@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+
+    <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="New Button"
+            android:id="@+id/button" android:layout_gravity="center_horizontal" android:visibility="gone"/>
+    <view android:layout_width="fill_parent"
+          android:layout_height="fill_parent"
+          class="com.fsoft.vktest.ConsoleView" android:id="@+id/console_view" android:layout_gravity="center_horizontal"
+          android:fillViewport="false" android:layout_weight="1"/>
+    <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:visibility="gone">
+        <EditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/editTextMessage" android:layout_gravity="center_horizontal" android:layout_weight="1"
+                android:focusable="false" android:focusableInTouchMode="true"
+                android:hint="Сбщ. для бота"/>
+        <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Отправить"
+                android:id="@+id/buttonSend"/>
+    </LinearLayout>
+</LinearLayout>
