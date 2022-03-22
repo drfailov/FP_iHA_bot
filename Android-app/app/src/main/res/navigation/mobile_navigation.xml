@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/nav_messages">
+
+    <fragment
+        android:id="@+id/nav_messages"
+        android:name="com.fsoft.ihabot.ui.home.HomeFragment"
+        android:label="@string/menu_messages"
+        tools:layout="@layout/fragment_home" />
+
+    <fragment
+        android:id="@+id/nav_accounts"
+        android:name="com.fsoft.ihabot.ui.gallery.GalleryFragment"
+        android:label="@string/menu_accounts"
+        tools:layout="@layout/fragment_gallery" />
+
+    <fragment
+        android:id="@+id/nav_settings"
+        android:name="com.fsoft.ihabot.ui.slideshow.SlideshowFragment"
+        android:label="@string/menu_settings"
+        tools:layout="@layout/fragment_slideshow" />
+</navigation>

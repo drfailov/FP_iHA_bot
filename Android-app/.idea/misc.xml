@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/app/src/main/res/drawable/ic_menu_gallery.xml" value="0.196" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/app/src/main/res/drawable/ic_menu_message.xml" value="0.196" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/app/src/main/res/drawable/ic_menu_slideshow.xml" value="0.196" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/app/src/main/res/drawable/side_nav_bar.xml" value="0.196" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/app/src/main/res/layout/activity_bot.xml" value="0.18802083333333333" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/app/src/main/res/layout/activity_main.xml" value="0.35260416666666666" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/app/src/main/res/layout/app_bar_bot.xml" value="0.18802083333333333" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/app/src/main/res/layout/content_bot.xml" value="0.358695652173913" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/app/src/main/res/layout/fragment_gallery.xml" value="0.18802083333333333" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/app/src/main/res/layout/fragment_home.xml" value="0.18802083333333333" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/app/src/main/res/layout/fragment_slideshow.xml" value="0.358695652173913" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/app/src/main/res/layout/nav_header_bot.xml" value="0.358695652173913" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/app/src/main/res/menu/activity_main_drawer.xml" value="0.5" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/app/src/main/res/menu/bot.xml" value="0.18802083333333333" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml" value="0.196" />
+      </map>
+    </option>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="Android Studio default JDK" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/build/classes" />
+  </component>
+  <component name="ProjectType">
+    <option name="id" value="Android" />
+  </component>
+</project>
