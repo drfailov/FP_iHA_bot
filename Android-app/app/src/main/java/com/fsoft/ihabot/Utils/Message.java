@@ -14,4 +14,7 @@ public class Message {
 //    protected AccountBase botAccount = null;     // кто из ботов эту хуйню обнаружил
 
 
+    public String getText() {
+        return text;
+    }
 }

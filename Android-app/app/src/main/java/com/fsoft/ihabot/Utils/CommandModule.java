@@ -1,5 +1,7 @@
 package com.fsoft.ihabot.Utils;
 
+import android.util.Log;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
@@ -13,6 +15,11 @@ public class CommandModule implements Command {
 
 
     public CommandModule() {
+    }
+
+    protected String log(String string){
+        Log.d(F.TAG, string);
+        return string;
     }
 
     @Override

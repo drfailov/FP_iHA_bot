@@ -1,6 +1,11 @@
 package com.fsoft.ihabot.Utils;
 
+import android.content.Context;
+
 import com.fsoft.ihabot.BotService;
+import com.fsoft.ihabot.communucation.Communicator;
+
+import java.io.File;
 
 /**
  * Спустя два года самое время всё нахуй переписать.
@@ -40,10 +45,21 @@ public class ApplicationManager extends CommandModule {
     }
 
     private BotService service = null;//это в общем то наш сервис. Он должен быть по любому
+    private Communicator communicator = null;
+
 
     public ApplicationManager(BotService service) throws Exception {
         super();
         applicationManagerInstance = this;
         this.service = service;
+    }
+    public File getHomeFolder(){
+        return service.getFilesDir();
+    }
+    public Context getContext() {
+        return service;
+    }
+    public Communicator getCommunicator() {
+        return communicator;
     }
 }

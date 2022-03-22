@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/action_turnoff"
+        android:icon="@drawable/ic_cross"
         android:orderInCategory="100"
         android:title="@string/action_turnoff"
         app:showAsAction="never" />
