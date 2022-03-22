@@ -3,12 +3,15 @@ package com.fsoft.ihabot;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
 
+import com.fsoft.ihabot.Utils.F;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.navigation.NavigationView;
 
+import androidx.annotation.NonNull;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -51,11 +54,11 @@ public class BotActivity extends AppCompatActivity {
         NavigationUI.setupWithNavController(navigationView, navController);
 
 
+
+
+
         //проверить запущен ли сервис. если нет - запустить.
-        Log.d("BOT", "Starting service...");
-
-
-
+        Log.d(F.TAG, "Starting service...");
         Intent intent = new Intent(getApplicationContext(), BotService.class);
         startService(intent);
 
@@ -64,9 +67,19 @@ public class BotActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.bot, menu);
         return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        // process actionbar menu selected
+        if(item.getItemId() == R.id.action_turnoff){
+            getApplicationContext().stopService(new Intent(this, BotService.class));
+            finish();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override

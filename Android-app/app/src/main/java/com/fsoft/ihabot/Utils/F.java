@@ -51,6 +51,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 public class F {
+    static public String TAG = "iHA bot";
 
         public static void sleep(int ms){
             try{
