@@ -50,6 +50,10 @@ public class Communicator extends CommandModule{
                 return account;
         return null;
     }
+    public ArrayList<TgAccount> getTgAccounts() {
+        return tgAccounts;
+    }
+
     public boolean containsTgAccount(long id){
         return getTgAccount(id) != null;
     }
