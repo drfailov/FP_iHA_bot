@@ -7,7 +7,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
 
+import com.fsoft.ihabot.Utils.ApplicationManager;
 import com.fsoft.ihabot.Utils.F;
+import com.fsoft.ihabot.communucation.tg.TgAccount;
+import com.fsoft.ihabot.ui.TgLoginWindow;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.navigation.NavigationView;
 
@@ -37,8 +40,21 @@ public class BotActivity extends AppCompatActivity {
         binding.appBarBot.fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+//                        .setAction("Action", null).show();
+                new TgLoginWindow(BotActivity.this, new TgLoginWindow.OnSuccessfulLoginListener() {
+                    @Override
+                    public void onSuccessfulLogin(TgAccount tgAccount) {
+                        try {
+                            ApplicationManager.getInstance().getCommunicator().addAccount(tgAccount);
+                            Snackbar.make(view, "Added: " + tgAccount.toString(), Snackbar.LENGTH_LONG).show();
+                        }
+                        catch (Exception e){
+                            e.printStackTrace();
+                            Snackbar.make(view, "Error: " + e.toString(), Snackbar.LENGTH_LONG).show();
+                        }
+                    }
+                });
             }
         });
         DrawerLayout drawer = binding.drawerLayout;

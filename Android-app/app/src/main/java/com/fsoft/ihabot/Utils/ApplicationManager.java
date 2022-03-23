@@ -52,6 +52,8 @@ public class ApplicationManager extends CommandModule {
         super();
         applicationManagerInstance = this;
         this.service = service;
+        communicator = new Communicator(this);
+        childCommands.add(communicator);
     }
     public File getHomeFolder(){
         return service.getFilesDir();
@@ -62,4 +64,6 @@ public class ApplicationManager extends CommandModule {
     public Communicator getCommunicator() {
         return communicator;
     }
+
+
 }

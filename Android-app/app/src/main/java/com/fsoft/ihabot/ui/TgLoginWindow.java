@@ -37,22 +37,20 @@ import java.util.Random;
 
 public class TgLoginWindow extends CommandModule {
     private Handler handler = new Handler();
-    private ApplicationManager applicationManager = null;
-    private TgAccountCore tgAccount = null;
+    private TgAccount tgAccount = null;
     private Dialog loginDialog = null;
     private Activity activity = null;
-    private Runnable howToRefresh = null;
+    private OnSuccessfulLoginListener onSuccessfulLoginListener = null;
 
     private EditText tokenField;
     private TextView saveButton;
     private View closeButton;
 
-    public TgLoginWindow(ApplicationManager applicationManager, Activity activity, Runnable howToRefresh) {
+    public TgLoginWindow(Activity activity, OnSuccessfulLoginListener onSuccessfulLoginListener) {
         super();
-        this.applicationManager = applicationManager;
         this.activity = activity;
-        this.tgAccount = new TgAccount(applicationManager, "acc"+ new SimpleDateFormat("_yyyy-MM-dd_HH-mm.json").format(new Date()));
-        this.howToRefresh = howToRefresh;
+        this.tgAccount = new TgAccount(ApplicationManager.getInstance(), "acc" + new SimpleDateFormat("_yyyy-MM-dd_HH-mm").format(new Date()) + ".json");
+        this.onSuccessfulLoginListener = onSuccessfulLoginListener;
         showLoginWindow();
     }
 
@@ -132,8 +130,8 @@ public class TgLoginWindow extends CommandModule {
                 Toast.makeText(activity, "Вход выполнен!", Toast.LENGTH_SHORT).show();
                 closeLoginWindow();
                 tgAccount.startAccount();
-                if(howToRefresh != null)
-                    howToRefresh.run();
+                if(onSuccessfulLoginListener != null)
+                    onSuccessfulLoginListener.onSuccessfulLogin(tgAccount);
             }
 
             @Override
@@ -147,5 +145,9 @@ public class TgLoginWindow extends CommandModule {
         });
         saveButton.setEnabled(false);
         saveButton.setText("Проверка...");
+    }
+
+    public interface OnSuccessfulLoginListener{
+        void onSuccessfulLogin(TgAccount tgAccount);
     }
 }

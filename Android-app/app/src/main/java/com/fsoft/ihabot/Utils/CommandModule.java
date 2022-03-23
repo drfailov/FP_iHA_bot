@@ -37,7 +37,6 @@ public class CommandModule implements Command {
             }
         }
         return result;
-
     }
     @Override
     public ArrayList<CommandDesc> getHelp() {
@@ -48,7 +47,7 @@ public class CommandModule implements Command {
     }
     public void stop() {
         //при закрытии программы останавливает процессы
-        //НЕ ИСПОЛЬЗОВАТЬ ДЛЯ СОХРАНЕНИЯ!!!!!!!!!!!!!!!
+        //НЕ ИСПОЛЬЗОВАТЬ ДЛЯ СОХРАНЕНИЯ!!!!!!!!!!!!!!! Сохранять всё на лету, так надежнее
         for (CommandModule child : childCommands)
             child.stop();
 
