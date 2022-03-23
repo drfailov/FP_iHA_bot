@@ -6,6 +6,7 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
+import android.view.WindowManager;
 
 import com.fsoft.ihabot.Utils.ApplicationManager;
 import com.fsoft.ihabot.Utils.F;
@@ -35,6 +36,7 @@ public class BotActivity extends AppCompatActivity {
 
         binding = ActivityBotBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         setSupportActionBar(binding.appBarBot.toolbar);
         binding.appBarBot.fab.setOnClickListener(new View.OnClickListener() {

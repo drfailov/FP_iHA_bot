@@ -60,9 +60,7 @@ public class TgAccountCore extends Account {
     private String userName = null;
     private String telegraphToken = "";//бот использует телеграф для отправки лонгридов
 
-    private Runnable apiCounterChangedListener = null;
     private long apiCounter = 0; //счётчик доступа к АПИ
-    private Runnable apiErrorsChangedListener = null;
     private long errorCounter = 0; //счётчик ошибок при доступе к АПИ
     private RequestQueue queue = null;
 
@@ -125,15 +123,9 @@ public class TgAccountCore extends Account {
     }
     public void incrementApiCounter(){
         apiCounter++;
-        //вызывается в фоновом потоке!
-        if(apiCounterChangedListener != null)
-            apiCounterChangedListener.run();
     }
     public void incrementErrorCounter(){
         errorCounter++;
-        //вызывается в фоновом потоке!
-        if(apiErrorsChangedListener != null)
-            apiErrorsChangedListener.run();
     }
     public long getErrorCounter() {
         return errorCounter;
@@ -148,12 +140,6 @@ public class TgAccountCore extends Account {
     }
     public String getTelegraphToken(){
         return telegraphToken;
-    }
-    public void setApiCounterChangedListener(Runnable apiCounterChangedListener) {
-        this.apiCounterChangedListener = apiCounterChangedListener;
-    }
-    public void setApiErrorsChangedListener(Runnable apiErrorsChangedListener) {
-        this.apiErrorsChangedListener = apiErrorsChangedListener;
     }
 
     public void publishOnTelegraph(final CreateTelegraphPageListener listener, final String text){
@@ -279,21 +265,6 @@ public class TgAccountCore extends Account {
         queue.add(stringRequest);
     }
     public void sendMessage(final SendMessageListener listener, final long chat_id, String text){
-        if(text.length() > 4000){
-            publishOnTelegraph(new CreateTelegraphPageListener() {
-                @Override
-                public void pageCreated(String link) {
-                    sendMessage(listener, chat_id, link);
-                }
-
-                @Override
-                public void error(Throwable error) {
-
-                }
-            }, text);
-            return;
-        }
-
         JSONObject jsonObject = new JSONObject();
         try {
             //text = URLEncoder.encode(text, "UTF-8");
