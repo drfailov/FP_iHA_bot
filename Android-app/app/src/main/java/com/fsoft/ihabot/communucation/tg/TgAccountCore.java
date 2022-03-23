@@ -60,8 +60,10 @@ public class TgAccountCore extends Account {
     private String userName = null;
     private String telegraphToken = "";//бот использует телеграф для отправки лонгридов
 
+
     private long apiCounter = 0; //счётчик доступа к АПИ
     private long errorCounter = 0; //счётчик ошибок при доступе к АПИ
+    private String currentUserPhotoUrl = null; //переменная для временного хранения здесь ссылки на фото профиля, чтобы каждый раз не грузить его заново
     private RequestQueue queue = null;
 
     public TgAccountCore(ApplicationManager applicationManager, String fileName) {
@@ -320,7 +322,26 @@ public class TgAccountCore extends Account {
         // Add the request to the RequestQueue.
         queue.add(stringRequest);
     }
-    public void getUserPhoto(final GetUserPhotoListener listener, final long user_id){
+    public void getMyPhotoUrl(final GetUserPhotoListener listener){
+        if(currentUserPhotoUrl != null){
+            listener.gotPhoto(currentUserPhotoUrl);
+        }
+        else {
+            getUserPhotoUrl(new GetUserPhotoListener() {
+                @Override
+                public void gotPhoto(String url) {
+                    currentUserPhotoUrl = url;
+                    listener.gotPhoto(url);
+                }
+
+                @Override
+                public void error(Throwable error) {
+                    listener.error(error);
+                }
+            }, getId());
+        }
+    }
+    public void getUserPhotoUrl(final GetUserPhotoListener listener, final long user_id){
         log(". Получение фотографии пользователя " + user_id + "...");
         getUserProfilePhotos(new GetUserProfilePhotosListener() {
             @Override
@@ -450,6 +471,7 @@ public class TgAccountCore extends Account {
         // Add the request to the RequestQueue.
         queue.add(stringRequest);
     }
+
     public void sendDocument(final SendMessageListener listener, final long chat_id, final String text, final java.io.File f){
         try {
             final String url ="https://api.telegram.org/bot"+getId()+":"+getToken()+"/sendDocument";

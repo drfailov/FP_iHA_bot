@@ -4,14 +4,20 @@ import android.app.Activity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.fsoft.ihabot.R;
 import com.fsoft.ihabot.Utils.ApplicationManager;
 import com.fsoft.ihabot.communucation.Communicator;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
+import com.fsoft.ihabot.communucation.tg.TgAccountCore;
+import com.squareup.picasso.Picasso;
 
 import java.util.Locale;
+
+import jp.wasabeef.picasso.transformations.CropCircleTransformation;
 
 public class AccountsAdapter extends BaseAdapter {
     Activity activity = null;
@@ -106,6 +112,30 @@ public class AccountsAdapter extends BaseAdapter {
             TextView textView = convertView.findViewById(R.id.item_account_textView_api_errors);
             if(textView != null) {
                 textView.setText(String.format(Locale.getDefault(),"%d шт", tgAccount.getErrorCounter()));
+            }
+        }
+        {//photo
+            ImageView imageView = convertView.findViewById(R.id.item_account_imageview_avatar);
+            if(imageView != null) {
+                tgAccount.getMyPhotoUrl(new TgAccountCore.GetUserPhotoListener() {
+                    @Override
+                    public void gotPhoto(String url) {
+                        Picasso.get()
+                                .load(url)
+                                .placeholder(R.mipmap.ic_launcher)
+                                .transform(new CropCircleTransformation())
+                                .into(imageView);
+                    }
+
+                    @Override
+                    public void error(Throwable error) {
+                        Picasso.get()
+                                .load(R.mipmap.ic_launcher)
+                                .transform(new CropCircleTransformation())
+                                .into(imageView);
+                        error.printStackTrace();
+                    }
+                });
             }
         }
         return convertView;
