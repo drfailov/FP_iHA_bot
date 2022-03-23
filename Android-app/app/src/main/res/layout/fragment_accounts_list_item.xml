@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="10dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="10dp">
+
+        <FrameLayout
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_weight="0">
+
+            <ImageView
+                android:id="@+id/item_account_imageview_avatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_menu_user" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginLeft="15dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="15dp"
+                    android:layout_height="15dp"
+                    android:layout_marginEnd="10dp"
+                    android:src="@drawable/ic_tg_logo"
+                    android:tint="?attr/colorOnBackground"
+                    tools:ignore="UseAppTint" />
+
+                <TextView
+                    android:id="@+id/item_account_textView_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Аккаунт без имени"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/item_account_textView_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Статус неизвестен"
+                android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="3dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.3"
+            android:text="Отправлено сообщений:"
+            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+            android:textSize="14sp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.7"
+            android:id="@+id/item_account_textView_messages_sent"
+            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:text="Неивестно"/>
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="3dp">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.3"
+            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+            android:textSize="14sp"
+            android:text="Принято сообщений:"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.7"
+            android:id="@+id/item_account_textView_messages_received"
+            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:text="Неивестно"/>
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="3dp">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.3"
+            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+            android:textSize="14sp"
+            android:text="Выполнено запросов:"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.7"
+            android:id="@+id/item_account_textView_api_counter"
+            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:text="Неивестно"/>
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="3dp">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.3"
+            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+            android:textSize="14sp"
+            android:text="Запросов с ошибками:"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.7"
+            android:id="@+id/item_account_textView_api_errors"
+            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:text="Неивестно"/>
+    </LinearLayout>
+</LinearLayout>

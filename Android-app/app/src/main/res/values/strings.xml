@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">FP iHA bot</string>
+    <string name="nav_header_title">FP iHA bot 6</string>
+    <string name="nav_header_subtitle">aplha</string>
+    <string name="action_turnoff">Выключить бота</string>
+
+    <string name="menu_messages">Сообщения</string>
+    <string name="menu_accounts">Аккаунты</string>
+    <string name="menu_settings">Настройки</string>
+    <string name="notification_content">Бот работает</string>
+    <string name="notification_title">iHA bot v0001</string>
+    <string name="notification_channel_name">Бот работает</string>
+</resources>

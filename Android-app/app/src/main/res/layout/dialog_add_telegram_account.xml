@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+xmlns:android="http://schemas.android.com/apk/res/android"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:orientation="vertical"
+android:background="#394249"
+android:padding="3dp">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#273238"
+    android:orientation="vertical">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0"
+        android:gravity="center_vertical"
+        android:background="#394249">
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="15dp"
+            android:layout_weight="0"
+            android:src="@drawable/ic_tg_logo"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Добавление аккаунта Telegram"
+            android:layout_marginTop="5dp"
+            android:layout_marginBottom="7dp"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="16sp"/>
+        <ImageView
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:id="@+id/dialogadd_telegram_accountButtonCancel"
+            android:padding="13dp"
+            android:layout_marginRight="5dp"
+            android:layout_weight="0"
+            android:src="@drawable/ic_cross"/>
+    </LinearLayout>
+
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="5dp"
+            android:text="Введи токен для Telegram бота"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp" />
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:textColor="#000000"
+            android:background="#FFFFFF"
+            android:padding="10dp"
+            android:textSize="14sp"
+            android:textColorHint="#777777"
+            android:id="@+id/dialog_add_telegram_account_field_token"
+            android:text=""
+            android:hint="000000000:AAAAAAA-BBBBBBBB-CCCCCCC"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Для работы с Telegram требуется создать аккаунт бота. Чтобы это сделать, найди в телеграме бота @BotFather и следуй инструкции. Ты получишь от него токен. Его и надо ввести сюда, чтобы бот заработал."
+            android:textSize="12sp"
+            android:textColor="#a6abad"
+            android:padding="5dp"/>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="14sp"
+                android:layout_marginTop="5dp"
+                android:id="@+id/dialogAdd_telegram_accountButtonSave"
+                android:background="#5c6f75"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                android:paddingEnd="15dp"
+                android:paddingStart="15dp"
+                android:layout_margin="3dp"
+                android:textColor="#FFFFFF"
+                android:text="Сохранить"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <ImageView
+        android:layout_width="70dp"
+        android:layout_height="20dp"
+        android:layout_gravity="right"
+        android:layout_marginRight="3dp"
+        android:layout_marginBottom="3dp"
+        android:src="@drawable/iha_bot" />
+</LinearLayout>
+
+</ScrollView>
