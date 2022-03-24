@@ -36,13 +36,16 @@ public class Communicator extends CommandModule{
     public void startCommunicator(){
         log("Запуск коммуникатора...");
         running = true;
-        for(TgAccount tgAccount:tgAccounts)
-            tgAccount.startAccount();
+        for(TgAccount tgAccount:tgAccounts) {
+            if(tgAccount.isEnabled())
+                tgAccount.startAccount();
+        }
     }
     public void stopCommunicator(){
         running = false;
-        for(TgAccount tgAccount:tgAccounts)
+        for(TgAccount tgAccount:tgAccounts) {
             tgAccount.stopAccount();
+        }
     }
     public TgAccount getTgAccount(long id){
         for (TgAccount account : tgAccounts)

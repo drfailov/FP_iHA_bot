@@ -1,12 +1,15 @@
 package com.fsoft.ihabot.ui.accounts;
 
 import android.app.Activity;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.PopupMenu;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.fsoft.ihabot.R;
 import com.fsoft.ihabot.Utils.ApplicationManager;
@@ -78,10 +81,14 @@ public class AccountsAdapter extends BaseAdapter {
         { //STATE
             TextView textView = convertView.findViewById(R.id.item_account_textView_status);
             if(textView != null) {
-                if (tgAccount.getState() != null)
-                    textView.setText(tgAccount.getState());
+                if(tgAccount.isEnabled()) {
+                    if (tgAccount.getState() != null)
+                        textView.setText(tgAccount.getState());
+                    else
+                        textView.setText("Непонятный статус");
+                }
                 else
-                    textView.setText("Непонятный статус");
+                    textView.setText("Аккаунт приостановлен пользователем");
             }
         }
         { //SENT MESSAGES
@@ -138,6 +145,16 @@ public class AccountsAdapter extends BaseAdapter {
                 });
             }
         }
+        {//pause
+            ImageView imageView = convertView.findViewById(R.id.item_account_imageview_pause);
+            if(imageView != null) {
+                if(tgAccount.isEnabled())
+                    imageView.setVisibility(View.GONE);
+                else
+                    imageView.setVisibility(View.VISIBLE);
+            }
+        }
+
         return convertView;
     }
 }

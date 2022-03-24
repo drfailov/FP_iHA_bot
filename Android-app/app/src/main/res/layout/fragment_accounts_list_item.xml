@@ -65,6 +65,14 @@
                 android:textAppearance="@style/TextAppearance.AppCompat.Display1"
                 android:textSize="14sp" />
         </LinearLayout>
+        <ImageView
+            android:id="@+id/item_account_imageview_pause"
+            android:tint="?attr/colorOnBackground"
+            tools:ignore="UseAppTint"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:visibility="visible"
+            android:src="@drawable/ic_pause"/>
     </LinearLayout>
 
     <LinearLayout
