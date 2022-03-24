@@ -64,6 +64,7 @@ public class TgAccountCore extends Account {
     private long apiCounter = 0; //счётчик доступа к АПИ
     private long errorCounter = 0; //счётчик ошибок при доступе к АПИ
     private String currentUserPhotoUrl = null; //переменная для временного хранения здесь ссылки на фото профиля, чтобы каждый раз не грузить его заново
+    private Boolean currentHasPhoto = null; //временный учёт наличия фотографии. Если фото нет то тут False.
     private RequestQueue queue = null;
 
     public TgAccountCore(ApplicationManager applicationManager, String fileName) {
@@ -323,22 +324,32 @@ public class TgAccountCore extends Account {
         queue.add(stringRequest);
     }
     public void getMyPhotoUrl(final GetUserPhotoListener listener){
-        if(currentUserPhotoUrl != null){
-            listener.gotPhoto(currentUserPhotoUrl);
-        }
-        else {
-            getUserPhotoUrl(new GetUserPhotoListener() {
-                @Override
-                public void gotPhoto(String url) {
-                    currentUserPhotoUrl = url;
-                    listener.gotPhoto(url);
-                }
+        if(currentHasPhoto != null && !currentHasPhoto)
+            listener.noPhoto();
+        if(currentHasPhoto == null) {
+            if (currentUserPhotoUrl != null) {
+                listener.gotPhoto(currentUserPhotoUrl);
+            } else {
+                getUserPhotoUrl(new GetUserPhotoListener() {
+                    @Override
+                    public void gotPhoto(String url) {
+                        currentUserPhotoUrl = url;
+                        currentHasPhoto = true;
+                        listener.gotPhoto(url);
+                    }
 
-                @Override
-                public void error(Throwable error) {
-                    listener.error(error);
-                }
-            }, getId());
+                    @Override
+                    public void noPhoto() {
+                        currentHasPhoto = false;
+                        listener.noPhoto();
+                    }
+
+                    @Override
+                    public void error(Throwable error) {
+                        listener.error(error);
+                    }
+                }, getId());
+            }
         }
     }
     public void getUserPhotoUrl(final GetUserPhotoListener listener, final long user_id){
@@ -347,10 +358,16 @@ public class TgAccountCore extends Account {
             @Override
             public void gotPhotos(UserProfilePhotos photos) {
                 log(". Запрос на архив фотографий " + user_id + " выполнен.");
-                if(photos.getArrayPhotos().isEmpty())
-                    listener.error(new Exception(log("! У юзера нет фотографий!")));
-                if(photos.getArrayPhotos().get(0).isEmpty())
-                    listener.error(new Exception(log("! У фото нет размера!")));
+                if(photos.getArrayPhotos().isEmpty()) {
+                    log("! У юзера нет фотографий!");
+                    listener.noPhoto();
+                    return;
+                }
+                if(photos.getArrayPhotos().get(0).isEmpty()) {
+                    log("! У фото нет размера!");
+                    listener.noPhoto();
+                    return;
+                }
                 PhotoSize photoSize = photos.getArrayPhotos().get(0).get(1);
                 final String file_id = photoSize.getFile_id();
                 getFile(new GetFileListener() {
@@ -379,6 +396,7 @@ public class TgAccountCore extends Account {
             }
         }, user_id, 0, 1);
     }
+
     public void getUserProfilePhotos(final GetUserProfilePhotosListener listener, final long user_id, int offset, int limit){
         final String url ="https://api.telegram.org/bot"+getId()+":"+getToken()+"/getUserProfilePhotos?user_id="+user_id+"&offset="+offset+"&limit="+limit;
         log(". Sending request: " + url);
@@ -954,6 +972,7 @@ public class TgAccountCore extends Account {
     }
     public interface GetUserPhotoListener{
         void gotPhoto(String url);
+        void noPhoto();
         void error(Throwable error);
     }
     public interface GetUserProfilePhotosListener{

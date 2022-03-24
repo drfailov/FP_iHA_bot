@@ -11,7 +11,6 @@ public class MessageProcessor extends CommandModule {
     private TgAccount tgAccount = null;
     private ApplicationManager applicationManager = null;
     private long lastUpdateId = 0;
-    private boolean isRunning = false;
     private boolean isChatsEnabled = true;
     private int errors = 0;
     private Runnable onMessagesReceivedCounterChangedListener = null;
@@ -33,7 +32,6 @@ public class MessageProcessor extends CommandModule {
 
     public void startModule(){
         log("Обработка сообщений для аккаунта "+tgAccount+" запускается...");
-        isRunning = true;
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -43,7 +41,6 @@ public class MessageProcessor extends CommandModule {
     }
     public void stopModule(){
         log("Обработка сообщений для аккаунта "+tgAccount+" останавливается...");
-        isRunning = false;
     }
 
     public int getMessagesReceivedCounter() {
@@ -96,7 +93,7 @@ public class MessageProcessor extends CommandModule {
                         try {
                             log(". Received " + updates.size() + " " + tgAccount + " updates.");
                             errors = 0;
-                            if (isRunning) {
+                            if (isRunning()) {
                                 processUpdates(updates);
                                 update();
                             }
@@ -120,7 +117,7 @@ public class MessageProcessor extends CommandModule {
 //                            tgAccount.stopAccount();
 //                            tgAccount.state("Слишком много ошибок " + error.getClass().getName() + " " +error.getMessage());
 //                        }
-                        if(isRunning) {
+                        if(isRunning()) {
                             if(errors != 0) {
                                 int wait = errors;
                                 if(wait > 60)
@@ -240,6 +237,9 @@ public class MessageProcessor extends CommandModule {
             //}
         };
 
+    private boolean isRunning(){
+        return tgAccount.isRunning();
+    }
         //формирует объект и вызываем систему
         //com.fsoft.vktest.AnswerInfrastructure.Message brainMessage;
 //        brainMessage = new com.fsoft.vktest.AnswerInfrastructure.Message(

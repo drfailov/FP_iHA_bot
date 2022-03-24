@@ -129,7 +129,15 @@ public class AccountsAdapter extends BaseAdapter {
                     public void gotPhoto(String url) {
                         Picasso.get()
                                 .load(url)
-                                .placeholder(R.mipmap.ic_launcher)
+                                .placeholder(R.drawable.tg_account_placeholder)
+                                .transform(new CropCircleTransformation())
+                                .into(imageView);
+                    }
+
+                    @Override
+                    public void noPhoto() {
+                        Picasso.get()
+                                .load(R.drawable.tg_account_placeholder)
                                 .transform(new CropCircleTransformation())
                                 .into(imageView);
                     }
@@ -137,7 +145,7 @@ public class AccountsAdapter extends BaseAdapter {
                     @Override
                     public void error(Throwable error) {
                         Picasso.get()
-                                .load(R.mipmap.ic_launcher)
+                                .load(R.drawable.tg_account_placeholder)
                                 .transform(new CropCircleTransformation())
                                 .into(imageView);
                         error.printStackTrace();

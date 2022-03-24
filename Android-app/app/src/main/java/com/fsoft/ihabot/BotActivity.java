@@ -49,6 +49,7 @@ public class BotActivity extends AppCompatActivity {
                     public void onSuccessfulLogin(TgAccount tgAccount) {
                         try {
                             ApplicationManager.getInstance().getCommunicator().addAccount(tgAccount);
+                            tgAccount.startAccount();
                             Snackbar.make(view, "Добавлено: " + tgAccount.toString(), Snackbar.LENGTH_LONG).show();
                         }
                         catch (Exception e){

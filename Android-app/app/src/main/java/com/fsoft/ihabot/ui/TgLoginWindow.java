@@ -129,7 +129,7 @@ public class TgLoginWindow extends CommandModule {
             public void gotUser(User user) {
                 Toast.makeText(activity, "Вход выполнен!", Toast.LENGTH_SHORT).show();
                 closeLoginWindow();
-                tgAccount.startAccount();
+                //tgAccount.startAccount();
                 if(onSuccessfulLoginListener != null)
                     onSuccessfulLoginListener.onSuccessfulLogin(tgAccount);
             }
