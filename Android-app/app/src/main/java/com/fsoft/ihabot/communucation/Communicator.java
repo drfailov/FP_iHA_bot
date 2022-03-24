@@ -63,8 +63,10 @@ public class Communicator extends CommandModule{
     public void addAccount(TgAccount tgAccount) throws Exception{
         if(tgAccount == null)
             throw new Exception("Аккаунт не получен");
-        if(containsTgAccount(tgAccount.getId()))
+        if(containsTgAccount(tgAccount.getId())) {
+            tgAccount.stopAccount();
             throw new Exception("Такой аккаунт уже есть");
+        }
         tgAccounts.add(tgAccount);
 
         String[] accountList = new String[tgAccounts.size()];
@@ -72,6 +74,23 @@ public class Communicator extends CommandModule{
             accountList[i] = tgAccounts.get(i).getFileName();
         file.put("TGaccounts", accountList).commit();
         log("Аккаунт " + tgAccount.getId() + " добавлен. Список аккаунтов сохранён.");
+    }
+    public void remAccount(TgAccount accountToRemove) throws Exception{
+        if(accountToRemove == null)
+            throw new Exception("Функция удаления TG аккаунта вызвана с аргументом null");
+        if(running)
+            accountToRemove.stopAccount();
+        tgAccounts.remove(accountToRemove);
+
+        String[] accountList = new String[tgAccounts.size()];
+        for (int i = 0; i < tgAccounts.size(); i++)
+            accountList[i] = tgAccounts.get(i).getFileName();
+        file.put("TGaccounts", accountList).commit();
+
+        if(accountToRemove.remove())
+            log("Аккаунт TG " + accountToRemove + " успешно удалён.");
+        else
+            throw new Exception("Аккаунт TG " + accountToRemove + " удалён из списка, но его файл удалить не получается.");
     }
 
     @Override

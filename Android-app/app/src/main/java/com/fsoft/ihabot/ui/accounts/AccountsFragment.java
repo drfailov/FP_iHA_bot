@@ -16,6 +16,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.fsoft.ihabot.R;
 import com.fsoft.ihabot.Utils.ApplicationManager;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
+import com.google.android.material.snackbar.Snackbar;
 
 public class AccountsFragment extends Fragment {
     ListView listView;
@@ -31,6 +32,8 @@ public class AccountsFragment extends Fragment {
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 try {
                     final TgAccount tgAccount = ApplicationManager.getInstance().getCommunicator().getTgAccounts().get(i);
+                    if(tgAccount == null)
+                        return;
                     PopupMenu popupMenu = new PopupMenu(getActivity(), view);
                     popupMenu.inflate(R.menu.account_popup_menu);
                     if(tgAccount.isEnabled())
@@ -45,6 +48,16 @@ public class AccountsFragment extends Fragment {
                             }
                             if (item.getItemId() == R.id.action_enable_account) {
                                 tgAccount.setEnabled(true);
+                            }
+                            if (item.getItemId() == R.id.action_delete_account) {
+                                try{
+                                    ApplicationManager.getInstance().getCommunicator().remAccount(tgAccount);
+                                    Snackbar.make(view, "Аккаунт "+tgAccount.getScreenName()+" успешно удалён", Snackbar.LENGTH_SHORT).show();
+                                }
+                                catch (Exception e){
+                                    e.printStackTrace();
+                                    Snackbar.make(view, "Ошибка: "+e.getLocalizedMessage(), Snackbar.LENGTH_SHORT).show();
+                                }
                             }
                             return false;
                         }

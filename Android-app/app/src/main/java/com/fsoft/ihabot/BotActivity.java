@@ -49,11 +49,11 @@ public class BotActivity extends AppCompatActivity {
                     public void onSuccessfulLogin(TgAccount tgAccount) {
                         try {
                             ApplicationManager.getInstance().getCommunicator().addAccount(tgAccount);
-                            Snackbar.make(view, "Added: " + tgAccount.toString(), Snackbar.LENGTH_LONG).show();
+                            Snackbar.make(view, "Добавлено: " + tgAccount.toString(), Snackbar.LENGTH_LONG).show();
                         }
                         catch (Exception e){
                             e.printStackTrace();
-                            Snackbar.make(view, "Error: " + e.toString(), Snackbar.LENGTH_LONG).show();
+                            Snackbar.make(view, "Ошибка: " + e.getLocalizedMessage(), Snackbar.LENGTH_LONG).show();
                         }
                     }
                 });

@@ -150,8 +150,14 @@ public class Account extends CommandModule implements AccountBase {
     public void setState(String state) {
         String time = new SimpleDateFormat("HH:mm").format(new Date());
         this.state = time + " " + state;
-        if(onStateChangedListener != null)
-            onStateChangedListener.run();
+        if(onStateChangedListener != null) {
+            try {
+                onStateChangedListener.run();
+            }
+            catch (Exception e){
+                e.printStackTrace();
+            }
+        }
     }
     public void setId(long id) {
         this.id = id;

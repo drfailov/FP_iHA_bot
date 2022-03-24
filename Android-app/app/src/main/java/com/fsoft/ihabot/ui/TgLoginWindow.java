@@ -49,7 +49,7 @@ public class TgLoginWindow extends CommandModule {
     public TgLoginWindow(Activity activity, OnSuccessfulLoginListener onSuccessfulLoginListener) {
         super();
         this.activity = activity;
-        this.tgAccount = new TgAccount(ApplicationManager.getInstance(), "acc" + new SimpleDateFormat("_yyyy-MM-dd_HH-mm").format(new Date()) + ".json");
+        this.tgAccount = new TgAccount(ApplicationManager.getInstance(), "acc" + new SimpleDateFormat("_yyyy-MM-dd_HH-mm-ss").format(new Date()) + ".json");
         this.onSuccessfulLoginListener = onSuccessfulLoginListener;
         showLoginWindow();
     }
