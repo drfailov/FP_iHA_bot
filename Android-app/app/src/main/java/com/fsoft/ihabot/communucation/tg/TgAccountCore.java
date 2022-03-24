@@ -326,6 +326,8 @@ public class TgAccountCore extends Account {
     public void getMyPhotoUrl(final GetUserPhotoListener listener){
         if(currentHasPhoto != null && !currentHasPhoto)
             listener.noPhoto();
+        if(currentHasPhoto != null && currentHasPhoto)
+            listener.gotPhoto(currentUserPhotoUrl);
         if(currentHasPhoto == null) {
             if (currentUserPhotoUrl != null) {
                 listener.gotPhoto(currentUserPhotoUrl);

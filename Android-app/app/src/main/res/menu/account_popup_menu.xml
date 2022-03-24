@@ -2,6 +2,9 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
+        android:id="@+id/action_copy_account_username"
+        android:title="Копировать имя пользователя" />
+    <item
         android:id="@+id/action_disable_account"
         android:title="Выключить аккаунт" />
     <item

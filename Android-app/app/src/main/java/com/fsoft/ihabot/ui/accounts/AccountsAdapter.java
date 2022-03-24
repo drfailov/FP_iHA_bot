@@ -1,6 +1,8 @@
 package com.fsoft.ihabot.ui.accounts;
 
 import android.app.Activity;
+import android.icu.util.LocaleData;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,6 +15,7 @@ import android.widget.Toast;
 
 import com.fsoft.ihabot.R;
 import com.fsoft.ihabot.Utils.ApplicationManager;
+import com.fsoft.ihabot.Utils.F;
 import com.fsoft.ihabot.communucation.Communicator;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
 import com.fsoft.ihabot.communucation.tg.TgAccountCore;
@@ -76,6 +79,12 @@ public class AccountsAdapter extends BaseAdapter {
                     textView.setText(tgAccount.getScreenName());
                 else
                     textView.setText("Имя неизвестно");
+            }
+        }
+        { //USERNAME
+            TextView textView = convertView.findViewById(R.id.item_account_textView_userhame);
+            if(textView != null) {
+                textView.setText(String.format("@%s", tgAccount.getUserName()));
             }
         }
         { //STATE
@@ -151,6 +160,9 @@ public class AccountsAdapter extends BaseAdapter {
                         error.printStackTrace();
                     }
                 });
+            }
+            else {
+                Log.d(F.TAG, "R.id.item_account_imageview_avatar is null =(");
             }
         }
         {//pause

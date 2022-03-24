@@ -1,5 +1,10 @@
 package com.fsoft.ihabot.ui.accounts;
 
+import android.app.AlertDialog;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -43,6 +48,13 @@ public class AccountsFragment extends Fragment {
                     popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                         @Override
                         public boolean onMenuItemClick(MenuItem item) {
+                            if (item.getItemId() == R.id.action_copy_account_username) {
+                                if(getActivity() != null) {
+                                    ClipboardManager clipboardManager = (ClipboardManager) getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
+                                    String text = "@" + tgAccount.getUserName();
+                                    clipboardManager.setPrimaryClip(ClipData.newPlainText("username", text));
+                                }
+                            }
                             if (item.getItemId() == R.id.action_disable_account) {
                                 tgAccount.setEnabled(false);
                             }
@@ -50,14 +62,22 @@ public class AccountsFragment extends Fragment {
                                 tgAccount.setEnabled(true);
                             }
                             if (item.getItemId() == R.id.action_delete_account) {
-                                try{
-                                    ApplicationManager.getInstance().getCommunicator().remAccount(tgAccount);
-                                    Snackbar.make(view, "Аккаунт "+tgAccount.getScreenName()+" успешно удалён", Snackbar.LENGTH_SHORT).show();
-                                }
-                                catch (Exception e){
-                                    e.printStackTrace();
-                                    Snackbar.make(view, "Ошибка: "+e.getLocalizedMessage(), Snackbar.LENGTH_SHORT).show();
-                                }
+                                new AlertDialog.Builder(getActivity())
+                                        .setTitle("Удаление аккаунта")
+                                        .setMessage("Вы действительно хотите удалить аккаунт " + tgAccount.getScreenName() + "?")
+                                        .setIcon(android.R.drawable.ic_dialog_alert)
+                                        .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                                            public void onClick(DialogInterface dialog, int whichButton) {
+                                                try{
+                                                    ApplicationManager.getInstance().getCommunicator().remAccount(tgAccount);
+                                                    Snackbar.make(view, "Аккаунт "+tgAccount.getScreenName()+" успешно удалён", Snackbar.LENGTH_SHORT).show();
+                                                }
+                                                catch (Exception e){
+                                                    e.printStackTrace();
+                                                    Snackbar.make(view, "Ошибка: "+e.getLocalizedMessage(), Snackbar.LENGTH_SHORT).show();
+                                                }
+                                            }})
+                                        .setNegativeButton(android.R.string.no, null).show();
                             }
                             return false;
                         }
