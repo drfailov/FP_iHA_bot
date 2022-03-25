@@ -73,9 +73,6 @@ public class BotActivity extends AppCompatActivity {
         NavigationUI.setupWithNavController(navigationView, navController);
 
 
-
-
-
         //проверить запущен ли сервис. если нет - запустить.
         Log.d(F.TAG, "Starting service...");
         Intent intent = new Intent(getApplicationContext(), BotService.class);

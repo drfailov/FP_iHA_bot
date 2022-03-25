@@ -38,7 +38,7 @@ public class Message {
     private String text = "";               //что в этой хуйне написано
     private User author = null;               //кто эту хуйню написал
     private Date date = null;               //когда мы эту хуйню получили
-    protected ArrayList<Attachment> attachments = new ArrayList<>();//что он к этой хуйне приложил
+    private final ArrayList<Attachment> attachments = new ArrayList<>();//что он к этой хуйне приложил
 
     public Message() {
     }
@@ -84,4 +84,6 @@ public class Message {
                 attachments.add(new Attachment(jsonArray.getJSONObject(i)));
         }
     }
+
+
 }

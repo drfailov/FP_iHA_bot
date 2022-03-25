@@ -26,12 +26,6 @@ public class Communicator extends CommandModule{
         String[] accountList = file.getStringArray("TGaccounts", new String[0]);
         for (String acc:accountList)
             tgAccounts.add(new TgAccount(applicationManager, acc));
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                startCommunicator();
-            }
-        }, 1000);
     }
     public void startCommunicator(){
         log("Запуск коммуникатора...");

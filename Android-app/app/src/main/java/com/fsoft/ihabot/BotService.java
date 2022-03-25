@@ -30,10 +30,6 @@ public class BotService extends Service {
     public void onCreate() {
         super.onCreate();
         try {
-            applicationManager = new ApplicationManager(this);
-
-
-
             Intent notificationIntent = new Intent(this, BotActivity.class);
 
             PendingIntent pendingIntent = PendingIntent.getActivity(
@@ -63,11 +59,24 @@ public class BotService extends Service {
             // Notification ID cannot be 0.
             int ONGOING_NOTIFICATION_ID = 1;
             startForeground(ONGOING_NOTIFICATION_ID, notification);
-            Log.d(F.TAG, "BotService started");
         } catch (Exception e) {
             Log.d(F.TAG, "Error starting service: " + e.getMessage());
             e.printStackTrace();
         }
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Log.d(F.TAG, "BotService ApplicationManager starting...");
+                    applicationManager = new ApplicationManager(BotService.this);
+                    Log.d(F.TAG, "BotService started");
+                }
+                catch (Exception e){
+                    Log.d(F.TAG, "Error starting ApplicationManager: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        }).start();
     }
 
 

@@ -3,9 +3,12 @@ package com.fsoft.ihabot.Utils;
 import android.content.Context;
 
 import com.fsoft.ihabot.BotService;
+import com.fsoft.ihabot.answer.AnswerDatabase;
 import com.fsoft.ihabot.communucation.Communicator;
 
 import java.io.File;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Спустя два года самое время всё нахуй переписать.
@@ -46,14 +49,26 @@ public class ApplicationManager extends CommandModule {
 
     private BotService service = null;//это в общем то наш сервис. Он должен быть по любому
     private Communicator communicator = null;
+    private AnswerDatabase answerDatabase = null;
 
 
     public ApplicationManager(BotService service) throws Exception {
         super();
         applicationManagerInstance = this;
         this.service = service;
+
+        answerDatabase = new AnswerDatabase(this);
+
         communicator = new Communicator(this);
+
         childCommands.add(communicator);
+
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                communicator.startCommunicator();
+            }
+        }, 1000);
     }
     public File getHomeFolder(){
         return service.getFilesDir();

@@ -143,6 +143,16 @@ public class MessageProcessor extends CommandModule {
         }
     }
     public void processMessage(final Message message){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                processMessageAsync(message);
+            }
+        }).start();
+    }
+
+    public void processMessageAsync(final Message message){
+        //Это выполняется в отдельном потоке (можно делать что хочешь и сколько хочешь)
         log(". ПОЛУЧЕНО СООБЩЕНИЕ: " + message);
         inctementMessagesReceivedCounter();
 
