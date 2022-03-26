@@ -1,13 +1,19 @@
+import java.util.Hashtable;
+import java.util.Map;
+import java.util.Enumeration;
+
 JSONObject json;
+Hashtable hashtable = new Hashtable();
 
 void setup() {
   println("Start...");
   BufferedReader reader;  
+  PrintWriter output;
   String line = "";
   long counter = 0;
   
-  reader = createReader("data/answer_database_old_full.txt");
-  output = createWriter("data/answer_database.txt"); 
+  println("Open IN file...");
+  reader = createReader("data/answer_database_old_full.txt"); 
   
   try {
     while(line != null){
@@ -17,6 +23,8 @@ void setup() {
         println("Finished at ", counter);
         break;
       }
+      
+      counter++;  
       //println(counter++, jsonIn.toString().replace("\t", "").replace("\n", "").replace("  ", " ").substring(0,110), "...");
       JSONObject jsonIn = parseJSONObject(line);
       String jsonIn_questionText = jsonIn.getString("questionText");   
@@ -37,44 +45,21 @@ void setup() {
         answerAttachments_files.add(attachment.getString("file"));
       }
       
+      String question = jsonIn_questionText.toLowerCase().trim();
+      question = filterSymbols(question);
+      question = question.replace(" +", " ");
+      String[] words = question.split(" ");
       
-      JSONObject jsonOut_questionMessage = new JSONObject();
-      jsonOut_questionMessage.setString("text", jsonIn_questionText);
-      jsonOut_questionMessage.setString("date", jsonIn_questionDate);
-      jsonOut_questionMessage.setJSONObject("author", authorByVkId(jsonIn_questionAuthor_id));
+      if(counter % 145 == 0)
+        println("Processing ...", counter);
       
-      
-      JSONObject jsonOut_answerMessage = new JSONObject();
-      jsonOut_answerMessage.setString("text", jsonIn_answerText);
-      jsonOut_answerMessage.setString("date", jsonIn_createdDate);
-      jsonOut_answerMessage.setJSONObject("author", authorByVkId(jsonIn_createdAuthor_id));
-      
-      
-      JSONArray jsonOut_attachments = new JSONArray();
-      for(int i=0; i<answerAttachments_types.size(); i++){
-        JSONObject attachment = new JSONObject();
-        attachment.setString("type", answerAttachments_types.get(i));
-        attachment.setString("file", answerAttachments_files.get(i));
-        jsonOut_attachments.setJSONObject(i, attachment);
+      for(int i=0; i<words.length; i++){
+        int freq = (Integer)hashtable.getOrDefault(words[i], 0);
+        freq++;
+        hashtable.put(words[i], freq);
       }
-     
       
-      JSONObject jsonOut = new JSONObject();
-      jsonOut.setLong("id", counter);   
-      jsonOut.setLong("timesUsed", jsonIn_timesUsed);   
-      jsonOut.setJSONObject("questionMessage", jsonOut_questionMessage);
-      jsonOut.setJSONObject("answerMessage", jsonOut_answerMessage);
-      jsonOut.setJSONArray("attachments", jsonOut_attachments);
-      
-      output.println(
-        jsonOut.toString()
-        .replace("\t", "")
-        .replace("\n", "")
-        .replace("   ", " ")
-        .replace("  ", " ")
-        .replace("{ ", "{")
-      );
-      counter++;      
+          
     }
   } catch (Exception e) {
     e.printStackTrace();
@@ -83,47 +68,43 @@ void setup() {
     println("EOF наверное");
   }
   
-  println("Close file...");
+  println("Close IN file...");
+  
+
+
+  println("Open OUT file...");
+  output = createWriter("data/words_frequency.txt");
+        
+  Enumeration<String> e = hashtable.keys();
+  int total = 0;
+  while (e.hasMoreElements()) {
+ 
+      // Getting the key of a particular entry
+      String word = e.nextElement();
+      int freq = (Integer)hashtable.get(word);
+      if(freq > 20){
+        println(freq, word);
+        output.println(freq + "\t" + word);
+        total ++;
+      }
+  }
+  
+  
+  
   output.flush(); // Writes the remaining data to the file
   output.close(); // Finishes the file
+  println("Wrote lines: ", total);
+  println("Close OUT file...");
   exit();
 }
 
-
-JSONObject authorByVkId(long jsonIn_questionAuthor_id){
-  
-      JSONObject jsonOut_questionMessage_author = new JSONObject();
-      if(jsonIn_questionAuthor_id == 10299185){ //Dr. Failov VK ID
-        //"id":248067313,"is_bot":false,"first_name":"Dr","last_name":"Failov","username":"DrFailov","language_code":"ru"
-        jsonOut_questionMessage_author.setString("username", "drfailov");
-        jsonOut_questionMessage_author.setLong("id", 248067313);
-        jsonOut_questionMessage_author.setString("first_name", "Dr");
-        jsonOut_questionMessage_author.setString("last_name", "Failov");
-        jsonOut_questionMessage_author.setString("language_code", "ru");
-      }     
-      else if(jsonIn_questionAuthor_id == 262949329){ //Cyber Tailor VK ID
-        //"id":1601776521,"is_bot":false,"first_name":"Cyber","last_name":"Tailor","username":"cybertailor","language_code":"ru"
-        jsonOut_questionMessage_author.setString("username", ""); //cybertailor
-        jsonOut_questionMessage_author.setLong("id", 0); //1601776521
-        jsonOut_questionMessage_author.setString("first_name", "Cyber");
-        jsonOut_questionMessage_author.setString("last_name", "Tailor");
-        jsonOut_questionMessage_author.setString("language_code", "ru");
-      }
-      else if(jsonIn_questionAuthor_id == 140830142){ //Олег Плаксин VK ID
-        //
-        jsonOut_questionMessage_author.setString("username", ""); //plaxeen
-        jsonOut_questionMessage_author.setLong("id", 0);
-        jsonOut_questionMessage_author.setString("first_name", "Олег");
-        jsonOut_questionMessage_author.setString("last_name", "Плаксин");
-        jsonOut_questionMessage_author.setString("language_code", "ru");
-      }
-      else{
-        println("UNKNOWN ID", jsonIn_questionAuthor_id);
-        jsonOut_questionMessage_author.setString("username", "");
-        jsonOut_questionMessage_author.setLong("id", 0);
-        jsonOut_questionMessage_author.setString("first_name", "No");
-        jsonOut_questionMessage_author.setString("last_name", "Name");
-        jsonOut_questionMessage_author.setString("language_code", "ru");
-      }
-      return jsonOut_questionMessage_author;
+String filterSymbols(String input){
+    String allowedSymbols = "qwertyuiopasdfghjklzxcvbnm їіёйцукенгшщзхъфывапролджэячсмитьбю 1234567890";
+    StringBuilder builder = new StringBuilder();
+    for (int i = 0; i < input.length(); i++) {
+        char c = input.charAt(i);
+        if(allowedSymbols.indexOf(c) >= 0)
+            builder.append(c);
+    }
+    return builder.toString();
 }
