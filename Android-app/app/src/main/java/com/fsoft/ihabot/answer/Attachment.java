@@ -21,6 +21,18 @@ public class Attachment {
         fromJson(jsonObject);
     }
 
+    public boolean isPhoto(){
+        return type.equals(TYPE_PHOTO);
+    }
+    public boolean isAudio(){
+        return type.equals(TYPE_AUDIO);
+    }
+    public boolean isDoc(){
+        return type.equals(TYPE_DOC);
+    }
+    public boolean isVideo(){
+        return type.equals(TYPE_VIDEO);
+    }
 
     public JSONObject toJson() throws JSONException {
         JSONObject jsonObject = new JSONObject();

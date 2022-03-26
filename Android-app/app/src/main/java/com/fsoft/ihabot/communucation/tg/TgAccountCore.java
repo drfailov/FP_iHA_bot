@@ -313,6 +313,7 @@ public class TgAccountCore extends Account {
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
+                //Caused by: java.net.UnknownHostException: Unable to resolve host "api.telegram.org": No address associated with hostname
                 log(error.getClass().getName() + " while sending request: " + url);
                 error.printStackTrace();
                 listener.error(error);

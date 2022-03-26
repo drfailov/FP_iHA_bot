@@ -56,4 +56,6 @@ public class AnswerElement {
         if(jsonObject.has("answerMessage"))
             answerMessage = new Message(jsonObject.getJSONObject("answerMessage"));
     }
+
+
 }

@@ -1,5 +1,7 @@
 package com.fsoft.ihabot.answer;
 
+import androidx.annotation.NonNull;
+
 import com.fsoft.ihabot.communucation.tg.User;
 
 import org.json.JSONArray;
@@ -96,5 +98,32 @@ public class Message {
 
     public ArrayList<Attachment> getAttachments() {
         return attachments;
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        int photos = 0;
+        int music = 0;
+        int videos = 0;
+        int documents = 0;
+        for (int i = 0; i < attachments.size(); i++) {
+            if(attachments.get(i).isPhoto()) photos++;
+            if(attachments.get(i).isAudio()) music++;
+            if(attachments.get(i).isVideo()) videos++;
+            if(attachments.get(i).isDoc()) documents++;
+        }
+        String result = text;
+        String attachments = "";
+        if(photos != 0) attachments += " " + photos + " фото, ";
+        if(music != 0) attachments += " " + music + " аудио, ";
+        if(videos != 0) attachments += " " + videos + " видео, ";
+        if(documents != 0) attachments += " " + documents + " файл, ";
+        //    " 2 фото, 2 аудио, 2 видео, 2 файл, "
+        attachments = attachments.trim();  //    "2 фото, 2 аудио, 2 видео, 2 файл,"
+        attachments = attachments.substring(0, Math.max(attachments.length()-2, 0)); //    "2 фото, 2 аудио, 2 видео, 2 файл"
+        if(!attachments.isEmpty())
+            result = result + " (+" + attachments + ")"; ////    "Ответ (+2 фото, 2 аудио, 2 видео, 2 файл)"
+        return result;
     }
 }

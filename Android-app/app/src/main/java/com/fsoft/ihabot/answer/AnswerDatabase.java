@@ -14,6 +14,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.Arrays;
+import java.util.Locale;
 
 /**
  * ----=== Полный пиздец. ===----
@@ -63,7 +64,7 @@ public class AnswerDatabase  extends CommandModule {
     }
 
     /*Медленная функция для отладки*/
-    public Message pickAnswer(Message question) throws Exception{
+    public AnswerElement pickAnswer(Message question) throws Exception{
         MessageRating messageRating = new MessageRating();
         BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers));
         String line;
@@ -77,8 +78,30 @@ public class AnswerDatabase  extends CommandModule {
             try {
                 JSONObject jsonObject = new JSONObject(line);
                 AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
-                double similarity = jaroWinkler.similarity(currentAnswerElement.getQuestionMessage().getText(), question.getText());
-                messageRating.addAnswer(currentAnswerElement.getAnswerMessage(), similarity);
+                String currentQuestion = currentAnswerElement.getQuestionMessage().getText();
+                currentQuestion = currentQuestion
+                        .toLowerCase(Locale.ROOT)
+                        .replace("!", " ")
+                        .replace(",", " ")
+                        .replace(".", " ")
+                        .replace("-", " ")
+                        .replace(":", " ")
+                        .replace(" +", " ")
+                        .trim();
+
+                String neededQuestion = question.getText();
+                neededQuestion = neededQuestion
+                        .toLowerCase(Locale.ROOT)
+                        .replace("!", " ")
+                        .replace(",", " ")
+                        .replace(".", " ")
+                        .replace("-", " ")
+                        .replace(":", " ")
+                        .replace(" +", " ")
+                        .trim();
+                double similarity = jaroWinkler.similarity(currentQuestion, neededQuestion);
+                //log( similarity + ", neededQuestion: " + neededQuestion + ", currentQuestion: " + currentQuestion);
+                messageRating.addAnswer(currentAnswerElement, similarity);
             } catch (Exception e) {
                 e.printStackTrace();
                 errors++;
@@ -94,14 +117,18 @@ public class AnswerDatabase  extends CommandModule {
         log("Отчёт по поводу содержимого рейтинга:");
         for(int i = 0; i<messageRating.getCapacity(); i++){
             double rating = messageRating.getTopRating(i);
-            Message message = messageRating.getTopMessage(i);
+            AnswerElement message = messageRating.getTopMessage(i);
             if(message != null) {
-                log(i + " " + rating + " \t" + message.getText().replace("\n", " ").substring(0, 100));
+                log(String.format(Locale.US, "%d %2f: %s -> %s",
+                        i,
+                        rating,
+                        message.getQuestionMessage().toString().replace("\n", ""),
+                        message.getAnswerMessage().toString().replace("\n", "")));
             }
         }
 
         if(messageRating.isEmpty())
-            return new Message("Нормального ответа подобрать не получилось :(");
+            throw new Exception("Нормального ответа подобрать не получилось :(");
         else
             return messageRating.getTopMessage();
     }
@@ -312,7 +339,7 @@ public class AnswerDatabase  extends CommandModule {
      */
     private static class MessageRating{
         private final int capacity;
-        private final Message[] messages; //0 - top element (max rating)
+        private final AnswerElement[] messages; //0 - top element (max rating)
         private final double[] ratings;
 
         /**
@@ -320,7 +347,7 @@ public class AnswerDatabase  extends CommandModule {
          */
         public MessageRating() {
             this.capacity = 10;
-            messages = new Message[capacity];
+            messages = new AnswerElement[capacity];
             ratings = new double[capacity];
         }
         /**
@@ -329,7 +356,7 @@ public class AnswerDatabase  extends CommandModule {
          */
         public MessageRating(int capacity) {
             this.capacity = capacity;
-            messages = new Message[capacity];
+            messages = new AnswerElement[capacity];
             ratings = new double[capacity];
         }
 
@@ -337,7 +364,7 @@ public class AnswerDatabase  extends CommandModule {
          * Return Message with biggest rating ever received.
          * @return Message with biggest rating or NULL.
          */
-        public Message getTopMessage(){
+        public AnswerElement getTopMessage(){
             return messages[0];
         }
 
@@ -346,7 +373,7 @@ public class AnswerDatabase  extends CommandModule {
          * @param index 0 is first place, 1 is second place in rating... Max is capacity-1
          * @return Message with taken place in rating or NULL.
          */
-        public Message getTopMessage(int index){
+        public AnswerElement getTopMessage(int index){
             if(index > capacity-1)
                 return null;
             return messages[index];
@@ -391,7 +418,7 @@ public class AnswerDatabase  extends CommandModule {
          * @param message Message to store in rating.
          * @param rating rating of Message to store in rating.
          */
-        public void addAnswer(Message message, double rating){
+        public void addAnswer(AnswerElement message, double rating){
 //            if(rating > 0)
 //                log("add " + rating + " \t" + message.getText().replace("\n", " ").substring(0, 100));
             for(int i=0; i<capacity; i++){

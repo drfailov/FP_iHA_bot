@@ -4,6 +4,7 @@ package com.fsoft.ihabot.communucation.tg;
 import com.fsoft.ihabot.Utils.ApplicationManager;
 import com.fsoft.ihabot.Utils.CommandModule;
 import com.fsoft.ihabot.Utils.F;
+import com.fsoft.ihabot.answer.AnswerElement;
 
 import java.util.ArrayList;
 
@@ -152,7 +153,34 @@ public class MessageProcessor extends CommandModule {
     }
 
     public void processMessageAsync(final Message message){
+        if(applicationManager == null) return;
+        if(applicationManager.getAnswerDatabase() == null) return;
+
         //Это выполняется в отдельном потоке (можно делать что хочешь и сколько хочешь)
+        /*
+        - Когда получено сообщение:
+        - привести текст входящего сообшения к нижнему регистру
+        - Убрать лишние пробелы и знаки (? оставить)
+        - Заменить символы которые часто забивают писать (ё ъ щ)
+        - Сравнить ответ с такими же по алгоритму Жаро-Винклера
+        - Выбрать максимальный.
+        - Если есть незагруженные на сервер вложения, внести их в очередь для загрузки на сервер
+        - Инициировать загрузку вложений из очереди на сервер
+
+        - Когда загрузка вложений завершена:
+        - Удалить вложение из очереди на загрузку на сервер
+        - Обновить в объекте сообщения информацию о онлайн загруженных вложениях
+        - Обновить в файле базы данных информацию о том что вложения загружены
+        - внести сообщение в очередь для отправки
+        - Инициировать отправку сообщений из очереди на сервер
+
+        - Когда сообщение отправлено:
+        - Удалить сообщение из очереди отправки на сервер
+        - обновить счётчик отправленных сообщений в аккаунте
+        - Обновить в объекте ответа из базы информацию о количестве использований
+        - Обновить в файле базы данных информацию о количестве использований
+        * */
+
         log(". ПОЛУЧЕНО СООБЩЕНИЕ: " + message);
         inctementMessagesReceivedCounter();
 
@@ -177,17 +205,17 @@ public class MessageProcessor extends CommandModule {
         log("\nОтправлено сообщений: " + messagesSentCounter);
         log("\nВыполнено запросов к API: " + tgAccount.getApiCounter());
         log("\nОшибок при доступе к API: " + tgAccount.getErrorCounter());
-        com.fsoft.ihabot.answer.Message question = new com.fsoft.ihabot.answer.Message();
+        com.fsoft.ihabot.answer.Message question = new com.fsoft.ihabot.answer.Message(message.getText());
 
         com.fsoft.ihabot.answer.Message answer = null;
         try {
-            answer = applicationManager.getAnswerDatabase().pickAnswer(question);
+            AnswerElement answerElement = applicationManager.getAnswerDatabase().pickAnswer(question);
+            answer = answerElement.getAnswerMessage();
         }
         catch (Exception e){
             e.printStackTrace();
             answer = new com.fsoft.ihabot.answer.Message("Не могу подобрать ответ: " + e.getLocalizedMessage());
         }
-        //String replyText = "Я сам в ахуе, это работает!";
 
         tgAccount.sendMessage(new TgAccountCore.SendMessageListener() {
             @Override
