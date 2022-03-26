@@ -79,6 +79,7 @@ public class ApplicationManager extends CommandModule {
     public Communicator getCommunicator() {
         return communicator;
     }
-
-
+    public AnswerDatabase getAnswerDatabase() {
+        return answerDatabase;
+    }
 }

@@ -17,7 +17,7 @@ public class CommandModule implements Command {
     public CommandModule() {
     }
 
-    protected String log(String string){
+    protected static String log(String string){
         Log.d(F.TAG, string);
         return string;
     }

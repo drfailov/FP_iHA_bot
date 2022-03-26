@@ -42,6 +42,11 @@ public class Message {
 
     public Message() {
     }
+
+    public Message(String text) {
+        this.text = text;
+    }
+
     public Message(JSONObject jsonObject)throws JSONException, ParseException {
         fromJson(jsonObject);
     }
@@ -85,5 +90,11 @@ public class Message {
         }
     }
 
+    public String getText() {
+        return text;
+    }
 
+    public ArrayList<Attachment> getAttachments() {
+        return attachments;
+    }
 }

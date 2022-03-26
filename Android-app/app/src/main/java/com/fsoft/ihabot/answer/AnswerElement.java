@@ -25,6 +25,14 @@ public class AnswerElement {
         fromJson(jsonObject);
     }
 
+    public Message getQuestionMessage() {
+        return questionMessage;
+    }
+
+    public Message getAnswerMessage() {
+        return answerMessage;
+    }
+
     public JSONObject toJson() throws JSONException {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("id", id);

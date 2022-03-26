@@ -157,16 +157,6 @@ public class MessageProcessor extends CommandModule {
         inctementMessagesReceivedCounter();
 
 
-        log("\n.");
-        log("\nТы: " + message.getFrom());
-        log("\nТы написал: " + message.getText());
-        log("\nПринято сообщений: " + messagesReceivedCounter);
-        log("\nОтправлено сообщений: " + messagesSentCounter);
-        log("\nВыполнено запросов к API: " + tgAccount.getApiCounter());
-        log("\nОшибок при доступе к API: " + tgAccount.getErrorCounter());
-
-
-        String replyText = "Я сам в ахуе, это работает!";
         tgAccount.sendMessage(new TgAccountCore.SendMessageListener() {
             @Override
             public void sentMessage(Message message) {
@@ -178,7 +168,39 @@ public class MessageProcessor extends CommandModule {
             public void error(Throwable error) {
                 log(error.getClass().getName() + " while sending message");
             }
-        }, message.getChat().getId(), replyText);
+        }, message.getChat().getId(), new com.fsoft.ihabot.answer.Message("Думаю..."));
+
+        log("\n.");
+        log("\nТы: " + message.getFrom());
+        log("\nТы написал: " + message.getText());
+        log("\nПринято сообщений: " + messagesReceivedCounter);
+        log("\nОтправлено сообщений: " + messagesSentCounter);
+        log("\nВыполнено запросов к API: " + tgAccount.getApiCounter());
+        log("\nОшибок при доступе к API: " + tgAccount.getErrorCounter());
+        com.fsoft.ihabot.answer.Message question = new com.fsoft.ihabot.answer.Message();
+
+        com.fsoft.ihabot.answer.Message answer = null;
+        try {
+            answer = applicationManager.getAnswerDatabase().pickAnswer(question);
+        }
+        catch (Exception e){
+            e.printStackTrace();
+            answer = new com.fsoft.ihabot.answer.Message("Не могу подобрать ответ: " + e.getLocalizedMessage());
+        }
+        //String replyText = "Я сам в ахуе, это работает!";
+
+        tgAccount.sendMessage(new TgAccountCore.SendMessageListener() {
+            @Override
+            public void sentMessage(Message message) {
+                log(". Отправлено сообщение: " + message);
+                inctementMessagesSentCounter();
+            }
+
+            @Override
+            public void error(Throwable error) {
+                log(error.getClass().getName() + " while sending message");
+            }
+        }, message.getChat().getId(), answer);
 
         //заполняем юзера
 //        com.fsoft.vktest.Utils.User brainUser = new User();

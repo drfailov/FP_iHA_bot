@@ -267,12 +267,12 @@ public class TgAccountCore extends Account {
         // Add the request to the RequestQueue.
         queue.add(stringRequest);
     }
-    public void sendMessage(final SendMessageListener listener, final long chat_id, String text){
+    public void sendMessage(final SendMessageListener listener, final long chat_id, com.fsoft.ihabot.answer.Message message){
         JSONObject jsonObject = new JSONObject();
         try {
             //text = URLEncoder.encode(text, "UTF-8");
             jsonObject.put("chat_id", chat_id);
-            jsonObject.put("text", text);
+            jsonObject.put("text", message.getText());
         }
         catch (Exception e){
             log("! Error building JSON: " + e.toString());
