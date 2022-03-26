@@ -97,21 +97,25 @@ public class AnswerDatabase  extends CommandModule {
         bufferedReader.close();
         System.gc();
 
-        log("Отчёт по поводу содержимого рейтинга:");
+        log("-----------------------------------------------------------");
+        log("Вопрос: " + question.getText());
+        log("Варианты ответов:");
         for(int i = 0; i<messageRating.getCapacity(); i++){
             double rating = messageRating.getTopRating(i);
-            AnswerElement message = messageRating.getTopMessage(i);
-            if(message != null) {
-                log(String.format(Locale.US, "%d %2f: %s -> %s",
+            AnswerElement answerElement = messageRating.getTopMessage(i);
+            if(answerElement != null) {
+                log(String.format(Locale.US, "%d %2f: ID%d %s -> %s",
                         i,
                         rating,
-                        message.getQuestionMessage().toString().replace("\n", ""),
-                        message.getAnswerMessage().toString().replace("\n", "")));
+                        answerElement.getId(),
+                        answerElement.getQuestionMessage().toString().replace("\n", ""),
+                        answerElement.getAnswerMessage().toString().replace("\n", "")));
             }
         }
+        log("-----------------------------------------------------------");
 
-        if(messageRating.isEmpty())
-            throw new Exception("Нормального ответа подобрать не получилось :(");
+        if(messageRating.isEmpty() || messageRating.getTopRating() < 0.48)
+            throw new Exception("Нормального ответа найти не получилось");
         else
             return messageRating.getTopMessage();
     }
@@ -120,14 +124,16 @@ public class AnswerDatabase  extends CommandModule {
         - оставить только последнее предложение
         - Сохранить информацию о том есть ли знак вопроса
         - Убрать все символы и знаки, оставить только текст
+        если после этого всего строка оказывается пустая - результат сравнения точно 0
+        - заменить синонимы (полнотекстовым образом)
         - Заменить символы которые часто забивают писать (ё ъ щ)
         - устранить любые символы повторяющиеся несколько раз
         - Тримануть
         - разложить на слова
         - сравнить все слова со всеми  по алгоритму Жаро-Винклера
-        - при сравнении также учитывать: длину слова
         - При сравнении между вариантами учитывать если есть слова которые не участвовали в сравнении
         - ПРи сравнении учитывать наличие знака вопроса в тексте*.
+        - учитывать длину сообщения
          */
         //привести текст входящего сообшения к нижнему регистру
         s1 = s1.toLowerCase(Locale.ROOT);
@@ -141,9 +147,16 @@ public class AnswerDatabase  extends CommandModule {
         boolean s1question = s1.contains("?");
         boolean s2question = s2.contains("?");
 
-        //Убрать лишние пробелы и знаки (? оставить)
+        //Убрать все символы и знаки, оставить только текст
         s1 = filterSymbols(s1);
         s2 = filterSymbols(s2);
+
+        //если после этого всего строка оказывается пустая - результат сравнения точно 0
+        if(s1.isEmpty() || s2.isEmpty())
+            return 0;
+
+        //заменить синонимы (полнотекстовым образом в нижнем регистре)
+        //todo
 
         //Заменить символы которые часто забивают писать (ё ъ щ)
         s1 = replacePhoneticallySimilarLetters(s1);
@@ -199,6 +212,13 @@ public class AnswerDatabase  extends CommandModule {
         }
         //Результат вычислить по формуле: сумма похожести / общее количество слов обоих фраз
         double result = similaritySum / wordsSum;
+
+        //учесть знак вопроса
+        if(s1question == s2question)
+            result += 0.1;
+
+        //учесть длину строк
+        result -= Math.abs(s1.length()-s2.length()) * 0.01;
 
         return result;
     }

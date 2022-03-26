@@ -25,6 +25,10 @@ public class AnswerElement {
         fromJson(jsonObject);
     }
 
+    public long getId() {
+        return id;
+    }
+
     public Message getQuestionMessage() {
         return questionMessage;
     }
