@@ -13,6 +13,7 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
 
@@ -79,28 +80,10 @@ public class AnswerDatabase  extends CommandModule {
                 JSONObject jsonObject = new JSONObject(line);
                 AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
                 String currentQuestion = currentAnswerElement.getQuestionMessage().getText();
-                currentQuestion = currentQuestion
-                        .toLowerCase(Locale.ROOT)
-                        .replace("!", " ")
-                        .replace(",", " ")
-                        .replace(".", " ")
-                        .replace("-", " ")
-                        .replace(":", " ")
-                        .replace(" +", " ")
-                        .trim();
-
                 String neededQuestion = question.getText();
-                neededQuestion = neededQuestion
-                        .toLowerCase(Locale.ROOT)
-                        .replace("!", " ")
-                        .replace(",", " ")
-                        .replace(".", " ")
-                        .replace("-", " ")
-                        .replace(":", " ")
-                        .replace(" +", " ")
-                        .trim();
-                double similarity = jaroWinkler.similarity(currentQuestion, neededQuestion);
-                //log( similarity + ", neededQuestion: " + neededQuestion + ", currentQuestion: " + currentQuestion);
+
+                double similarity = compareMessages(neededQuestion, currentQuestion);
+
                 messageRating.addAnswer(currentAnswerElement, similarity);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -131,6 +114,137 @@ public class AnswerDatabase  extends CommandModule {
             throw new Exception("Нормального ответа подобрать не получилось :(");
         else
             return messageRating.getTopMessage();
+    }
+    private double compareMessages(String s1, String s2){
+        /*- привести текст входящего сообшения к нижнему регистру
+        - оставить только последнее предложение
+        - Сохранить информацию о том есть ли знак вопроса
+        - Убрать все символы и знаки, оставить только текст
+        - Заменить символы которые часто забивают писать (ё ъ щ)
+        - устранить любые символы повторяющиеся несколько раз
+        - Тримануть
+        - разложить на слова
+        - сравнить все слова со всеми  по алгоритму Жаро-Винклера
+        - при сравнении также учитывать: длину слова
+        - При сравнении между вариантами учитывать если есть слова которые не участвовали в сравнении
+        - ПРи сравнении учитывать наличие знака вопроса в тексте*.
+         */
+        //привести текст входящего сообшения к нижнему регистру
+        s1 = s1.toLowerCase(Locale.ROOT);
+        s2 = s2.toLowerCase(Locale.ROOT);
+
+        //оставить только последнее предложение
+        s1 = passOnlyLastSentence(s1);
+        s2 = passOnlyLastSentence(s2);
+
+        //Сохранить информацию о том есть ли знак вопроса
+        boolean s1question = s1.contains("?");
+        boolean s2question = s2.contains("?");
+
+        //Убрать лишние пробелы и знаки (? оставить)
+        s1 = filterSymbols(s1);
+        s2 = filterSymbols(s2);
+
+        //Заменить символы которые часто забивают писать (ё ъ щ)
+        s1 = replacePhoneticallySimilarLetters(s1);
+        s2 = replacePhoneticallySimilarLetters(s2);
+
+        //устранить любые символы повторяющиеся несколько раз
+        s1 = removeRepeatingSymbols(s1);
+        s2 = removeRepeatingSymbols(s2);
+
+        //Тримануть
+        s1 = s1.trim();
+        s2 = s2.trim();
+
+        //разложить на слова
+        ArrayList<String> s1words = new ArrayList<>(Arrays.asList(s1.split(" ")));
+        ArrayList<String> s2words = new ArrayList<>(Arrays.asList(s2.split(" ")));
+
+        //сравнить все слова со всеми  по алгоритму Жаро-Винклера
+        //
+        //1 записать общее количество слов для обоих фраз
+        //2 Найти между двумя строками пару самых похожих слов (максимальный коэффициент)
+        //3 Их похожесть добавить к сумме по этой паре фраз
+        //4 Эту пару слов удалить из списка
+        //5 Если в каждой фразе ещё остались слова, вернуться к п.2
+        //6 Результат вычислить по формуле: сумма похожести / общее количество слов обоих фраз
+
+        //записать общее количество слов для обоих фраз
+        double wordsSum = s1words.size() + s2words.size();
+        double similaritySum = 0;
+        //Если в каждой фразе ещё остались слова, вернуться
+        while(!s1words.isEmpty() && !s2words.isEmpty()){
+            //Найти между двумя строками пару самых похожих слов (максимальный коэффициент)
+            String s1wordMax = null;
+            String s2wordMax = null;
+            double maxSimilarity = 0;
+            for (int i=0; i<s1words.size(); i++){
+                for (int j=0; j<s2words.size(); j++){
+                    String s1word = s1words.get(i);
+                    String s2word = s2words.get(j);
+                    double similarity = jaroWinkler.similarity(s1word, s2word);
+                    if(similarity >= maxSimilarity){
+                        s1wordMax = s1word;
+                        s2wordMax = s2word;
+                        maxSimilarity = similarity;
+                    }
+                }
+            }
+            //Их похожесть добавить к сумме по этой паре фраз
+            similaritySum += maxSimilarity;
+            //Эту пару слов удалить из списка
+            s1words.remove(s1wordMax);
+            s2words.remove(s2wordMax);
+        }
+        //Результат вычислить по формуле: сумма похожести / общее количество слов обоих фраз
+        double result = similaritySum / wordsSum;
+
+        return result;
+    }
+    private static String passOnlyLastSentence(String in){
+        if(!in.contains("."))
+            return in;
+        String[] sentences = in.split("\\.");
+        for(int i=sentences.length-1; i>=0; i--)
+            if(sentences[i].length() > 3)
+                return sentences[i];
+        //если не было найдено ни одного нормального предложения
+        return in;
+    }
+    private static String filterSymbols(String input){
+        String allowedSymbols = "qwertyuiopasdfghjklzxcvbnm їіёйцукенгшщзхъфывапролджэячсмитьбю 1234567890";
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            if(allowedSymbols.indexOf(c) >= 0)
+                builder.append(c);
+        }
+        return builder.toString();
+    }
+    private static String removeRepeatingSymbols(String in){
+        Character last = null;
+        String result = "";
+        for (Character c : in.toCharArray()) {
+            if (c.equals(last)) {
+                continue;
+            }
+            result = result.concat(c.toString());
+            last = c;
+        }
+        return result;
+    }
+    private static String replacePhoneticallySimilarLetters(String in) {
+        String result = in;
+        result = result.replace('ё', 'е');
+        result = result.replace('й', 'и');
+        result = result.replace('е', 'и');
+        result = result.replace('і', 'и');
+        result = result.replace('ї', 'и');
+        result = result.replace('э', 'и');
+        result = result.replace('щ', 'ш');
+        result = result.replace('ъ', 'ь');
+        return result;
     }
 
     /*Overwrite(!!!!) database by default from resources */
