@@ -46,14 +46,17 @@ import java.util.Locale;
  * */
 public class AnswerDatabase  extends CommandModule {
     private static final int defaultDatabaseResourceZip = R.raw.answer_database;
-    private ApplicationManager applicationManager = null;
-    private JaroWinkler jaroWinkler = new JaroWinkler();
+    private final ApplicationManager applicationManager;
+    private final JaroWinkler jaroWinkler;
+    private final Synonyme synonyme;
     private File fileAnswers = null;
     private File folderAttachments = null;
 
 
     public AnswerDatabase(ApplicationManager applicationManager)  throws Exception {
         this.applicationManager = applicationManager;
+        jaroWinkler = new JaroWinkler();
+        synonyme = new Synonyme(applicationManager);
         if(applicationManager == null)
             return;
         folderAttachments = new File(applicationManager.getHomeFolder(), "attachments");
@@ -156,7 +159,8 @@ public class AnswerDatabase  extends CommandModule {
             return 0;
 
         //заменить синонимы (полнотекстовым образом в нижнем регистре)
-        //todo
+        s1 = synonyme.replaceSynonyms(s1);
+        s2 = synonyme.replaceSynonyms(s2);
 
         //Заменить символы которые часто забивают писать (ё ъ щ)
         s1 = replacePhoneticallySimilarLetters(s1);
@@ -218,7 +222,7 @@ public class AnswerDatabase  extends CommandModule {
             result += 0.1;
 
         //учесть длину строк
-        result -= Math.abs(s1.length()-s2.length()) * 0.01;
+        result -= Math.abs(s1.length()-s2.length()) * 0.005;
 
         return result;
     }
