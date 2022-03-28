@@ -8,6 +8,6 @@
     <string name="menu_accounts">Аккаунты</string>
     <string name="menu_settings">Настройки</string>
     <string name="notification_content">Бот работает</string>
-    <string name="notification_title">iHA bot v0002</string>
+    <string name="notification_title">iHA bot v0003</string>
     <string name="notification_channel_name">Бот работает</string>
 </resources>

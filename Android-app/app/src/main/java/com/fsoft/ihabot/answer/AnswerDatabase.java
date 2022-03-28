@@ -69,6 +69,11 @@ public class AnswerDatabase  extends CommandModule {
 
     /*Медленная функция для отладки*/
     public AnswerElement pickAnswer(Message question) throws Exception{
+        if(question.getText().split(" +").length > 4)
+            throw new Exception("Я на сообщение с таким количеством слов не смогу подобрать ответ.");
+        if(question.getText().length() > 25)
+            throw new Exception("Я на такое длинное сообщение не смогу подобрать ответ.");
+
         MessageRating messageRating = new MessageRating();
         BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers));
         String line;
@@ -77,7 +82,7 @@ public class AnswerDatabase  extends CommandModule {
 
         while ((line = bufferedReader.readLine()) != null) {
             lineNumber++;
-            if (lineNumber % 1000 == 0)
+            if (lineNumber % 1289 == 0)
                 log(". Поиск ответа в базе (" + lineNumber + " уже проверено) ...");
             try {
                 JSONObject jsonObject = new JSONObject(line);
@@ -124,6 +129,7 @@ public class AnswerDatabase  extends CommandModule {
     }
     private double compareMessages(String s1, String s2){
         /*- привести текст входящего сообшения к нижнему регистру
+        - убрать обращение бот
         - оставить только последнее предложение
         - Сохранить информацию о том есть ли знак вопроса
         - Убрать все символы и знаки, оставить только текст
@@ -142,13 +148,51 @@ public class AnswerDatabase  extends CommandModule {
         s1 = s1.toLowerCase(Locale.ROOT);
         s2 = s2.toLowerCase(Locale.ROOT);
 
+        //убрать обращение бот
+        //бот ,     бот,      бот
+        if(s1.startsWith("бот ,")) s1=s1.substring(5,s1.length()-1);
+        else if(s1.startsWith("бот,")) s1=s1.substring(4,s1.length()-1);
+        else if(s1.startsWith("бот")) s1=s1.substring(3,s1.length()-1);
+
+        if(s2.startsWith("бот ,")) s2=s2.substring(5,s2.length()-1);
+        else if(s2.startsWith("бот,")) s2=s2.substring(4,s2.length()-1);
+        else if(s2.startsWith("бот ")) s2=s2.substring(3,s2.length()-1);
+
         //оставить только последнее предложение
         s1 = passOnlyLastSentence(s1);
         s2 = passOnlyLastSentence(s2);
 
-        //Сохранить информацию о том есть ли знак вопроса
-        boolean s1question = s1.contains("?");
-        boolean s2question = s2.contains("?");
+        //Сохранить информацию о том есть ли знак вопроса или слово вопроса
+        boolean s1question = (" "+s1).contains("?")
+                || (" "+s1).contains(" где ")
+                || (" "+s1).contains(" ли ")
+                || (" "+s1).contains(" сколько ")
+                || (" "+s1).contains(" когда ")
+                || (" "+s1).contains(" как ")
+                || (" "+s1).contains(" какие ")
+                || (" "+s1).contains(" кем ")
+                || (" "+s1).contains(" каким ")
+                || (" "+s1).contains(" с кем ")
+                || (" "+s1).contains(" в каком ")
+                || (" "+s1).contains(" какой ")
+                || (" "+s1).contains(" какая ")
+                || (" "+s1).contains(" какими ")
+                || (" "+s1).contains(" что ");
+        boolean s2question = (" "+s2).contains("?")
+                || (" "+s2).contains(" где ")
+                || (" "+s2).contains(" ли ")
+                || (" "+s2).contains(" сколько ")
+                || (" "+s2).contains(" когда ")
+                || (" "+s2).contains(" как ")
+                || (" "+s2).contains(" какие ")
+                || (" "+s2).contains(" кем ")
+                || (" "+s2).contains(" каким ")
+                || (" "+s2).contains(" с кем ")
+                || (" "+s2).contains(" в каком ")
+                || (" "+s2).contains(" какой ")
+                || (" "+s2).contains(" какая ")
+                || (" "+s2).contains(" какими ")
+                || (" "+s2).contains(" что ");
 
         //Убрать все символы и знаки, оставить только текст
         s1 = filterSymbols(s1);
@@ -237,7 +281,8 @@ public class AnswerDatabase  extends CommandModule {
         return in;
     }
     private static String filterSymbols(String input){
-        String allowedSymbols = "qwertyuiopasdfghjklzxcvbnm їіёйцукенгшщзхъфывапролджэячсмитьбю 1234567890";
+        //String allowedSymbols = "qwertyuiopasdfghjklzxcvbnm їіёйцукенгшщзхъфывапролджэячсмитьбю 1234567890";
+        String allowedSymbols = "qwertyuiopasdfghjklzxcvbnm їіёйцукенгшщзхъфывапролджэячсмитьбю";
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < input.length(); i++) {
             char c = input.charAt(i);
