@@ -127,16 +127,27 @@ public class AnswerDatabase  extends CommandModule {
         else
             return messageRating.getTopMessage();
     }
+
+    private String compareMessagesLastS1Text = ""; //данные для оптимизации. Хранит строку с прошлого вызова, чтобы понять актуальны ли следующие поля
+    private boolean compareMessagesLastS1Empty = false; //данные для оптимизации. Хранит информацию о том оказалась ли строка с прошлого вызова пустой
+    private boolean compareMessagesLastS1Question = false; //данные для оптимизации. Хранит информацию о том содержала ли строка с прошлого вызова вопрос
+    private ArrayList<String> compareMessagesLastS1Words = new ArrayList<>(); //данные для оптимизации. Хранит преобразованную строку с прошлого вызова готовую к сравнению
+    private String compareMessagesLastS2Text = ""; //данные для оптимизации. Хранит строку с прошлого вызова, чтобы понять актуальны ли следующие поля
+    private boolean compareMessagesLastS2Empty = false; //данные для оптимизации. Хранит информацию о том оказалась ли строка с прошлого вызова пустой
+    private boolean compareMessagesLastS2Question = false; //данные для оптимизации. Хранит информацию о том содержала ли строка с прошлого вызова вопрос
+    private ArrayList<String> compareMessagesLastS2Words = new ArrayList<>(); //данные для оптимизации. Хранит преобразованную строку с прошлого вызова готовую к сравнению
+
     private double compareMessages(String s1, String s2){
-        /*- привести текст входящего сообшения к нижнему регистру
+        /*
+        - привести текст входящего сообшения к нижнему регистру
         - убрать обращение бот
         - оставить только последнее предложение
         - Сохранить информацию о том есть ли знак вопроса
         - Убрать все символы и знаки, оставить только текст
-        если после этого всего строка оказывается пустая - результат сравнения точно 0
-        - заменить синонимы (полнотекстовым образом)
+        - если после этого всего строка оказывается пустая - результат сравнения точно 0
         - Заменить символы которые часто забивают писать (ё ъ щ)
         - устранить любые символы повторяющиеся несколько раз
+        - заменить синонимы (полнотекстовым образом)
         - Тримануть
         - разложить на слова
         - сравнить все слова со всеми  по алгоритму Жаро-Винклера
@@ -144,83 +155,62 @@ public class AnswerDatabase  extends CommandModule {
         - ПРи сравнении учитывать наличие знака вопроса в тексте*.
         - учитывать длину сообщения
          */
-        //привести текст входящего сообшения к нижнему регистру
-        s1 = s1.toLowerCase(Locale.ROOT);
-        s2 = s2.toLowerCase(Locale.ROOT);
 
-        //убрать обращение бот
-        //бот ,     бот,      бот
-        if(s1.startsWith("бот ,")) s1=s1.substring(5,s1.length()-1);
-        else if(s1.startsWith("бот,")) s1=s1.substring(4,s1.length()-1);
-        else if(s1.startsWith("бот")) s1=s1.substring(3,s1.length()-1);
-
-        if(s2.startsWith("бот ,")) s2=s2.substring(5,s2.length()-1);
-        else if(s2.startsWith("бот,")) s2=s2.substring(4,s2.length()-1);
-        else if(s2.startsWith("бот ")) s2=s2.substring(3,s2.length()-1);
-
-        //оставить только последнее предложение
-        s1 = passOnlyLastSentence(s1);
-        s2 = passOnlyLastSentence(s2);
-
-        //Сохранить информацию о том есть ли знак вопроса или слово вопроса
-        boolean s1question = (" "+s1).contains("?")
-                || (" "+s1).contains(" где ")
-                || (" "+s1).contains(" ли ")
-                || (" "+s1).contains(" сколько ")
-                || (" "+s1).contains(" когда ")
-                || (" "+s1).contains(" как ")
-                || (" "+s1).contains(" какие ")
-                || (" "+s1).contains(" кем ")
-                || (" "+s1).contains(" каким ")
-                || (" "+s1).contains(" с кем ")
-                || (" "+s1).contains(" в каком ")
-                || (" "+s1).contains(" какой ")
-                || (" "+s1).contains(" какая ")
-                || (" "+s1).contains(" какими ")
-                || (" "+s1).contains(" что ");
-        boolean s2question = (" "+s2).contains("?")
-                || (" "+s2).contains(" где ")
-                || (" "+s2).contains(" ли ")
-                || (" "+s2).contains(" сколько ")
-                || (" "+s2).contains(" когда ")
-                || (" "+s2).contains(" как ")
-                || (" "+s2).contains(" какие ")
-                || (" "+s2).contains(" кем ")
-                || (" "+s2).contains(" каким ")
-                || (" "+s2).contains(" с кем ")
-                || (" "+s2).contains(" в каком ")
-                || (" "+s2).contains(" какой ")
-                || (" "+s2).contains(" какая ")
-                || (" "+s2).contains(" какими ")
-                || (" "+s2).contains(" что ");
-
-        //Убрать все символы и знаки, оставить только текст
-        s1 = filterSymbols(s1);
-        s2 = filterSymbols(s2);
-
-        //если после этого всего строка оказывается пустая - результат сравнения точно 0
-        if(s1.isEmpty() || s2.isEmpty())
+        if(compareMessagesLastS1Text.equals(s1) && compareMessagesLastS1Empty)
             return 0;
+        if(compareMessagesLastS2Text.equals(s1) && compareMessagesLastS2Empty)
+            return 0;
+        if(!compareMessagesLastS1Text.equals(s1)){
+            compareMessagesLastS1Text = s1;
+            //Пример: "бОт , ОпАчКи, ты бот. ПривЁЁёётик как ДелииишкИ ?!?!?! ??! )))"
+            s1 = s1.toLowerCase(Locale.ROOT); //привести текст входящего сообшения к нижнему регистру
+            //Пример: "бот , опачки, ты бот. привёёёётик как делииишки ?!?!?! ??! )))"
+            s1 = removeTreatment(s1); //убрать обращение бот
+            //Пример: " опачки, ты бот. привёёёётик как делииишки ?!?!?! ??! )))"
+            s1 = passOnlyLastSentence(s1); //оставить только последнее предложение
+            compareMessagesLastS1Question = isQuestion(s1); //Сохранить информацию о том есть ли знак вопроса или слово вопроса
+            //Пример: " привёёёётик как делииишки ?!?!?! ??! )))"
+            s1 = filterSymbols(s1); //Убрать все символы и знаки, оставить только текст
+            compareMessagesLastS1Empty = s1.isEmpty();  //проверить не оказывается ли у нас пустая строка
+            if(compareMessagesLastS1Empty) return 0; //если после этого всего строка оказывается пустая - результат сравнения точно 0
+            //Пример: " привёёёётик как делииишки   "
+            s1 = replacePhoneticallySimilarLetters(s1); //Заменить символы которые часто забивают писать (ё ъ щ)
+            //Пример: " привеееетик как делииишки   "
+            s1 = removeRepeatingSymbols(s1); //устранить любые символы повторяющиеся несколько раз
+            //Пример: " приветик как делишки   "
+            s1 = synonyme.replaceSynonyms(s1); //заменить синонимы (полнотекстовым образом в нижнем регистре)
+            //Пример: " привет как дела   "
+            s1 = s1.trim(); //Тримануть
+            //Пример: "привет как дела"
+            compareMessagesLastS1Words = new ArrayList<>(Arrays.asList(s1.split(" ")));//разложить на слова
+            //Пример: ["привет","как","дела"]
+        }
+        if(!compareMessagesLastS2Text.equals(s2)){
+            compareMessagesLastS2Text = s2;
+            //Пример: "бОт , ОпАчКи, ты бот. ПривЁЁёётик как ДелииишкИ ?!?!?! ??! )))"
+            s2 = s2.toLowerCase(Locale.ROOT); //привести текст входящего сообшения к нижнему регистру
+            //Пример: "бот , опачки, ты бот. привёёёётик как делииишки ?!?!?! ??! )))"
+            s2 = removeTreatment(s2); //убрать обращение бот
+            //Пример: " опачки, ты бот. привёёёётик как делииишки ?!?!?! ??! )))"
+            s2 = passOnlyLastSentence(s2); //оставить только последнее предложение
+            compareMessagesLastS2Question = isQuestion(s2); //Сохранить информацию о том есть ли знак вопроса или слово вопроса
+            //Пример: " привёёёётик как делииишки ?!?!?! ??! )))"
+            s2 = filterSymbols(s2); //Убрать все символы и знаки, оставить только текст
+            compareMessagesLastS2Empty = s2.isEmpty();  //проверить не оказывается ли у нас пустая строка
+            if(compareMessagesLastS2Empty) return 0; //если после этого всего строка оказывается пустая - результат сравнения точно 0
+            //Пример: " привёёёётик как делииишки   "
+            s2 = replacePhoneticallySimilarLetters(s2); //Заменить символы которые часто забивают писать (ё ъ щ)
+            //Пример: " привеееетик как делииишки   "
+            s2 = removeRepeatingSymbols(s2); //устранить любые символы повторяющиеся несколько раз
+            //Пример: " приветик как делишки   "
+            s2 = synonyme.replaceSynonyms(s2); //заменить синонимы (полнотекстовым образом в нижнем регистре)
+            //Пример: " привет как дела   "
+            s2 = s2.trim(); //Тримануть
+            //Пример: "привет как дела"
+            compareMessagesLastS2Words = new ArrayList<>(Arrays.asList(s2.split(" ")));//разложить на слова
+            //Пример: ["привет","как","дела"]
+        }
 
-        //заменить синонимы (полнотекстовым образом в нижнем регистре)
-        s1 = synonyme.replaceSynonyms(s1);
-        s2 = synonyme.replaceSynonyms(s2);
-
-        //Заменить символы которые часто забивают писать (ё ъ щ)
-        s1 = replacePhoneticallySimilarLetters(s1);
-        s2 = replacePhoneticallySimilarLetters(s2);
-
-        //устранить любые символы повторяющиеся несколько раз
-        s1 = removeRepeatingSymbols(s1);
-        s2 = removeRepeatingSymbols(s2);
-
-        //Тримануть
-        s1 = s1.trim();
-        s2 = s2.trim();
-
-        //разложить на слова
-        ArrayList<String> s1words = new ArrayList<>(Arrays.asList(s1.split(" ")));
-        ArrayList<String> s2words = new ArrayList<>(Arrays.asList(s2.split(" ")));
 
         //сравнить все слова со всеми  по алгоритму Жаро-Винклера
         //
@@ -231,6 +221,9 @@ public class AnswerDatabase  extends CommandModule {
         //5 Если в каждой фразе ещё остались слова, вернуться к п.2
         //6 Результат вычислить по формуле: сумма похожести / общее количество слов обоих фраз
 
+        //работает с копиями потому что массив будет редактироваться
+        ArrayList<String> s1words = new ArrayList<>(compareMessagesLastS1Words);
+        ArrayList<String> s2words = new ArrayList<>(compareMessagesLastS2Words);
         //записать общее количество слов для обоих фраз
         double wordsSum = s1words.size() + s2words.size();
         double similaritySum = 0;
@@ -262,13 +255,39 @@ public class AnswerDatabase  extends CommandModule {
         double result = similaritySum / wordsSum;
 
         //учесть знак вопроса
-        if(s1question == s2question)
+        if(compareMessagesLastS1Question == compareMessagesLastS2Question)
             result += 0.1;
 
         //учесть длину строк
         result -= Math.abs(s1.length()-s2.length()) * 0.005;
 
         return result;
+    }
+    private static String removeTreatment(String s1){
+        //бот ,     бот,      бот
+        if(filterSymbols(s1).trim().equals("бот")) return s1; //если бот - это единственное что есть в фразе
+        if (s1.startsWith("бот ,")) s1 = s1.substring(5, s1.length() - 1);
+        else if (s1.startsWith("бот,")) s1 = s1.substring(4, s1.length() - 1);
+        else if (s1.startsWith("бот")) s1 = s1.substring(3, s1.length() - 1);
+        return s1;
+    }
+
+    private static boolean isQuestion(String s1){
+        return  (" "+s1).contains("?")
+                || (" "+s1).contains(" где ")
+                || (" "+s1).contains(" ли ")
+                || (" "+s1).contains(" сколько ")
+                || (" "+s1).contains(" когда ")
+                || (" "+s1).contains(" как ")
+                || (" "+s1).contains(" какие ")
+                || (" "+s1).contains(" кем ")
+                || (" "+s1).contains(" каким ")
+                || (" "+s1).contains(" с кем ")
+                || (" "+s1).contains(" в каком ")
+                || (" "+s1).contains(" какой ")
+                || (" "+s1).contains(" какая ")
+                || (" "+s1).contains(" какими ")
+                || (" "+s1).contains(" что ");
     }
     private static String passOnlyLastSentence(String in){
         if(!in.contains("."))
@@ -291,7 +310,7 @@ public class AnswerDatabase  extends CommandModule {
         }
         return builder.toString();
     }
-    private static String removeRepeatingSymbols(String in){
+    public static String removeRepeatingSymbols(String in){
         Character last = null;
         String result = "";
         for (Character c : in.toCharArray()) {
@@ -303,14 +322,12 @@ public class AnswerDatabase  extends CommandModule {
         }
         return result;
     }
-    private static String replacePhoneticallySimilarLetters(String in) {
+    public static String replacePhoneticallySimilarLetters(String in) {
         String result = in;
         result = result.replace('ё', 'е');
         result = result.replace('й', 'и');
-        result = result.replace('е', 'и');
         result = result.replace('і', 'и');
         result = result.replace('ї', 'и');
-        result = result.replace('э', 'и');
         result = result.replace('щ', 'ш');
         result = result.replace('ъ', 'ь');
         return result;

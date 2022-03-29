@@ -68,6 +68,14 @@ public class Synonyme extends CommandModule {
         log(". Загрузка синонимов из synonyme.txt прошла без ошибок. Загружено " + synonymeRows.size() + " рядов.");
     }
 
+    /*текст на входе:
+        - привести текст входящего сообшения к нижнему регистру
+        - убрать обращение бот
+        - Убрать все символы и знаки, оставить только текст
+        - Заменить символы которые часто забивают писать (ё ъ щ)
+        - устранить любые символы повторяющиеся несколько раз
+     */
+
     public String replaceSynonyms(String in){
         in = " " + in + " ";
         for (ArrayList<String> row:synonymeRows){
