@@ -272,6 +272,15 @@ public class AnswerDatabase  extends CommandModule {
         return s1;
     }
 
+
+    /**
+     * Определяет есть ли в предложении вопрос. Определяет по наличию знака вопроса или словам типа "как", "когда" и т.п.
+     * Пример: "Ёпта, бот. Как ты?" -> true.
+     * Пример: "Как ты" -> true.
+     * Пример: "Трава зелёная" -> false.
+     * @param s1 Входная строка на русском в нижнем регистре
+     * @return true если это вопрос, false если это не вопрос.
+     */
     private static boolean isQuestion(String s1){
         return  (" "+s1).contains("?")
                 || (" "+s1).contains(" где ")
@@ -289,6 +298,13 @@ public class AnswerDatabase  extends CommandModule {
                 || (" "+s1).contains(" какими ")
                 || (" "+s1).contains(" что ");
     }
+
+    /**
+     * Оставить только последнее предложение, если принято несколько. Разделяет по точкам.
+     * Пример: "Ёпта, бот. Как ты?" -> " Как ты?".
+     * @param in Входная строка
+     * @return Строка в которой осталось только последнее предложение.
+     */
     private static String passOnlyLastSentence(String in){
         if(!in.contains("."))
             return in;
@@ -299,6 +315,13 @@ public class AnswerDatabase  extends CommandModule {
         //если не было найдено ни одного нормального предложения
         return in;
     }
+
+    /**
+     * Убрать в строке все символы кроме букв в нижнем регистре
+     * Пример: "о_О їбать ты лох!!(((" -> "їбать ты лох".
+     * @param input Входная строка в нижнем регистре
+     * @return Строка в которой остались только буквы в нижнем регистре и пробелы.
+     */
     private static String filterSymbols(String input){
         //String allowedSymbols = "qwertyuiopasdfghjklzxcvbnm їіёйцукенгшщзхъфывапролджэячсмитьбю 1234567890";
         String allowedSymbols = "qwertyuiopasdfghjklzxcvbnm їіёйцукенгшщзхъфывапролджэячсмитьбю";
@@ -310,6 +333,13 @@ public class AnswerDatabase  extends CommandModule {
         }
         return builder.toString();
     }
+
+    /**
+     * Убрать в строке повторы символов
+     * Пример: "Привеееет ебанааат!!!" -> "Привет ебанат!".
+     * @param in Входная строка
+     * @return Строка без повторов символов.
+     */
     public static String removeRepeatingSymbols(String in){
         Character last = null;
         String result = "";
@@ -322,18 +352,26 @@ public class AnswerDatabase  extends CommandModule {
         }
         return result;
     }
+
+    /**
+     * Заменить фонетически похожие буквы, которые часто пишут или игнорируют. Пример: й,ё,ъ.
+     * Пример: "съешь ещё" -> "сьешь еше".
+     * @param in Входная строка на русском в нижнем регистре
+     * @return Строка с заменёнными символами.
+     */
     public static String replacePhoneticallySimilarLetters(String in) {
         String result = in;
         result = result.replace('ё', 'е');
         result = result.replace('й', 'и');
-        result = result.replace('і', 'и');
-        result = result.replace('ї', 'и');
+        result = result.replace('ї', 'і');
         result = result.replace('щ', 'ш');
         result = result.replace('ъ', 'ь');
         return result;
     }
 
-    /*Overwrite(!!!!) database by default from resources */
+    /**
+     * Overwrite(!!!!) database by default from resources
+     * */
     private void loadDefaultDatabase() throws Exception {
         if (fileAnswers.isFile()) {
             log(". Удаление старой базы answer_database.txt перед восстановлением стандартной базы...");

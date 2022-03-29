@@ -47,6 +47,10 @@ public class Synonyme extends CommandModule {
 
         while ((line = bufferedReader.readLine()) != null) {
             lineNumber++;
+            //- Заменить символы которые часто забивают писать (ё ъ щ)
+            line = AnswerDatabase.replacePhoneticallySimilarLetters(line);
+            // - устранить любые символы повторяющиеся несколько раз
+            line = AnswerDatabase.removeRepeatingSymbols(line);
             if (lineNumber % 18 == 0)
                 log(". Загрузка синонимов (" + lineNumber + " рядов загружено) ...");
             try {
