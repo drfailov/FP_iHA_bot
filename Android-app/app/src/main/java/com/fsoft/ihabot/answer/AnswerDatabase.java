@@ -1,6 +1,7 @@
 package com.fsoft.ihabot.answer;
 
 import android.content.res.Resources;
+import android.util.Log;
 import android.util.Pair;
 
 import com.fsoft.ihabot.R;
@@ -16,6 +17,7 @@ import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.Random;
 
 /**
  * ----=== Полный пиздец. ===----
@@ -81,8 +83,7 @@ public class AnswerDatabase  extends CommandModule {
         if(question.getText().length() > 25)
             throw new Exception("Я на такое длинное сообщение не смогу подобрать ответ.");
 
-        MessageRating messageRating = new MessageRating();
-
+        MessageRating messageRating = new MessageRating(50);
 
         String line;
         int lineNumber = 0;
@@ -123,20 +124,16 @@ public class AnswerDatabase  extends CommandModule {
             double rating = messageRating.getTopRating(i);
             AnswerElement answerElement = messageRating.getTopMessage(i);
             if(answerElement != null) {
-                log(String.format(Locale.US, "%d %2f: ID%d %s -> %s",
-                        i,
-                        rating,
-                        answerElement.getId(),
-                        answerElement.getQuestionMessage().toString().replace("\n", ""),
-                        answerElement.getAnswerMessage().toString().replace("\n", "")));
+                log(String.format(Locale.US, "%d %.2f: %s", i, rating, answerElement));
             }
         }
         log("-----------------------------------------------------------");
 
         if(messageRating.isEmpty() || messageRating.getTopRating() < 0.48)
             throw new Exception("Нормального ответа найти не получилось");
-        else
-            return messageRating.getTopMessage();
+
+        ArrayList<AnswerElement> answers = messageRating.getTopMessages();
+        return answers.get(new Random().nextInt(answers.size()));
     }
 
 
@@ -183,28 +180,28 @@ public class AnswerDatabase  extends CommandModule {
             return 0;
         if(!compareMessagesLastS1Text.equals(s1)){
             compareMessagesLastS1Text = s1;
-            //Пример: "бОт , ОпАчКи, ты бот. ПривЁЁёётик как ДелииишкИ ?!?!?! ??! )))"
+            log("IN        :" + s1);//Пример: "бОт , ОпАчКи, ты бот. ПривЁЁёётик как ДелииишкИ ?!?!?! ??! )))"
             s1 = s1.toLowerCase(Locale.ROOT); //привести текст входящего сообшения к нижнему регистру
-            //Пример: "бот , опачки, ты бот. привёёёётик как делииишки ?!?!?! ??! )))"
+            log("LOWCASE   :" + s1); //Пример: "бот , опачки, ты бот. привёёёётик как делииишки ?!?!?! ??! )))"
             s1 = removeTreatment(s1); //убрать обращение бот
-            //Пример: " опачки, ты бот. привёёёётик как делииишки ?!?!?! ??! )))"
+            log("TREATMENT :" + s1); //Пример: " опачки, ты бот. привёёёётик как делииишки ?!?!?! ??! )))"
             s1 = passOnlyLastSentence(s1); //оставить только последнее предложение
+            log("LAST SENT :" + s1); //Пример: " привёёёётик как делииишки ?!?!?! ??! )))"
             compareMessagesLastS1Question = isQuestion(s1); //Сохранить информацию о том есть ли знак вопроса или слово вопроса
-            //Пример: " привёёёётик как делииишки ?!?!?! ??! )))"
             s1 = filterSymbols(s1); //Убрать все символы и знаки, оставить только текст
+            log("FILTER    :" + s1); //Пример: " привёёёётик как делииишки   "
             compareMessagesLastS1Empty = s1.isEmpty();  //проверить не оказывается ли у нас пустая строка
             if(compareMessagesLastS1Empty) return 0; //если после этого всего строка оказывается пустая - результат сравнения точно 0
-            //Пример: " привёёёётик как делииишки   "
             s1 = replacePhoneticallySimilarLetters(s1); //Заменить символы которые часто забивают писать (ё ъ щ)
-            //Пример: " привеееетик как делииишки   "
+            log("PHONETIC  :" + s1); //Пример: " привеееетик как делииишки   "
             s1 = removeRepeatingSymbols(s1); //устранить любые символы повторяющиеся несколько раз
-            //Пример: " приветик как делишки   "
+            log("REPEATING :" + s1); //Пример: " приветик как делишки   "
             s1 = synonyme.replaceSynonyms(s1); //заменить синонимы (полнотекстовым образом в нижнем регистре)
-            //Пример: " привет как дела   "
+            log("SYNONYMS  :" + s1); //Пример: " привет как дела   "
             s1 = s1.trim(); //Тримануть
-            //Пример: "привет как дела"
+            log("TRIM      :" + s1); //Пример: "привет как дела"
             compareMessagesLastS1Words = new ArrayList<>(Arrays.asList(s1.split(" ")));//разложить на слова
-            //Пример: ["привет","как","дела"]
+            log("ARRAY     :" + compareMessagesLastS1Words); //Пример: ["привет","как","дела"]
         }
         if(!compareMessagesLastS2Text.equals(s2)){
             compareMessagesLastS2Text = s2;
@@ -298,9 +295,9 @@ public class AnswerDatabase  extends CommandModule {
     private static String removeTreatment(String s1){
         //бот ,     бот,      бот
         if(filterSymbols(s1).trim().equals("бот")) return s1; //если бот - это единственное что есть в фразе
-        if (s1.startsWith("бот ,")) s1 = s1.substring(5, s1.length() - 1);
-        else if (s1.startsWith("бот,")) s1 = s1.substring(4, s1.length() - 1);
-        else if (s1.startsWith("бот")) s1 = s1.substring(3, s1.length() - 1);
+        if (s1.startsWith("бот ,")) s1 = s1.substring(5);
+        else if (s1.startsWith("бот,")) s1 = s1.substring(4);
+        else if (s1.startsWith("бот")) s1 = s1.substring(3);
         return s1;
     }
 
@@ -630,8 +627,27 @@ public class AnswerDatabase  extends CommandModule {
         }
 
         /**
-         * Return Message with biggest rating ever received.
+         * Get Array of messages which have equal and biggest rating from ever received.
+         * Several AnswerElements will be only in case if its ratings equal.
          * @return Message with biggest rating or NULL.
+         */
+        public ArrayList<AnswerElement> getTopMessages(){
+            ArrayList<AnswerElement> result = new ArrayList<>();
+            if(messages[0] != null) {
+                result.add(messages[0]);
+                for (int i=1; i<capacity; i++){
+                    if(ratings[0] == ratings[i])
+                        result.add(messages[i]);
+                    else
+                        break;
+                }
+            }
+            return result;
+        }
+
+        /**
+         * Return Message with one of the biggest rating ever received.
+         * @return Message with one of the biggest rating or NULL.
          */
         public AnswerElement getTopMessage(){
             return messages[0];

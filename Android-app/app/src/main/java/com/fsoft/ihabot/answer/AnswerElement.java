@@ -1,5 +1,7 @@
 package com.fsoft.ihabot.answer;
 
+import androidx.annotation.NonNull;
+
 import com.fsoft.ihabot.communucation.tg.User;
 
 import org.json.JSONArray;
@@ -7,6 +9,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.text.ParseException;
+import java.util.Locale;
 
 /* * Какая инфа про ответ должна хранится:
  * - ID ответа (id, long. В случае коллизий генерировать новые)
@@ -61,5 +64,26 @@ public class AnswerElement {
             answerMessage = new Message(jsonObject.getJSONObject("answerMessage"));
     }
 
+    @NonNull
+    @Override
+    public String toString() {
+        if(getQuestionMessage() == null && getAnswerMessage() == null){
+            return String.format(Locale.US, "ID%d NULL -> NULL", getId());
+        }
+        if(getQuestionMessage() == null){
+            return String.format(Locale.US, "ID%d NULL -> %s",
+                    getId(),
+                    getAnswerMessage().toString().replace("\n", ""));
+        }
+        if(getAnswerMessage() == null){
+            return String.format(Locale.US, "ID%d %s -> NULL",
+                    getId(),
+                    getQuestionMessage().toString().replace("\n", ""));
+        }
+        return String.format(Locale.US, "ID%d %s -> %s",
+                getId(),
+                getQuestionMessage().toString().replace("\n", ""),
+                getAnswerMessage().toString().replace("\n", ""));
 
+    }
 }
