@@ -49,7 +49,7 @@ public class AnswerDatabase  extends CommandModule {
     private final ApplicationManager applicationManager;
     private final JaroWinkler jaroWinkler;
     private final Synonyme synonyme;
-    private File fileAnswers = null;
+    private final File fileAnswers;
     private File folderAttachments = null;
 
 
@@ -57,8 +57,11 @@ public class AnswerDatabase  extends CommandModule {
         this.applicationManager = applicationManager;
         jaroWinkler = new JaroWinkler();
         synonyme = new Synonyme(applicationManager);
-        if(applicationManager == null)
+        if(applicationManager == null) {
+            fileAnswers = null;
             return;
+        }
+
         folderAttachments = new File(applicationManager.getHomeFolder(), "attachments");
         fileAnswers = new File(applicationManager.getHomeFolder(), "answer_database.txt");
         if(!fileAnswers.isFile()){
@@ -67,7 +70,11 @@ public class AnswerDatabase  extends CommandModule {
         }
     }
 
-    /*Медленная функция для отладки*/
+    /**
+     * Подбирает ответ на вопрос исходя из базы вопросв. Эта функция просматривает файл полностью в поисках ответа.
+     * @param question Входящее сообщение типа Message в исходном виде, без никакиз преобразований
+     * @return AnswerElement из базы который описывает элемент базы ответов который подходит под этот вопрос
+     */
     public AnswerElement pickAnswer(Message question) throws Exception{
         if(question.getText().split(" +").length > 4)
             throw new Exception("Я на сообщение с таким количеством слов не смогу подобрать ответ.");
@@ -75,34 +82,38 @@ public class AnswerDatabase  extends CommandModule {
             throw new Exception("Я на такое длинное сообщение не смогу подобрать ответ.");
 
         MessageRating messageRating = new MessageRating();
-        BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers));
+
+
         String line;
         int lineNumber = 0;
         int errors = 0;
+        synchronized (fileAnswers) {
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers));
+            while ((line = bufferedReader.readLine()) != null) {
+                if (lineNumber % 1289 == 0)
+                    log(". Поиск ответа в базе (" + lineNumber + " уже проверено) ...");
+                try {
+                    JSONObject jsonObject = new JSONObject(line);
+                    AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
+                    String currentQuestion = currentAnswerElement.getQuestionMessage().getText();
+                    String neededQuestion = question.getText();
 
-        while ((line = bufferedReader.readLine()) != null) {
-            lineNumber++;
-            if (lineNumber % 1289 == 0)
-                log(". Поиск ответа в базе (" + lineNumber + " уже проверено) ...");
-            try {
-                JSONObject jsonObject = new JSONObject(line);
-                AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
-                String currentQuestion = currentAnswerElement.getQuestionMessage().getText();
-                String neededQuestion = question.getText();
+                    double similarity = compareMessages(neededQuestion, currentQuestion);
 
-                double similarity = compareMessages(neededQuestion, currentQuestion);
-
-                messageRating.addAnswer(currentAnswerElement, similarity);
-            } catch (Exception e) {
-                e.printStackTrace();
-                errors++;
-                log("! Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                    messageRating.addAnswer(currentAnswerElement, similarity);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    errors++;
+                    log("! Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                }
+                lineNumber++;
             }
+            //завешить сессию
+            bufferedReader.close();
         }
+
         if (errors != 0)
             log("! При загрузке базы ответов возникло ошибок: " + errors + ".");
-        //завешить сессию
-        bufferedReader.close();
         System.gc();
 
         log("-----------------------------------------------------------");
