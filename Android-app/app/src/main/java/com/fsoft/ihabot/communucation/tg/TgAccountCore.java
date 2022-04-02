@@ -2,17 +2,22 @@ package com.fsoft.ihabot.communucation.tg;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.DefaultRetryPolicy;
+import com.android.volley.NetworkResponse;
+import com.android.volley.NoConnectionError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
+import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.fsoft.ihabot.Utils.ApplicationManager;
 import com.fsoft.ihabot.communucation.Account;
+import com.fsoft.ihabot.communucation.VolleyMultipartRequest;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.net.URLEncoder;
@@ -168,6 +173,7 @@ public class TgAccountCore extends Account {
         }
         createTelegraphPage(listener, "iHA bot message", text);
     }
+
 
     public void getMe(final GetMeListener listener){
         final String url ="https://api.telegram.org/bot"+getId()+":"+getToken()+"/getMe";
@@ -399,7 +405,6 @@ public class TgAccountCore extends Account {
             }
         }, user_id, 0, 1);
     }
-
     public void getUserProfilePhotos(final GetUserProfilePhotosListener listener, final long user_id, int offset, int limit){
         final String url ="https://api.telegram.org/bot"+getId()+":"+getToken()+"/getUserProfilePhotos?user_id="+user_id+"&offset="+offset+"&limit="+limit;
         log(". Sending request: " + url);
@@ -492,6 +497,8 @@ public class TgAccountCore extends Account {
         // Add the request to the RequestQueue.
         queue.add(stringRequest);
     }
+
+
 
     public void sendDocument(final SendMessageListener listener, final long chat_id, final String text, final java.io.File f){
         try {
@@ -724,51 +731,78 @@ public class TgAccountCore extends Account {
             final String url ="https://api.telegram.org/bot"+getId()+":"+getToken()+"/sendPhoto";
             log(". Sending request: " + url);
             incrementApiCounter();
-            HashMap<String, String> headers = new HashMap<String, String>();
-            HashMap<String, String> params = new HashMap<String, String>();
-            params.put("chat_id", String.valueOf(chat_id));
-            params.put("caption", text);
-            Response.ErrorListener errorListener =  new Response.ErrorListener() {
+            VolleyMultipartRequest multipartRequest = new VolleyMultipartRequest(Request.Method.POST, url, new Response.Listener<NetworkResponse>() {
+                @Override
+                public void onResponse(NetworkResponse response) {
+                    String resultResponse = new String(response.data);
+                    try {
+                        JSONObject result = new JSONObject(resultResponse);
+//                        String status = result.getString("status");
+//                        String message = result.getString("message");
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }, new Response.ErrorListener() {
                 @Override
                 public void onErrorResponse(VolleyError error) {
-                    log(error.getClass().getName() + " while sending request: " + url);
-                    listener.error(error);
+                    NetworkResponse networkResponse = error.networkResponse;
+                    String errorMessage = "Unknown error";
+                    if (networkResponse == null) {
+                        if (error.getClass().equals(TimeoutError.class)) {
+                            errorMessage = "Request timeout";
+                        } else if (error.getClass().equals(NoConnectionError.class)) {
+                            errorMessage = "Failed to connect server";
+                        }
+                    } else {
+                        String result = new String(networkResponse.data);
+                        try {
+                            JSONObject response = new JSONObject(result);
+                            String status = response.getString("status");
+                            String message = response.getString("message");
+
+                            log("Error Status" + status);
+                            log("Error Message" + message);
+
+                            if (networkResponse.statusCode == 404) {
+                                errorMessage = "Resource not found";
+                            } else if (networkResponse.statusCode == 401) {
+                                errorMessage = message+" Please login again";
+                            } else if (networkResponse.statusCode == 400) {
+                                errorMessage = message+ " Check your inputs";
+                            } else if (networkResponse.statusCode == 500) {
+                                errorMessage = message+" Something is getting wrong";
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    log("Error" + errorMessage);
                     error.printStackTrace();
-                    incrementErrorCounter();
                 }
-            };
-            Response.Listener<String> responseListener = new Response.Listener<String>() {
+            }) {
                 @Override
-                public void onResponse(String  response) {
-                    try{
-                        log(". Got response: " + response);
-                        JSONObject jsonObject = new JSONObject(response);
-                        if(!jsonObject.has("ok")) {
-                            incrementErrorCounter();
-                            listener.error(new Exception("No OK in response!"));
-                            return;
-                        }
-                        if(!jsonObject.getBoolean("ok")){
-                            incrementErrorCounter();
-                            listener.error(new Exception(jsonObject.optString("description", "No description")));
-                            return;
-                        }
-                        JSONObject result = jsonObject.getJSONObject("result");
-                        Message message = new Message(result);
-                        listener.sentMessage(message);
-                        state("Аккаунт работает");
-                    }
-                    catch (Exception e){
-                        e.printStackTrace();
-                        incrementErrorCounter();
-                        listener.error(e);
-                    }
+                protected Map<String, String> getParams() {
+                    Map<String, String> params = new HashMap<>();
+                    params.put("chat_id", String.valueOf(chat_id));
+                    params.put("caption", text);
+                    return params;
+                }
+
+                @Override
+                protected Map<String, DataPart> getByteData() {
+                    Map<String, DataPart> params = new HashMap<>();
+                    // file name could found file base or direct access from real path
+                    // for now just get bitmap data from ImageView
+                    params.put("photo", new DataPart(f, "image/jpeg"));
+
+
+                    return params;
                 }
             };
-            //todo
-//            MultiPartReq mPR = new MultiPartReq(url, errorListener, responseListener, f, "photo", params, headers);
-//            mPR.setRetryPolicy(new DefaultRetryPolicy( 30000, 5, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
-//            queue.add(mPR);
+
+            queue.add(multipartRequest);
         }
         catch (Exception e){
             if(listener != null)

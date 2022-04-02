@@ -121,7 +121,7 @@ public class Message {
         if(documents != 0) attachments += " " + documents + " файл, ";
         //    " 2 фото, 2 аудио, 2 видео, 2 файл, "
         attachments = attachments.trim();  //    "2 фото, 2 аудио, 2 видео, 2 файл,"
-        attachments = attachments.substring(0, Math.max(attachments.length()-2, 0)); //    "2 фото, 2 аудио, 2 видео, 2 файл"
+        attachments = attachments.substring(0, Math.max(attachments.length()-1, 0)); //    "2 фото, 2 аудио, 2 видео, 2 файл"
         if(!attachments.isEmpty())
             result = result + " (+" + attachments + ")"; ////    "Ответ (+2 фото, 2 аудио, 2 видео, 2 файл)"
         return result;

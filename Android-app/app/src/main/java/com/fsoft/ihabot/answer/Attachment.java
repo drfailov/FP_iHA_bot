@@ -13,7 +13,7 @@ public class Attachment {
 
     private String type = "";      //тип вложения из списка выще
     private String filename = "";  //Имя файла если это вложение есть локально в папке attachments (часть базы).
-    private Object online = null;  //Как-то представить что файл уже загружен и существует онлайн
+    private String file_id = "";  //Как-то представить что файл уже загружен и существует онлайн
 
     public Attachment() {
     }
@@ -33,19 +33,45 @@ public class Attachment {
     public boolean isVideo(){
         return type.equals(TYPE_VIDEO);
     }
+    public boolean isOnline(){
+        return !file_id.isEmpty();
+    }
+    public boolean isLocal(){
+        return !filename.isEmpty();
+    }
 
     public JSONObject toJson() throws JSONException {
         JSONObject jsonObject = new JSONObject();
         if(type != null)
             jsonObject.put("type", type);
         if(filename != null)
-            jsonObject.put("filename", filename);
+            jsonObject.put("file", filename);
         return jsonObject;
     }
     private void fromJson(JSONObject jsonObject)throws JSONException, ParseException {
         if(jsonObject.has("type"))
             type = jsonObject.getString("type");
-        if(jsonObject.has("filename"))
-            filename = jsonObject.getString("filename");
+        if(jsonObject.has("file"))
+            filename = jsonObject.getString("file");
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getFilename() {
+        return filename;
+    }
+
+    public void setFilename(String filename) {
+        this.filename = filename;
+    }
+
+    public String getFile_id() {
+        return file_id;
+    }
+
+    public void setFile_id(String file_id) {
+        this.file_id = file_id;
     }
 }

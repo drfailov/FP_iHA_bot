@@ -66,7 +66,8 @@ public class AnswerDatabase  extends CommandModule {
 
         folderAttachments = new File(applicationManager.getHomeFolder(), "attachments");
         fileAnswers = new File(applicationManager.getHomeFolder(), "answer_database.txt");
-        if(!fileAnswers.isFile()){
+        if(!fileAnswers.isFile())
+        {
             log(". Файла базы нет. Загрузка файла answer_database.zip из ресурсов...");
             loadDefaultDatabase();
         }
@@ -136,6 +137,13 @@ public class AnswerDatabase  extends CommandModule {
         return answers.get(new Random().nextInt(answers.size()));
     }
 
+    /**
+     * Выдает папку где хранятся вложения к ответам в базе
+     * @return File который папке где лежат аттачи
+     */
+    public File getFolderAttachments() {
+        return folderAttachments;
+    }
 
     private String compareMessagesLastS1Text = ""; //данные для оптимизации compareMessages. Хранит строку с прошлого вызова, чтобы понять актуальны ли следующие поля
     private boolean compareMessagesLastS1Empty = false; //данные для оптимизации compareMessages. Хранит информацию о том оказалась ли строка с прошлого вызова пустой

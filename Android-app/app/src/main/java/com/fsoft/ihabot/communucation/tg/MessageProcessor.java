@@ -5,7 +5,9 @@ import com.fsoft.ihabot.Utils.ApplicationManager;
 import com.fsoft.ihabot.Utils.CommandModule;
 import com.fsoft.ihabot.Utils.F;
 import com.fsoft.ihabot.answer.AnswerElement;
+import com.fsoft.ihabot.answer.Attachment;
 
+import java.io.File;
 import java.util.ArrayList;
 
 public class MessageProcessor extends CommandModule {
@@ -218,18 +220,41 @@ public class MessageProcessor extends CommandModule {
             answer = new com.fsoft.ihabot.answer.Message(e.getLocalizedMessage());
         }
 
-        tgAccount.sendMessage(new TgAccountCore.SendMessageListener() {
-            @Override
-            public void sentMessage(Message message) {
-                log(". Отправлено сообщение: " + message);
-                inctementMessagesSentCounter();
-            }
 
-            @Override
-            public void error(Throwable error) {
-                log(error.getClass().getName() + " while sending message");
+        if(answer.getAttachments().isEmpty()) {
+            tgAccount.sendMessage(new TgAccountCore.SendMessageListener() {
+                @Override
+                public void sentMessage(Message message) {
+                    log(". Отправлено сообщение: " + message);
+                    inctementMessagesSentCounter();
+                }
+
+                @Override
+                public void error(Throwable error) {
+                    log(error.getClass().getName() + " while sending message");
+                }
+            }, message.getChat().getId(), answer);
+        }
+        else {
+            for (Attachment attachment : answer.getAttachments()) {
+                if(attachment.isPhoto() && attachment.isLocal()){
+                    File file = new File(applicationManager.getAnswerDatabase().getFolderAttachments(), attachment.getFilename());
+                    tgAccount.sendPhoto(new TgAccountCore.SendMessageListener() {
+                        @Override
+                        public void sentMessage(Message message) {
+                            log(". Отправлено фото: " + message);
+                            inctementMessagesSentCounter();
+                        }
+
+                        @Override
+                        public void error(Throwable error) {
+                            log(error.getClass().getName() + " while sending message");
+                        }
+                    }, message.getChat().getId(), answer.getText(), file);
+                }
             }
-        }, message.getChat().getId(), answer);
+        }
+
 
         //заполняем юзера
 //        com.fsoft.vktest.Utils.User brainUser = new User();
