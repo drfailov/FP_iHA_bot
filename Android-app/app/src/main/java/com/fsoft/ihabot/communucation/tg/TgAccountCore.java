@@ -177,7 +177,7 @@ public class TgAccountCore extends Account {
 
     public void getMe(final GetMeListener listener){
         final String url ="https://api.telegram.org/bot"+getId()+":"+getToken()+"/getMe";
-        log(". Sending request: " + url);
+        log("GetMe: " + url);
         incrementApiCounter();
         // Request a string response from the provided URL.
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
@@ -224,7 +224,7 @@ public class TgAccountCore extends Account {
     }
     public void getUpdates(final GetUpdatesListener listener, long offset, int timeout){
         final String url ="https://api.telegram.org/bot"+getId()+":"+getToken()+"/getUpdates?offset="+offset+"&timeout="+timeout;
-        log(". Sending request: " + url);
+        log("Getting photos: " + url);
         incrementApiCounter();
         // Request a string response from the provided URL.
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
@@ -285,7 +285,7 @@ public class TgAccountCore extends Account {
             e.printStackTrace();
         }
         final String url ="https://api.telegram.org/bot"+getId()+":"+getToken()+"/sendMessage";//?chat_id="+chat_id+"&text="+text;
-        log(". Sending request: " + url);
+        log("Sending message: " + url);
         incrementApiCounter();
         // Request a string response from the provided URL.
         JsonObjectRequest stringRequest = new JsonObjectRequest(Request.Method.POST, url, jsonObject,
@@ -293,8 +293,7 @@ public class TgAccountCore extends Account {
                     @Override
                     public void onResponse(JSONObject jsonObject) {
                         try{
-                            log(". Got response: " + jsonObject.toString());
-                            //JSONObject jsonObject = new JSONObject(response);
+                            log("Sending message response: " + jsonObject.toString());
                             if(!jsonObject.has("ok")) {
                                 incrementErrorCounter();
                                 listener.error(new Exception("No OK in response!"));
@@ -497,6 +496,73 @@ public class TgAccountCore extends Account {
         // Add the request to the RequestQueue.
         queue.add(stringRequest);
     }
+    public void sendPhoto(final SendMessageListener listener, final long chat_id, final String text, final java.io.File f){
+        try {
+            final String url ="https://api.telegram.org/bot"+getId()+":"+getToken()+"/sendPhoto";
+            log("Uploading photo file: " + url);
+            incrementApiCounter();
+            VolleyMultipartRequest multipartRequest = new VolleyMultipartRequest(Request.Method.POST, url, new Response.Listener<NetworkResponse>() {
+                @Override
+                public void onResponse(NetworkResponse response) {
+                    String resultResponse = new String(response.data);
+                    log("Upload photo result: " + resultResponse);
+
+                    try{
+                        JSONObject jsonObject = new JSONObject(resultResponse);
+                        log("Sending message response: " + jsonObject.toString());
+                        if(!jsonObject.has("ok")) {
+                            incrementErrorCounter();
+                            listener.error(new Exception("No OK in response!"));
+                            return;
+                        }
+                        if(!jsonObject.getBoolean("ok")){
+                            incrementErrorCounter();
+                            listener.error(new Exception(jsonObject.optString("description", "No description")));
+                            return;
+                        }
+                        JSONObject result = jsonObject.getJSONObject("result");
+                        Message message = new Message(result);
+                        listener.sentMessage(message);
+                        state("Аккаунт работает");
+                    }
+                    catch (Exception e){
+                        listener.error(e);
+                        e.printStackTrace();
+                        incrementErrorCounter();
+                    }
+                }
+            }, new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    log("Upload photo error: " + error.networkResponse);
+                    error.printStackTrace();
+                }
+            }) {
+                @Override
+                protected Map<String, String> getParams() {
+                    Map<String, String> params = new HashMap<>();
+                    params.put("chat_id", String.valueOf(chat_id));
+                    params.put("caption", text);
+                    return params;
+                }
+
+                @Override
+                protected Map<String, DataPart> getByteData() {
+                    Map<String, DataPart> params = new HashMap<>();
+                    params.put("photo", new DataPart(f));
+                    return params;
+                }
+            };
+
+            queue.add(multipartRequest);
+        }
+        catch (Exception e){
+            if(listener != null)
+                listener.error(e);
+        }
+    }
+
+
 
 
 
@@ -726,146 +792,7 @@ public class TgAccountCore extends Account {
         // Add the request to the RequestQueue.
         queue.add(stringRequest);
     }
-    public void sendPhoto(final SendMessageListener listener, final long chat_id, final String text, final java.io.File f){
-        try {
-            final String url ="https://api.telegram.org/bot"+getId()+":"+getToken()+"/sendPhoto";
-            log(". Sending request: " + url);
-            incrementApiCounter();
-            VolleyMultipartRequest multipartRequest = new VolleyMultipartRequest(Request.Method.POST, url, new Response.Listener<NetworkResponse>() {
-                @Override
-                public void onResponse(NetworkResponse response) {
-                    String resultResponse = new String(response.data);
-                    try {
-                        JSONObject result = new JSONObject(resultResponse);
-//                        String status = result.getString("status");
-//                        String message = result.getString("message");
 
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }, new Response.ErrorListener() {
-                @Override
-                public void onErrorResponse(VolleyError error) {
-                    NetworkResponse networkResponse = error.networkResponse;
-                    String errorMessage = "Unknown error";
-                    if (networkResponse == null) {
-                        if (error.getClass().equals(TimeoutError.class)) {
-                            errorMessage = "Request timeout";
-                        } else if (error.getClass().equals(NoConnectionError.class)) {
-                            errorMessage = "Failed to connect server";
-                        }
-                    } else {
-                        String result = new String(networkResponse.data);
-                        try {
-                            JSONObject response = new JSONObject(result);
-                            String status = response.getString("status");
-                            String message = response.getString("message");
-
-                            log("Error Status" + status);
-                            log("Error Message" + message);
-
-                            if (networkResponse.statusCode == 404) {
-                                errorMessage = "Resource not found";
-                            } else if (networkResponse.statusCode == 401) {
-                                errorMessage = message+" Please login again";
-                            } else if (networkResponse.statusCode == 400) {
-                                errorMessage = message+ " Check your inputs";
-                            } else if (networkResponse.statusCode == 500) {
-                                errorMessage = message+" Something is getting wrong";
-                            }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    log("Error" + errorMessage);
-                    error.printStackTrace();
-                }
-            }) {
-                @Override
-                protected Map<String, String> getParams() {
-                    Map<String, String> params = new HashMap<>();
-                    params.put("chat_id", String.valueOf(chat_id));
-                    params.put("caption", text);
-                    return params;
-                }
-
-                @Override
-                protected Map<String, DataPart> getByteData() {
-                    Map<String, DataPart> params = new HashMap<>();
-                    // file name could found file base or direct access from real path
-                    // for now just get bitmap data from ImageView
-                    params.put("photo", new DataPart(f, "image/jpeg"));
-
-
-                    return params;
-                }
-            };
-
-            queue.add(multipartRequest);
-        }
-        catch (Exception e){
-            if(listener != null)
-                listener.error(e);
-        }
-    }
-    public void sendPhoto(final SendMessageListener listener, final long chat_id, String text, final String id){
-        //todo test it
-        JSONObject jsonObject = new JSONObject();
-        try {
-            jsonObject.put("chat_id", chat_id);
-            jsonObject.put("text", text);
-            jsonObject.put("photo", id);
-        }
-        catch (Exception e){
-            log("! Error building JSON: " + e.toString());
-            e.printStackTrace();
-        }
-        final String url ="https://api.telegram.org/bot"+getId()+":"+getToken()+"/sendPhoto";//?chat_id="+chat_id+"&text="+text;
-        log(". Sending request: " + url);
-        incrementApiCounter();
-        // Request a string response from the provided URL.
-        JsonObjectRequest stringRequest = new JsonObjectRequest(Request.Method.POST, url, jsonObject,
-                new Response.Listener<JSONObject>() {
-                    @Override
-                    public void onResponse(JSONObject jsonObject) {
-                        try{
-                            log(". Got response: " + jsonObject.toString());
-                            //JSONObject jsonObject = new JSONObject(response);
-                            if(!jsonObject.has("ok")) {
-                                incrementErrorCounter();
-                                listener.error(new Exception("No OK in response!"));
-                                return;
-                            }
-                            if(!jsonObject.getBoolean("ok")){
-                                incrementErrorCounter();
-                                listener.error(new Exception(jsonObject.optString("description", "No description")));
-                                return;
-                            }
-                            JSONObject result = jsonObject.getJSONObject("result");
-                            Message message = new Message(result);
-                            listener.sentMessage(message);
-                            state("Аккаунт работает");
-                        }
-                        catch (Exception e){
-                            listener.error(e);
-                            e.printStackTrace();
-                            incrementErrorCounter();
-                        }
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                log(error.getClass().getName() + " while sending request: " + url);
-                error.printStackTrace();
-                listener.error(error);
-                incrementErrorCounter();
-            }
-        });
-        stringRequest.setRetryPolicy(new DefaultRetryPolicy( 30000, 5, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
-        // Add the request to the RequestQueue.
-        queue.add(stringRequest);
-    }
 
     //TELEGRAPH
     public void createTelegraphAccount(final CreateTelegraphAccountListener listener, String name){

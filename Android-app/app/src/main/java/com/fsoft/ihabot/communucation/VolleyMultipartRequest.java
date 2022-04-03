@@ -7,17 +7,11 @@ import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.HttpHeaderParser;
-import com.fsoft.ihabot.Utils.F;
-
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
@@ -26,8 +20,8 @@ public class VolleyMultipartRequest extends Request<NetworkResponse> {
     private final String lineEnd = "\r\n";
     private final String boundary = "apiclient-" + System.currentTimeMillis();
 
-    private Response.Listener<NetworkResponse> mListener;
-    private Response.ErrorListener mErrorListener;
+    private final Response.Listener<NetworkResponse> mListener;
+    private final Response.ErrorListener mErrorListener;
     private Map<String, String> mHeaders;
 
     /**
@@ -82,7 +76,7 @@ public class VolleyMultipartRequest extends Request<NetworkResponse> {
             // populate text payload
             Map<String, String> params = getParams();
             if (params != null && params.size() > 0) {
-                textParse(dos, params, "UTF-8"); //getParamsEncoding()
+                textParse(dos, params);
             }
 
             // populate data byte payload
@@ -105,9 +99,8 @@ public class VolleyMultipartRequest extends Request<NetworkResponse> {
      * Custom method handle data payload.
      *
      * @return Map data part label with data byte
-     * @throws AuthFailureError
      */
-    protected Map<String, DataPart> getByteData() throws AuthFailureError {
+    protected Map<String, DataPart> getByteData() {
         return null;
     }
 
@@ -137,16 +130,11 @@ public class VolleyMultipartRequest extends Request<NetworkResponse> {
      *
      * @param dataOutputStream data output stream handle string parsing
      * @param params           string inputs collection
-     * @param encoding         encode the inputs, default UTF-8
-     * @throws IOException
+     * @throws IOException if IO error
      */
-    private void textParse(DataOutputStream dataOutputStream, Map<String, String> params, String encoding) throws IOException {
-        try {
-            for (Map.Entry<String, String> entry : params.entrySet()) {
-                buildTextPart(dataOutputStream, entry.getKey(), entry.getValue());
-            }
-        } catch (UnsupportedEncodingException uee) {
-            throw new RuntimeException("Encoding not supported: " + encoding, uee);
+    private void textParse(DataOutputStream dataOutputStream, Map<String, String> params) throws IOException {
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            buildTextPart(dataOutputStream, entry.getKey(), entry.getValue());
         }
     }
 
@@ -155,7 +143,7 @@ public class VolleyMultipartRequest extends Request<NetworkResponse> {
      *
      * @param dataOutputStream data output stream handle file attachment
      * @param data             loop through data
-     * @throws IOException
+     * @throws IOException  if IO error
      */
     private void dataParse(DataOutputStream dataOutputStream, Map<String, DataPart> data) throws IOException {
         for (Map.Entry<String, DataPart> entry : data.entrySet()) {
@@ -169,7 +157,7 @@ public class VolleyMultipartRequest extends Request<NetworkResponse> {
      * @param dataOutputStream data output stream handle string parsing
      * @param parameterName    name of input
      * @param parameterValue   value of input
-     * @throws IOException
+     * @throws IOException if IO error
      */
     private void buildTextPart(DataOutputStream dataOutputStream, String parameterName, String parameterValue) throws IOException {
         dataOutputStream.writeBytes(twoHyphens + boundary + lineEnd);
@@ -186,7 +174,7 @@ public class VolleyMultipartRequest extends Request<NetworkResponse> {
      * @param dataOutputStream data output stream handle data parsing
      * @param dataFile         data byte as DataPart from collection
      * @param inputName        name of data input
-     * @throws IOException
+     * @throws IOException  if IO error
      */
     private void buildDataPart(DataOutputStream dataOutputStream, DataPart dataFile, String inputName) throws IOException {
         dataOutputStream.writeBytes(twoHyphens + boundary + lineEnd);
@@ -219,7 +207,7 @@ public class VolleyMultipartRequest extends Request<NetworkResponse> {
     /**
      * Simple data container use for passing byte file
      */
-    public class DataPart {
+    public static class DataPart {
         private File file;
         private String type;
 
@@ -234,6 +222,15 @@ public class VolleyMultipartRequest extends Request<NetworkResponse> {
         public DataPart(File data, String mimeType) {
             file = data;
             type = mimeType;
+        }
+
+        /**
+         * Constructor.
+         *
+         * @param data     file data
+         */
+        public DataPart(File data) {
+            file = data;
         }
 
         public File getFile() {
