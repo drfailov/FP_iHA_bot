@@ -242,7 +242,18 @@ public class MessageProcessor extends CommandModule {
                     tgAccount.sendPhoto(new TgAccountCore.SendMessageListener() {
                         @Override
                         public void sentMessage(Message message) {
-                            log(". Отправлено фото: " + message);
+                            log("Отправлено фото: " + message.toString());
+                            String photoId = message.getPhotoId();
+                            if(photoId != null){
+                                log("ID загруженной фотографии: " + photoId);
+                                try {
+                                    applicationManager.getAnswerDatabase().updateAnswerPhotoId(file.getName(), photoId);
+                                }
+                                catch (Exception e){
+                                    e.printStackTrace();
+                                    log("Не могу записать в базу айдишник фотографии: " + e.getLocalizedMessage());
+                                }
+                            }
                             inctementMessagesSentCounter();
                         }
 

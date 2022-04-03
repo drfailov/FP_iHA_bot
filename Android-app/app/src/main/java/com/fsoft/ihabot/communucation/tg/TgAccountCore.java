@@ -252,7 +252,7 @@ public class TgAccountCore extends Account {
                                 updates.add(update);
                             }
                             listener.gotUpdates(updates);
-                            state("Аккаунт работает");
+                            state("Информация успешно обновлена");
                         }
                         catch (Exception e){
                             listener.error(e);
@@ -307,7 +307,7 @@ public class TgAccountCore extends Account {
                             JSONObject result = jsonObject.getJSONObject("result");
                             Message message = new Message(result);
                             listener.sentMessage(message);
-                            state("Аккаунт работает");
+                            state("Успешно отправлено текстовое сообщение");
                         }
                         catch (Exception e){
                             listener.error(e);
@@ -429,7 +429,7 @@ public class TgAccountCore extends Account {
                             JSONObject result = jsonObject.getJSONObject("result");
                             UserProfilePhotos userProfilePhotos = new UserProfilePhotos(result);
                             listener.gotPhotos(userProfilePhotos);
-                            state("Аккаунт работает");
+                            state("Успешно загружен список фотографий в аккануте");
                         }
                         catch (Exception e){
                             listener.error(e);
@@ -475,7 +475,7 @@ public class TgAccountCore extends Account {
                             JSONObject result = jsonObject.getJSONObject("result");
                             File file = new File(result);
                             listener.gotFile(file);
-                            state("Аккаунт работает");
+                            state("Успешно загружена информация о файле по ID");
                         }
                         catch (Exception e){
                             listener.error(e);
@@ -523,7 +523,7 @@ public class TgAccountCore extends Account {
                         JSONObject result = jsonObject.getJSONObject("result");
                         Message message = new Message(result);
                         listener.sentMessage(message);
-                        state("Аккаунт работает");
+                        state("Успешно выгружен файл фото");
                     }
                     catch (Exception e){
                         listener.error(e);

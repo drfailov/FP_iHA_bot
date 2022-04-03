@@ -1,5 +1,8 @@
 package com.fsoft.ihabot.communucation.tg;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -21,8 +24,8 @@ public class Message {
     private Chat chat = null;
     private String text = "";
     private Message reply_to_message = null;
-
-    private ArrayList<MessageEntity> entities = new ArrayList<>();
+    private final ArrayList<PhotoSize> photo = new ArrayList<>();
+    private final ArrayList<MessageEntity> entities = new ArrayList<>();
 
     public Message() {
     }
@@ -39,9 +42,14 @@ public class Message {
         this.text = text;
     }
 
+    @NonNull
     @Override
     public String toString() {
-        return from + ": " + text;
+        String photos = "";
+        if(!photo.isEmpty()){
+            photos += "(" + photo.size() + " фото)";
+        }
+        return from + ": " + text + " " + photos;
     }
     public JSONObject toJson() throws JSONException {
         JSONObject jsonObject = new JSONObject();
@@ -56,11 +64,18 @@ public class Message {
             jsonObject.put("reply_to_message", reply_to_message.toJson());
         if(text != null)
             jsonObject.put("text", text);
-        if(entities != null && !entities.isEmpty()) {
+        if(!entities.isEmpty()) {
             JSONArray jsonArray = new JSONArray();
             for (int i = 0; i < entities.size(); i++)
                 jsonArray.put(entities.get(i).toJson());
             jsonObject.put("entities", jsonArray);
+        }
+        //photo
+        if(!photo.isEmpty()) {
+            JSONArray jsonArray = new JSONArray();
+            for (int i = 0; i < photo.size(); i++)
+                jsonArray.put(photo.get(i).toJson());
+            jsonObject.put("photo", jsonArray);
         }
         return jsonObject;
     }
@@ -84,6 +99,27 @@ public class Message {
                 entities.add(new MessageEntity(arrayItem));
             }
         }
+        //photo
+        photo.clear();
+        if(jsonObject.has("photo")){
+            JSONArray jsonArray = jsonObject.getJSONArray("photo");
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject arrayItem = jsonArray.getJSONObject(i);
+                photo.add(new PhotoSize(arrayItem));
+            }
+        }
+    }
+
+    /*
+    * returns photoId if available. If not available, returns NULL.
+    * */
+    @Nullable
+    public String getPhotoId(){
+        if(photo.isEmpty())
+            return null;
+        if(photo.get(0) == null)
+            return null;
+        return photo.get(0).getFile_id();
     }
 
     public long getMessage_id() {
@@ -118,9 +154,6 @@ public class Message {
     }
     public ArrayList<MessageEntity> getEntities() {
         return entities;
-    }
-    public void setEntities(ArrayList<MessageEntity> entities) {
-        this.entities = entities;
     }
     public Message getReply_to_message() {
         return reply_to_message;
