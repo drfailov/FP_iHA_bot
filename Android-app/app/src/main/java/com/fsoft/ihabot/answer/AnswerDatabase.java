@@ -14,6 +14,7 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
@@ -137,6 +138,7 @@ public class AnswerDatabase  extends CommandModule {
         return answers.get(new Random().nextInt(answers.size()));
     }
 
+    ArrayList<Pair<String, String>> updateAnswerPhotoIdQueue = new ArrayList<>();
     /**
      * Производится полный проход по базе, по всем вложениям. И везде где в ответе во вложении используется файл filename,
      * вписывается fileId для дальнейшего использования при отправке.
@@ -145,7 +147,66 @@ public class AnswerDatabase  extends CommandModule {
      * @param fileId ID файла на сервере телеграм, который следует внести в базу
      */
     public void updateAnswerPhotoId(String filename, String fileId) throws Exception{
-        log("Вношу в базу для файла " + filename + " айдишник " + fileId + " ...");
+        if(filename == null || filename.isEmpty())
+            throw new Exception(log("Проблема внесения в базу ID фотографии: filename = null или пустой!"));
+        if(fileId == null || fileId.isEmpty())
+            throw new Exception(log("Проблема внесения в базу ID фотографии: fileId = null или пустой!"));
+        log("Вношу в очередь на прикрепление в базу к файлу " + filename + " айдишник " + fileId + " ...");
+        for(Pair<String, String> pair:updateAnswerPhotoIdQueue)
+            if(pair.first.equals(filename))
+                throw new Exception(log("Попытка внести в очередь несколько ID для файла " + filename));
+        updateAnswerPhotoIdQueue.add(new Pair<>(filename, fileId));
+        log("IDшников в очереди: " + updateAnswerPhotoIdQueue.size());
+
+        if(updateAnswerPhotoIdQueue.size() >= 3){
+            log("Накопилось достаточно элементов в очереди чтобы внести данные в базу...");
+
+            File fileTmp = new File(applicationManager.getHomeFolder(), "Answer_database.tmp");
+            PrintWriter fileTmpWriter = new PrintWriter(fileTmp);
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers));
+            String line;
+            int lineNumber = 0;
+            int errors = 0;
+            int changed = 0;
+            synchronized (fileAnswers) {
+                try {
+                    while ((line = bufferedReader.readLine()) != null) {
+                        lineNumber++;
+                        if (lineNumber % 984 == 0)
+                            log("Прикрепление FileID в базе (" + lineNumber + " уже пройдено)");
+                        try {
+                            JSONObject jsonObject = new JSONObject(line);
+                            AnswerElement answerElement = new AnswerElement(jsonObject);
+                            if (answerElement.hasAnswer()){
+                                for (Pair<String, String> pair:updateAnswerPhotoIdQueue) {
+                                    if(answerElement.getAnswerMessage().hasAttachmentFilename(pair.first)){
+                                        answerElement.getAnswerMessage().addAttachmentFileID(pair.first, pair.second);
+                                        changed++;
+                                        log(answerElement.toJson().toString());
+                                    }
+                                }
+                            }
+                            fileTmpWriter.println(answerElement.toJson().toString());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            errors++;
+                            log("! Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                        }
+                    }
+                }
+                finally {
+                    bufferedReader.close();
+                    fileTmpWriter.close();
+                }
+                if (errors != 0)
+                    log("При внесении FileID в базу возникло ошибок: " + errors + ".");
+                log("В базе изменено " + changed + " FileID.");
+                log("Удаление старой базы: " + fileAnswers.delete());
+                log("Замена старой базы новой: " + fileTmp.renameTo(fileAnswers));
+            }
+            updateAnswerPhotoIdQueue.clear();
+            log("Готово, FileID успешно внесены в базу. Очередь сброшена.");
+        }
     }
 
     /**

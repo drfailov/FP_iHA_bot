@@ -100,6 +100,32 @@ public class Message {
         return attachments;
     }
 
+    /**
+     * Выполняет поиск по вложениям в этом сообщении на предмет того содержит ли это сообщение
+     * вложение, которое ссылается на файл filename
+     * @param filename Имя файла из папки вложений (не путь), который мы ищем
+     * @return true если это сообщение содержит вложение которое ссылается на файл filename
+     */
+    public boolean hasAttachmentFilename(String filename){
+        for (Attachment attachment:attachments){
+            if(attachment.getFilename().equals(filename))
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * Находит в этом ответе вложение которое ссылается на filename и вносит в него FileID
+     * @param filename Имя файла из папки вложений (не путь), который мы ищем
+     * @param fileID Данные которые надо прикрепить к Attachment
+     */
+    public void addAttachmentFileID(String filename, String fileID){
+        for (Attachment attachment:attachments){
+            if(attachment.getFilename().equals(filename))
+                attachment.updateTgFile_id(fileID);
+        }
+    }
+
     @NonNull
     @Override
     public String toString() {

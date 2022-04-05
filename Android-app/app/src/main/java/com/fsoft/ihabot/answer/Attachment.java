@@ -4,16 +4,21 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class Attachment {
-    public static String TYPE_PHOTO = "photo";
-    public static String TYPE_AUDIO = "audio";
-    public static String TYPE_DOC = "doc";
-    public static String TYPE_VIDEO = "video";
+    private final static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+    public final static String TYPE_PHOTO = "photo";
+    public final static String TYPE_AUDIO = "audio";
+    public final static String TYPE_DOC = "doc";
+    public final static String TYPE_VIDEO = "video";
 
     private String type = "";      //тип вложения из списка выще
     private String filename = "";  //Имя файла если это вложение есть локально в папке attachments (часть базы).
-    private String file_id = "";  //Как-то представить что файл уже загружен и существует онлайн
+    private String tg_file_id = "";  //fileID телеграмовскний сообщающий что что файл уже загружен и существует онлайн
+    private String tg_file_id_date = ""; //Дата, когда этот fileId был присвоен
 
     public Attachment() {
     }
@@ -33,8 +38,8 @@ public class Attachment {
     public boolean isVideo(){
         return type.equals(TYPE_VIDEO);
     }
-    public boolean isOnline(){
-        return !file_id.isEmpty();
+    public boolean isOnlineTg(){
+        return !tg_file_id.isEmpty();
     }
     public boolean isLocal(){
         return !filename.isEmpty();
@@ -46,6 +51,10 @@ public class Attachment {
             jsonObject.put("type", type);
         if(filename != null)
             jsonObject.put("file", filename);
+        if(tg_file_id != null)
+            jsonObject.put("tg_file_id", tg_file_id);
+        if(tg_file_id_date != null)
+            jsonObject.put("tg_file_id_date", tg_file_id_date);
         return jsonObject;
     }
     private void fromJson(JSONObject jsonObject)throws JSONException, ParseException {
@@ -53,6 +62,10 @@ public class Attachment {
             type = jsonObject.getString("type");
         if(jsonObject.has("file"))
             filename = jsonObject.getString("file");
+        if(jsonObject.has("tg_file_id"))
+            tg_file_id = jsonObject.getString("tg_file_id");
+        if(jsonObject.has("tg_file_id_date"))
+            tg_file_id_date = jsonObject.getString("tg_file_id_date");
     }
 
     public void setType(String type) {
@@ -60,6 +73,8 @@ public class Attachment {
     }
 
     public String getFilename() {
+        if(filename == null)
+            return "";
         return filename;
     }
 
@@ -67,11 +82,12 @@ public class Attachment {
         this.filename = filename;
     }
 
-    public String getFile_id() {
-        return file_id;
+    public String getTgFile_id() {
+        return tg_file_id;
     }
 
-    public void setFile_id(String file_id) {
-        this.file_id = file_id;
+    public void updateTgFile_id(String file_id) {
+        this.tg_file_id = file_id;
+        tg_file_id_date = sdf.format(new Date());
     }
 }

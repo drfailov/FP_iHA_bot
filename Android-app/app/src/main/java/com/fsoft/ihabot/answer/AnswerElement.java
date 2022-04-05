@@ -40,6 +40,10 @@ public class AnswerElement {
         return answerMessage;
     }
 
+    public boolean hasAnswer(){
+        return answerMessage != null;
+    }
+
     public JSONObject toJson() throws JSONException {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("id", id);
