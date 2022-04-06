@@ -5,6 +5,7 @@ import android.content.Context;
 import com.fsoft.ihabot.BotService;
 import com.fsoft.ihabot.answer.AnswerDatabase;
 import com.fsoft.ihabot.communucation.Communicator;
+import com.fsoft.ihabot.configuration.AdminList;
 
 import java.io.File;
 import java.util.Timer;
@@ -47,15 +48,18 @@ public class ApplicationManager extends CommandModule {
         return applicationManagerInstance;
     }
 
-    private BotService service = null;//это в общем то наш сервис. Он должен быть по любому
-    private Communicator communicator = null;
-    private AnswerDatabase answerDatabase = null;
+    private BotService service;//это в общем то наш сервис. Он должен быть по любому
+    private Communicator communicator;
+    private AnswerDatabase answerDatabase;
+    private AdminList adminList;
 
 
     public ApplicationManager(BotService service) throws Exception {
         super();
         applicationManagerInstance = this;
         this.service = service;
+
+        adminList = new AdminList(this);
 
         answerDatabase = new AnswerDatabase(this);
 
