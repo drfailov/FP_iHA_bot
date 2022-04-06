@@ -198,6 +198,7 @@ public class MessageProcessor extends CommandModule {
 
         log(". ПОЛУЧЕНО СООБЩЕНИЕ: " + message);
         inctementMessagesReceivedCounter();
+        tgAccount.sendChatTyping(message.getChat().getId());
 
         log("\n.");
         log("\nТы: " + message.getFrom());

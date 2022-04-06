@@ -496,6 +496,49 @@ public class TgAccountCore extends Account {
         // Add the request to the RequestQueue.
         queue.add(stringRequest);
     }
+    public void sendChatTyping(final long chat_id){
+        sendChatAction(chat_id, "typing");
+    }
+    public void sendChatAction(final long chat_id, final String action){
+        JSONObject jsonObject = new JSONObject();
+        try {
+            //text = URLEncoder.encode(text, "UTF-8");
+            jsonObject.put("chat_id", chat_id);
+            jsonObject.put("action", action);
+        }
+        catch (Exception e){
+            log("! Error building JSON: " + e.toString());
+            e.printStackTrace();
+        }
+
+        final String url ="https://api.telegram.org/bot"+getId()+":"+getToken()+"/sendChatAction";
+        log("sendChatAction: " + chat_id + ", " + action);
+        incrementApiCounter();
+        // Request a string response from the provided URL.
+        JsonObjectRequest stringRequest = new JsonObjectRequest(Request.Method.POST, url, jsonObject,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        try{
+                            log("sendChatAction response: " + response);
+                        }
+                        catch (Exception e){
+                            e.printStackTrace();
+                            incrementErrorCounter();
+                        }
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                log(error.getClass().getName() + " while sendChatAction: " + url);
+                error.printStackTrace();
+                incrementErrorCounter();
+            }
+        });
+        // Add the request to the RequestQueue.
+        //stringRequest.setRetryPolicy(new DefaultRetryPolicy( 30000, 5, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        queue.add(stringRequest);
+    }
     public void sendPhoto(final SendMessageListener listener, final long chat_id, final String text, final java.io.File f){
         try {
             final String url ="https://api.telegram.org/bot"+getId()+":"+getToken()+"/sendPhoto";
