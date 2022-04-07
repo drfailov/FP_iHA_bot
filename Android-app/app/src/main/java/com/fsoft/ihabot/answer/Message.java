@@ -92,8 +92,44 @@ public class Message {
         }
     }
 
+
+    public boolean isEmpty(){
+        return attachments.isEmpty() && text.isEmpty();
+    }
     public String getText() {
         return text;
+    }
+
+    public void setSourceDialog(){
+        source = SOURCE_DIALOG;
+    }
+
+    public long getMessage_id() {
+        return message_id;
+    }
+
+    public void setMessage_id(long message_id) {
+        this.message_id = message_id;
+    }
+
+    public void setText(String text) {
+        this.text = text;
+    }
+
+    public User getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(User author) {
+        this.author = author;
+    }
+
+    public void setDate(Date date) {
+        this.date = date;
+    }
+
+    public Date getDate() {
+        return date;
     }
 
     public ArrayList<Attachment> getAttachments() {

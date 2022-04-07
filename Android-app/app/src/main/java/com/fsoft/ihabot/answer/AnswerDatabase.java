@@ -67,11 +67,12 @@ public class AnswerDatabase  extends CommandModule {
 
         folderAttachments = new File(applicationManager.getHomeFolder(), "attachments");
         fileAnswers = new File(applicationManager.getHomeFolder(), "answer_database.txt");
-        if(!fileAnswers.isFile())
-        {
+        if(!fileAnswers.isFile()){
             log(". Файла базы нет. Загрузка файла answer_database.zip из ресурсов...");
             loadDefaultDatabase();
         }
+
+        childCommands.add(new TestCommand());
     }
 
     /**
@@ -798,6 +799,16 @@ public class AnswerDatabase  extends CommandModule {
                     return;
                 }
             }
+        }
+    }
+
+    private static class TestCommand extends CommandModule{
+        @Override
+        public ArrayList<Message> processCommand(Message message) throws Exception {
+            ArrayList<Message> result = super.processCommand(message);
+            if(message.getText().toLowerCase(Locale.ROOT).trim().equals("проверка базы"))
+                result.add(new Message("Команда работает нормально!"));
+            return result;
         }
     }
 }

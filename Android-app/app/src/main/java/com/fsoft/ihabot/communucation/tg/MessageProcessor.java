@@ -211,17 +211,35 @@ public class MessageProcessor extends CommandModule {
         //Отправить пользователю что бот уже начал готовить ответ для него
         tgAccount.sendChatTyping(message.getChat().getId());
 
-        //Сформировать пользователя отправителя
-        //UserTg userSender = new UserTg()
-
         //сформировать обьект вопроса
-        com.fsoft.ihabot.answer.Message question = new com.fsoft.ihabot.answer.Message(message.getText());
+        com.fsoft.ihabot.answer.Message question = new com.fsoft.ihabot.answer.Message();
+        question.setText(message.getText());
+        question.setAuthor(message.getFrom());
+        question.setSourceDialog();
+        question.setDate(message.getDate());
 
 
-        //В этом сообщении формируем ответ пользователю. Он и будет отправлен.
+
 
         //Проверить не является ли пользователь админинистратором. Если является, обработать как команду
-
+        if(applicationManager.getAdminList().has(question.getAuthor())){
+            try {
+                ArrayList<com.fsoft.ihabot.answer.Message> results = applicationManager.processCommand(question);
+                for (com.fsoft.ihabot.answer.Message item:results) {
+                    if (!item.isEmpty())
+                        sendAnswer(message.getChat().getId(), item);
+                }
+                if(!results.isEmpty())
+                    return;
+            }
+            catch (Exception e){
+                e.printStackTrace();
+                sendAnswer(
+                        message.getChat().getId(),
+                        "Ошибка обработки команды: "+e.getLocalizedMessage()
+                );
+            }
+        }
 
 
 
@@ -239,7 +257,7 @@ public class MessageProcessor extends CommandModule {
             e.printStackTrace();
             sendAnswer(
                     message.getChat().getId(),
-                    new com.fsoft.ihabot.answer.Message(e.getLocalizedMessage())
+                    e.getLocalizedMessage()
             );
         }
 
@@ -314,6 +332,9 @@ public class MessageProcessor extends CommandModule {
             //}
         };
 
+    private void sendAnswer(long chatId, String answer){
+        sendAnswer(chatId, new com.fsoft.ihabot.answer.Message(answer));
+    }
     private void sendAnswer(long chatId, com.fsoft.ihabot.answer.Message answer){
         if(answer.getAttachments().isEmpty()) {
             tgAccount.sendMessage(new TgAccountCore.SendMessageListener() {

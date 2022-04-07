@@ -1,5 +1,7 @@
 package com.fsoft.ihabot.communucation;
 
+import androidx.annotation.NonNull;
+
 import com.fsoft.ihabot.Utils.ApplicationManager;
 import com.fsoft.ihabot.Utils.CommandDesc;
 import com.fsoft.ihabot.Utils.CommandModule;
@@ -52,10 +54,6 @@ public class Account extends CommandModule implements AccountBase {
         token = getFileStorage().getString("token", token);
         screenName = getFileStorage().getString("screenName", screenName);
 
-        childCommands.add(new Status());
-        childCommands.add(new Enabled());
-        childCommands.add(new GetToken());
-        childCommands.add(new SetToken());
     }
     public boolean remove(){
         //удалить файл аккаунта
@@ -174,6 +172,7 @@ public class Account extends CommandModule implements AccountBase {
         this.onStateChangedListener = onStateChangedListener;
     }
 
+    @NonNull
     @Override public String toString() {
         return "Аккаунт " + id;
     }
@@ -191,132 +190,4 @@ public class Account extends CommandModule implements AccountBase {
         return (int) (getId() ^ (getId() >>> 32));
     }
 
-    class Enabled extends CommandModule {
-
-        @Override
-        public String processCommand(Message message) {
-            CommandParser commandParser = new CommandParser(message.getText());
-            if(commandParser.getWord().equals("acc"))
-                if(isMine(commandParser.getWord()))
-                    if(commandParser.getWord().toLowerCase().equals("enabled")) {
-                        Boolean ena = commandParser.getBoolean();
-                        String reason = commandParser.getText();
-                        setEnabled(ena);
-                        if (!reason.equals(""))
-                            setState(reason);
-                        if(isEnabled())
-                            return "Аккаунт "+Account.this+" теперь включен. Через пару минут все функции заработают.";
-                        else
-                            return "Аккаунт "+Account.this+" теперь выключен. Бот не будет его использовать, пока ты снова его не включишь.";
-                    }
-            return "";
-        }
-
-        @Override
-        public ArrayList<CommandDesc> getHelp() {
-            ArrayList<CommandDesc> result = new ArrayList<>();
-            result.add(new CommandDesc(
-                    "Включить или выключить аккаунт "+Account.this,
-                    "Если ты не хочешь, чтобы бот использовал этот аккаунт, ты можешь выключить его," +
-                            "и бот не будет его использовать пока ты его не включишь.\n" +
-                            "Ты можешь также дописать комментарий, чтобы описать почему " +
-                            "аккаунт отключён или включён.",
-                    "botcmd acc " + id + " enabled <on/off> <комментарий>"));
-            return result;
-        }
-    }
-    class Status extends CommandModule{
-        public @Override String processCommand(Message message) {
-            if(message.getText().equals("status") || message.getText().equals("acc status"))
-                return  "Аккаунт " + Account.this + " id: "+getId() + "\n" +
-                        "Аккаунт " + Account.this + " файл: "+new File(fileStorage.getFilePath()).getName() + "\n" +
-                        "Аккаунт " + Account.this + " включён: "+(isEnabled()?"ВКЛ":"ВЫКЛ")+ "\n" +
-                        "Аккаунт " + Account.this + " состояние: "+getState()+ "\n" +
-                        "Аккаунт " + Account.this + " токен в норме: "+(isToken_ok()?"да":"нет") + "\n";
-            return "";
-        }
-        public @Override ArrayList<CommandDesc> getHelp() {
-            return new ArrayList<>();
-        }
-    }
-    class GetToken extends CommandModule{
-
-        @Override
-        public String processCommand(Message message) {
-            CommandParser commandParser = new CommandParser(message.getText());
-            if(commandParser.getWord().equals("acc"))
-                if(isMine(commandParser.getWord()))
-                    if(commandParser.getWord().equals("gettoken"))
-                        return "("+Account.this+") id = " + id +
-                                "\n("+Account.this+") token = " + token +
-                                "\nБудь осторожен с токеном! Не кидай его незнакомым людям. " +
-                                "Если какой-то нехороший человек получил твой токен, сделай следующее:" +
-                                "\nОткрой Вконтакте -> Нажми на аватарку в верхнем правом углу -> " +
-                                "Настройки -> Безопасность -> Завершить все сеансы." +
-                                "\nТак ты отключишь все токены, в том числе и тот " +
-                                "токен, который у тебя украли." +
-                                "\nЕсли ты хочешь добавить этот аккаунт в другого бота, " +
-                                "вот тебе готовая команда:" +
-                                "\n" +
-                                "\nbotcmd accs add "+token+" "+id+" " +
-                                "\n" +
-                                "\nОбрати внимание: если другой бот находится в другом городе, \n" +
-                                "токен может не заработать, либо спросить номер телефона.\n" ;
-            return "";
-        }
-
-        @Override
-        public ArrayList<CommandDesc> getHelp() {
-            ArrayList<CommandDesc> result = new ArrayList<>();
-            result.add(new CommandDesc(
-                    "Получить токен  для аккаунта "+Account.this,
-                    "Токен - это секретный код, который позволяет получать доступ к аккаунту" +
-                            " и выполнять от его имени разные действия. Это не пароль. " +
-                            "Пароль как раз и нужен для того, чтобы получить этот токен. " +
-                            "Не кидай этот код незнакомым людям, если не доверяешь им. " +
-                            "Токен - это временный код. Он меняется каждый раз, когда ты " +
-                            "заходишь во Вконтакте. Иногда токены перестают работать сами по себе, " +
-                            "если контакту почему-то кажется, что страницу взломали. " +
-                            "Также токен будет работать только в том же городе где он был получен. " +
-                            "Если ты попытаешься скинуть свой токен другу из другого города, он " +
-                            "может не сработать.\n" +
-                            "Если токен перестанет работать, надо заново воходить во Вконтакте.",
-                    "botcmd acc " + id + " gettoken"));
-            return result;
-        }
-    }
-    class SetToken extends CommandModule {
-
-        @Override
-        public String processCommand(Message message) {
-            CommandParser commandParser = new CommandParser(message.getText());
-            if(commandParser.getWord().equals("acc"))
-                if(isMine(commandParser.getWord()))
-                    if(commandParser.getWord().equals("settoken")) {
-                        setToken(commandParser.getText());
-                        startAccount();
-                        return "(" + Account.this + ") Задан новый токен: " + token + "\n";
-                    }
-            return "";
-        }
-
-        @Override
-        public ArrayList<CommandDesc> getHelp() {
-            ArrayList<CommandDesc> result = new ArrayList<>();
-            result.add(new CommandDesc("Задать токен для аккаунта "+Account.this,
-                    "Токен - это секретный код, который позволяет получать доступ к аккаунту" +
-                            " и выполнять от его имени разные действия. Это не пароль. " +
-                            "Пароль как раз и нужен для того, чтобы получить этот токен. " +
-                            "Не кидай этот код незнакомым людям, если не доверяешь им. " +
-                            "Токен - это временный код. Он меняется каждый раз, когда ты " +
-                            "заходишь во Вконтакте. Иногда токены перестают работать сами по себе, " +
-                            "если контакту почему-то кажется, что страницу взломали. " +
-                            "Также токен будет работать только в том же городе где он был получен. " +
-                            "Если ты попытаешься скинуть свой токен другу из другого города, он " +
-                            "может не сработать.\n" +
-                            "Если токен перестанет работать, надо заново воходить во Вконтакте.",
-                    "botcmd acc " + id + " settoken"));
-            return result;
-        }
-    }
 }

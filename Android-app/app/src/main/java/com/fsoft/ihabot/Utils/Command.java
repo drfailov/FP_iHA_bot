@@ -16,6 +16,15 @@ import java.util.ArrayList;
  * Created by Dr. Failov on 28.11.2014.
  */
 public interface Command {
-    String processCommand(Message message); //На вход принимается текст без botcmd
+
+    /**
+     * На входе и на выходе обьект com.fsoft.ihabot.answer.Message
+     * Обработка команд происзодит раньше чем обработка базой ответов
+     * Если по итогу модули прислали ответы на команду - Будут отправлены только сообщения с ответами на команду
+     * Если модули прислали пустые ответы на команду - ничего не будет отправлено. Базой ответов это сообщение не будет обработано.
+     * Если модули не прислали ни одного ответа на команду - будет выполнена обработка сообщения как обычного ответа
+    * */
+    ArrayList<Message> processCommand(Message message)  throws Exception; //На вход принимается текст без botcmd
+
     ArrayList<CommandDesc> getHelp();
 }

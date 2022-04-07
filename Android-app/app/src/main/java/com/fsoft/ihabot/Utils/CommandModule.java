@@ -24,20 +24,12 @@ public class CommandModule implements Command {
     }
 
     @Override
-    public String processCommand(Message message) {
-        StringBuilder result = new StringBuilder();
+    public ArrayList<Message> processCommand(Message message) throws Exception {
+        ArrayList<Message> results = new ArrayList<>();
         for (CommandModule child : childCommands) {
-            try {
-                result.append(child.processCommand(message));
-            }
-            catch (Exception e){
-                e.printStackTrace();
-                return "! Ошибка обрабоки команды дочерним модулем:\n"+
-                                "Модуль: "+this.getClass().getName()+"\n" +
-                                "Ошибка: " + e.toString();
-            }
+            results.addAll(child.processCommand(message));
         }
-        return result.toString();
+        return results;
     }
     @Override
     public ArrayList<CommandDesc> getHelp() {
