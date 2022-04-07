@@ -2,6 +2,8 @@ package com.fsoft.ihabot.Utils;
 
 import android.util.Log;
 
+import com.fsoft.ihabot.answer.Message;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
@@ -10,7 +12,6 @@ import java.util.ArrayList;
  * Created by Dr. Failov on 12.02.2017.
  */
 public class CommandModule implements Command {
-    protected SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
     protected ArrayList<CommandModule> childCommands = new ArrayList<>();
 
 
@@ -24,10 +25,10 @@ public class CommandModule implements Command {
 
     @Override
     public String processCommand(Message message) {
-        String result = "";
+        StringBuilder result = new StringBuilder();
         for (CommandModule child : childCommands) {
             try {
-                result += child.processCommand(message);
+                result.append(child.processCommand(message));
             }
             catch (Exception e){
                 e.printStackTrace();
@@ -36,7 +37,7 @@ public class CommandModule implements Command {
                                 "Ошибка: " + e.toString();
             }
         }
-        return result;
+        return result.toString();
     }
     @Override
     public ArrayList<CommandDesc> getHelp() {
@@ -50,6 +51,5 @@ public class CommandModule implements Command {
         //НЕ ИСПОЛЬЗОВАТЬ ДЛЯ СОХРАНЕНИЯ!!!!!!!!!!!!!!! Сохранять всё на лету, так надежнее
         for (CommandModule child : childCommands)
             child.stop();
-
     }
 }

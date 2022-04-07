@@ -1,5 +1,7 @@
 package com.fsoft.ihabot.Utils;
 
+import com.fsoft.ihabot.answer.Message;
+
 import java.util.ArrayList;
 
 /**

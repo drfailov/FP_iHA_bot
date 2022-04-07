@@ -4,8 +4,8 @@ import androidx.annotation.NonNull;
 
 import com.fsoft.ihabot.Utils.ApplicationManager;
 import com.fsoft.ihabot.Utils.CommandModule;
-import com.fsoft.ihabot.Utils.UserTg;
 import com.fsoft.ihabot.answer.AnswerElement;
+import com.fsoft.ihabot.communucation.tg.User;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -45,12 +45,12 @@ public class AdminList  extends CommandModule {
         log("Загружено список: " + userList.size() + " администраторов");
         if(userList.isEmpty()){
             log("Поскольку список администраторов пустой, добавляю тестовую запись.");
-            UserTg userTg = new UserTg(248067313, "DrFailov", "Dr. Failov");
+            User userTg = new User(248067313, "DrFailov", "Dr.","Failov");
             add(userTg, userTg, "Разработчик бота.");
         }
     }
 
-    public void add(UserTg userToAdd, UserTg responsible, String comment) throws Exception {
+    public void add(User userToAdd, User responsible, String comment) throws Exception {
         if(userToAdd == null)
             throw new Exception("Не могу добавить пользователя в список: Не получен пользователь чтобы его добавить.");
         if(responsible == null)
@@ -70,7 +70,7 @@ public class AdminList  extends CommandModule {
      * @param userTg Пользователь, которого мы ищем. Тот самый, который используется у нас везде в Message
      * @return Возвращает true если пользователь есть в списке
      */
-    public boolean has(UserTg userTg){
+    public boolean has(User userTg){
         return get(userTg) != null;
     }
 
@@ -79,7 +79,7 @@ public class AdminList  extends CommandModule {
     * @param userTg Пользователь, которого мы ищем. Тот самый, который используется у нас везде в Message
     * @return Возвращает обьект AdminListItem который содержит инфу про пользователя и ответственного за него пользователя
     */
-    public AdminListItem get(UserTg userTg){
+    public AdminListItem get(User userTg){
         for (AdminListItem adminListItem:userList){
             if(adminListItem.getUser() != null)
                 if(adminListItem.getUser().equals(userTg))
@@ -100,8 +100,8 @@ public class AdminList  extends CommandModule {
 
 
     public static class AdminListItem{
-        private UserTg user;
-        private UserTg responsible;
+        private User user;
+        private User responsible;
         private String comment;
         private boolean allowDatabaseDump = false;
 
@@ -109,7 +109,7 @@ public class AdminList  extends CommandModule {
 
         }
 
-        public AdminListItem(UserTg user, UserTg responsible, String comment) {
+        public AdminListItem(User user, User responsible, String comment) {
             this.user = user;
             this.responsible = responsible;
             this.comment = comment;
@@ -119,19 +119,19 @@ public class AdminList  extends CommandModule {
             fromJson(jsonObject);
         }
 
-        public UserTg getUser() {
+        public User getUser() {
             return user;
         }
 
-        public void setUser(UserTg user) {
+        public void setUser(User user) {
             this.user = user;
         }
 
-        public UserTg getResponsible() {
+        public User getResponsible() {
             return responsible;
         }
 
-        public void setResponsible(UserTg responsible) {
+        public void setResponsible(User responsible) {
             this.responsible = responsible;
         }
 
@@ -165,9 +165,9 @@ public class AdminList  extends CommandModule {
         }
         private void fromJson(JSONObject jsonObject)throws JSONException, ParseException {
             if(jsonObject.has("user"))
-                user = new UserTg(jsonObject.getJSONObject("user"));
+                user = new User(jsonObject.getJSONObject("user"));
             if(jsonObject.has("responsible"))
-                responsible = new UserTg(jsonObject.getJSONObject("responsible"));
+                responsible = new User(jsonObject.getJSONObject("responsible"));
             if(jsonObject.has("comment"))
                 comment = jsonObject.getString("comment");
             if(jsonObject.has("allowDatabaseDump"))

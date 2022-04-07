@@ -48,10 +48,10 @@ public class ApplicationManager extends CommandModule {
         return applicationManagerInstance;
     }
 
-    private BotService service;//это в общем то наш сервис. Он должен быть по любому
-    private Communicator communicator;
-    private AnswerDatabase answerDatabase;
-    private AdminList adminList;
+    private final BotService service;//это в общем то наш сервис. Он должен быть по любому
+    private final Communicator communicator;
+    private final AnswerDatabase answerDatabase;
+    private final AdminList adminList;
 
 
     public ApplicationManager(BotService service) throws Exception {
@@ -65,6 +65,8 @@ public class ApplicationManager extends CommandModule {
 
         communicator = new Communicator(this);
 
+        childCommands.add(adminList);
+        childCommands.add(answerDatabase);
         childCommands.add(communicator);
 
         new Timer().schedule(new TimerTask() {
@@ -85,5 +87,8 @@ public class ApplicationManager extends CommandModule {
     }
     public AnswerDatabase getAnswerDatabase() {
         return answerDatabase;
+    }
+    public AdminList getAdminList() {
+        return adminList;
     }
 }

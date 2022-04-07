@@ -5,7 +5,7 @@ import com.fsoft.ihabot.Utils.CommandDesc;
 import com.fsoft.ihabot.Utils.CommandModule;
 import com.fsoft.ihabot.Utils.CommandParser;
 import com.fsoft.ihabot.Utils.FileStorage;
-import com.fsoft.ihabot.Utils.Message;
+import com.fsoft.ihabot.answer.Message;
 
 import java.io.File;
 import java.text.SimpleDateFormat;

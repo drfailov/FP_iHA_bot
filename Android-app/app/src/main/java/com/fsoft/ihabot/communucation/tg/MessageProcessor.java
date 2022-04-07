@@ -161,6 +161,7 @@ public class MessageProcessor extends CommandModule {
         //Это выполняется в отдельном потоке (можно делать что хочешь и сколько хочешь)
         /*
         - Когда получено сообщение:
+        - Проверить не является ли пользователь админинистратором. Если является, обработать как команду
 
         - привести текст входящего сообшения к нижнему регистру
         - убрать обращение бот
@@ -196,10 +197,9 @@ public class MessageProcessor extends CommandModule {
         - Обновить в файле базы данных информацию о количестве использований
         * */
 
+        // Вывести логи, обновить счётчики
         log(". ПОЛУЧЕНО СООБЩЕНИЕ: " + message);
         inctementMessagesReceivedCounter();
-        tgAccount.sendChatTyping(message.getChat().getId());
-
         log("\n.");
         log("\nТы: " + message.getFrom());
         log("\nТы написал: " + message.getText());
@@ -207,65 +207,44 @@ public class MessageProcessor extends CommandModule {
         log("\nОтправлено сообщений: " + messagesSentCounter);
         log("\nВыполнено запросов к API: " + tgAccount.getApiCounter());
         log("\nОшибок при доступе к API: " + tgAccount.getErrorCounter());
+
+        //Отправить пользователю что бот уже начал готовить ответ для него
+        tgAccount.sendChatTyping(message.getChat().getId());
+
+        //Сформировать пользователя отправителя
+        //UserTg userSender = new UserTg()
+
+        //сформировать обьект вопроса
         com.fsoft.ihabot.answer.Message question = new com.fsoft.ihabot.answer.Message(message.getText());
 
-        com.fsoft.ihabot.answer.Message answer = null;
+
+        //В этом сообщении формируем ответ пользователю. Он и будет отправлен.
+
+        //Проверить не является ли пользователь админинистратором. Если является, обработать как команду
+
+
+
+
+
+
+
+
+        //Подобрать ответ из базы и отправить
         try {
             AnswerElement answerElement = applicationManager.getAnswerDatabase().pickAnswer(question);
-            answer = answerElement.getAnswerMessage();
-            if(answer.getText().trim().isEmpty())
-                answer = new com.fsoft.ihabot.answer.Message("Здесь должна быть фотка, но я к сожалению пока не умею отправлять фото :(");
+            com.fsoft.ihabot.answer.Message answer = answerElement.getAnswerMessage();
+            sendAnswer(message.getChat().getId(), answer);
         }
         catch (Exception e){
             e.printStackTrace();
-            answer = new com.fsoft.ihabot.answer.Message(e.getLocalizedMessage());
+            sendAnswer(
+                    message.getChat().getId(),
+                    new com.fsoft.ihabot.answer.Message(e.getLocalizedMessage())
+            );
         }
 
 
-        if(answer.getAttachments().isEmpty()) {
-            tgAccount.sendMessage(new TgAccountCore.SendMessageListener() {
-                @Override
-                public void sentMessage(Message message) {
-                    log(". Отправлено сообщение: " + message);
-                    inctementMessagesSentCounter();
-                }
 
-                @Override
-                public void error(Throwable error) {
-                    log(error.getClass().getName() + " while sending message");
-                }
-            }, message.getChat().getId(), answer);
-        }
-        else {
-            for (Attachment attachment : answer.getAttachments()) {
-                if(attachment.isPhoto() && attachment.isLocal()){
-                    File file = new File(applicationManager.getAnswerDatabase().getFolderAttachments(), attachment.getFilename());
-                    tgAccount.sendPhoto(new TgAccountCore.SendMessageListener() {
-                        @Override
-                        public void sentMessage(Message message) {
-                            log("Отправлено фото: " + message.toString());
-                            String photoId = message.getPhotoId();
-                            if(photoId != null){
-                                log("ID загруженной фотографии: " + photoId);
-                                try {
-                                    applicationManager.getAnswerDatabase().updateAnswerPhotoId(file.getName(), photoId);
-                                }
-                                catch (Exception e){
-                                    e.printStackTrace();
-                                    log("Не могу записать в базу айдишник фотографии: " + e.getLocalizedMessage());
-                                }
-                            }
-                            inctementMessagesSentCounter();
-                        }
-
-                        @Override
-                        public void error(Throwable error) {
-                            log(error.getClass().getName() + " while sending message");
-                        }
-                    }, message.getChat().getId(), answer.getText(), file);
-                }
-            }
-        }
 
 
         //заполняем юзера
@@ -334,6 +313,53 @@ public class MessageProcessor extends CommandModule {
 
             //}
         };
+
+    private void sendAnswer(long chatId, com.fsoft.ihabot.answer.Message answer){
+        if(answer.getAttachments().isEmpty()) {
+            tgAccount.sendMessage(new TgAccountCore.SendMessageListener() {
+                @Override
+                public void sentMessage(Message message) {
+                    log(". Отправлено сообщение: " + message);
+                    inctementMessagesSentCounter();
+                }
+
+                @Override
+                public void error(Throwable error) {
+                    log(error.getClass().getName() + " while sending message");
+                }
+            }, chatId, answer);
+        }
+        else {
+            for (Attachment attachment : answer.getAttachments()) {
+                if(attachment.isPhoto() && attachment.isLocal()){
+                    File file = new File(applicationManager.getAnswerDatabase().getFolderAttachments(), attachment.getFilename());
+                    tgAccount.sendPhoto(new TgAccountCore.SendMessageListener() {
+                        @Override
+                        public void sentMessage(Message message) {
+                            log("Отправлено фото: " + message.toString());
+                            String photoId = message.getPhotoId();
+                            if(photoId != null){
+                                log("ID загруженной фотографии: " + photoId);
+                                try {
+                                    applicationManager.getAnswerDatabase().updateAnswerPhotoId(file.getName(), photoId);
+                                }
+                                catch (Exception e){
+                                    e.printStackTrace();
+                                    log("Не могу записать в базу айдишник фотографии: " + e.getLocalizedMessage());
+                                }
+                            }
+                            inctementMessagesSentCounter();
+                        }
+
+                        @Override
+                        public void error(Throwable error) {
+                            log(error.getClass().getName() + " while sending message");
+                        }
+                    }, chatId, answer.getText(), file);
+                }
+            }
+        }
+    }
 
     private boolean isRunning(){
         return tgAccount.isRunning();

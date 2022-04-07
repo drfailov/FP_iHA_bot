@@ -2,10 +2,13 @@ package com.fsoft.ihabot.communucation.tg;
 
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.text.ParseException;
+import java.util.Objects;
 
 /*Telegram user according to telegram API*/
 public class User {
@@ -17,6 +20,13 @@ public class User {
     private String language_code = "";
 
     public User() {
+    }
+
+    public User(long id, String username, String first_name, String last_name) {
+        this.id = id;
+        this.first_name = first_name;
+        this.last_name = last_name;
+        this.username = username;
     }
 
     public User(JSONObject jsonObject) throws JSONException, ParseException {
@@ -37,10 +47,6 @@ public class User {
         this.language_code = language_code;
     }
 
-    @Override
-    public String toString() {
-        return first_name + " " + last_name + " (" + username + ")";
-    }
     public JSONObject toJson() throws JSONException {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("id", id);
@@ -62,6 +68,8 @@ public class User {
                 username = jsonObject.getString("username");
             if (jsonObject.has("is_bot"))
                 is_bot = jsonObject.getBoolean("is_bot");
+            if (jsonObject.has("name")) //for backward compatibiluty with old format of users (before 2022-04)
+                first_name = jsonObject.getString("name");
             if (jsonObject.has("first_name"))
                 first_name = jsonObject.getString("first_name");
             if (jsonObject.has("last_name"))
@@ -127,5 +135,30 @@ public class User {
 
     public void setLanguage_code(String language_code) {
         this.language_code = language_code;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User userTg = (User) o;
+        if(id == userTg.id)
+            return true;
+        return username != null && userTg.username != null && userTg.username.equals(username);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, username);
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        if(!last_name.isEmpty() && !first_name.isEmpty())
+            return  first_name + " " + last_name;
+        if(username != null)
+            return "@"+username;
+        return "ID"+id;
     }
 }
