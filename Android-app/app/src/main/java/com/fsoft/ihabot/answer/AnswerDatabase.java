@@ -73,6 +73,7 @@ public class AnswerDatabase  extends CommandModule {
         }
 
         childCommands.add(new TestCommand());
+        childCommands.add(new DumpCommand());
     }
 
     /**
@@ -802,7 +803,7 @@ public class AnswerDatabase  extends CommandModule {
         }
     }
 
-    private static class TestCommand extends CommandModule{
+    private class TestCommand extends CommandModule{
         @Override
         public ArrayList<Message> processCommand(Message message) throws Exception {
             ArrayList<Message> result = super.processCommand(message);
@@ -811,4 +812,18 @@ public class AnswerDatabase  extends CommandModule {
             return result;
         }
     }
+
+    private class DumpCommand extends CommandModule{
+        @Override
+        public ArrayList<Message> processCommand(Message message) throws Exception {
+            ArrayList<Message> result = super.processCommand(message);
+            if(message.getText().toLowerCase(Locale.ROOT).trim().equals("выгрузить базу")) {
+                Message answer = new Message("Дамп базы прикрепляю файлом.");
+                answer.addAttachment(new Attachment().setDoc().setFileToUpload(fileAnswers));
+                result.add(answer);
+            }
+            return result;
+        }
+    }
+
 }

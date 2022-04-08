@@ -3,6 +3,7 @@ package com.fsoft.ihabot.answer;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -17,6 +18,7 @@ public class Attachment {
 
     private String type = "";      //тип вложения из списка выще
     private String filename = "";  //Имя файла если это вложение есть локально в папке attachments (часть базы).
+    private File fileToUpload = null; //обьект файла который нужно выгрузить на сервер не из базы (используется отдельно от filename)
     private String tg_file_id = "";  //fileID телеграмовскний сообщающий что что файл уже загружен и существует онлайн
     private String tg_file_id_date = ""; //Дата, когда этот fileId был присвоен
 
@@ -42,7 +44,23 @@ public class Attachment {
         return !tg_file_id.isEmpty();
     }
     public boolean isLocal(){
-        return !filename.isEmpty();
+        return !filename.isEmpty() || fileToUpload != null;
+    }
+    public Attachment setPhoto(){
+        type = TYPE_PHOTO;
+        return this;
+    }
+    public Attachment setDoc(){
+        type = TYPE_DOC;
+        return this;
+    }
+    public Attachment setFileToUpload(File file){
+        fileToUpload = file;
+        return this;
+    }
+
+    public File getFileToUpload() {
+        return fileToUpload;
     }
 
     public JSONObject toJson() throws JSONException {

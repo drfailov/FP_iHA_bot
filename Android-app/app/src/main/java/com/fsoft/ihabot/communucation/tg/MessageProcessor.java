@@ -352,6 +352,7 @@ public class MessageProcessor extends CommandModule {
         }
         else {
             for (Attachment attachment : answer.getAttachments()) {
+                //send photo
                 if(attachment.isPhoto() && attachment.isLocal()){
                     File file = new File(applicationManager.getAnswerDatabase().getFolderAttachments(), attachment.getFilename());
                     tgAccount.sendPhoto(new TgAccountCore.SendMessageListener() {
@@ -374,10 +375,43 @@ public class MessageProcessor extends CommandModule {
 
                         @Override
                         public void error(Throwable error) {
-                            log(error.getClass().getName() + " while sending message");
+                            log(error.getClass().getName() + " while sending photo");
                         }
                     }, chatId, answer.getText(), file);
                 }
+
+                //send document, from attachment or from file
+                if(attachment.isDoc() && attachment.isLocal()){
+                    File file = attachment.getFileToUpload();
+                    if(file == null)
+                        file = new File(applicationManager.getAnswerDatabase().getFolderAttachments(), attachment.getFilename());
+                    tgAccount.sendDocument(new TgAccountCore.SendMessageListener() {
+                        @Override
+                        public void sentMessage(Message message) {
+                            log("Отправлено документ: " + message.toString());
+                            String fileId = message.getPhotoId();
+                            if(fileId != null){
+                                log("ID загруженного документа: " + fileId);
+                                try {
+                                    if(!attachment.getFilename().isEmpty())
+                                        applicationManager.getAnswerDatabase().updateAnswerPhotoId(attachment.getFilename(), fileId);
+                                }
+                                catch (Exception e){
+                                    e.printStackTrace();
+                                    log("Не могу записать в базу айдишник документа: " + e.getLocalizedMessage());
+                                }
+                            }
+                            inctementMessagesSentCounter();
+                        }
+
+                        @Override
+                        public void error(Throwable error) {
+                            log(error.getClass().getName() + " while sending document");
+                        }
+                    }, chatId, answer.getText(), file);
+                }
+
+
             }
         }
     }
