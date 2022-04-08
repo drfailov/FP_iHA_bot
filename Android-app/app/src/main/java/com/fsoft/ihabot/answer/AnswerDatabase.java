@@ -1,7 +1,6 @@
 package com.fsoft.ihabot.answer;
 
 import android.content.res.Resources;
-import android.util.Log;
 import android.util.Pair;
 
 import com.fsoft.ihabot.R;
@@ -803,7 +802,7 @@ public class AnswerDatabase  extends CommandModule {
         }
     }
 
-    private class TestCommand extends CommandModule{
+    private static class TestCommand extends CommandModule{
         @Override
         public ArrayList<Message> processCommand(Message message) throws Exception {
             ArrayList<Message> result = super.processCommand(message);
