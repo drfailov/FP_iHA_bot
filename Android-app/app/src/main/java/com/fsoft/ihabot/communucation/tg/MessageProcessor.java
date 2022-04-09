@@ -363,7 +363,7 @@ public class MessageProcessor extends CommandModule {
                             if(photoId != null){
                                 log("ID загруженной фотографии: " + photoId);
                                 try {
-                                    applicationManager.getAnswerDatabase().updateAnswerPhotoId(file.getName(), photoId);
+                                    applicationManager.getAnswerDatabase().updateAnswerAttachmentFileId(file.getName(), photoId, tgAccount.getId());
                                 }
                                 catch (Exception e){
                                     e.printStackTrace();
@@ -394,7 +394,7 @@ public class MessageProcessor extends CommandModule {
                                 log("ID загруженного документа: " + fileId);
                                 try {
                                     if(!attachment.getFilename().isEmpty())
-                                        applicationManager.getAnswerDatabase().updateAnswerPhotoId(attachment.getFilename(), fileId);
+                                        applicationManager.getAnswerDatabase().updateAnswerAttachmentFileId(attachment.getFilename(), fileId, tgAccount.getId());
                                 }
                                 catch (Exception e){
                                     e.printStackTrace();

@@ -7,6 +7,7 @@ import com.fsoft.ihabot.R;
 import com.fsoft.ihabot.Utils.ApplicationManager;
 import com.fsoft.ihabot.Utils.CommandModule;
 import com.fsoft.ihabot.Utils.F;
+import com.fsoft.ihabot.Utils.Triplet;
 
 import org.json.JSONObject;
 
@@ -139,7 +140,8 @@ public class AnswerDatabase  extends CommandModule {
         return answers.get(new Random().nextInt(answers.size()));
     }
 
-    ArrayList<Pair<String, String>> updateAnswerPhotoIdQueue = new ArrayList<>();
+    //filename, fileId, botId
+    ArrayList<Triplet<String, String, Long>> updateAnswerPhotoIdQueue = new ArrayList<>();
     /**
      * Производится полный проход по базе, по всем вложениям. И везде где в ответе во вложении используется файл filename,
      * вписывается fileId для дальнейшего использования при отправке.
@@ -147,16 +149,16 @@ public class AnswerDatabase  extends CommandModule {
      * @param filename Имя файла из папки вложений, который был отправлен
      * @param fileId ID файла на сервере телеграм, который следует внести в базу
      */
-    public void updateAnswerPhotoId(String filename, String fileId) throws Exception{
+    public void updateAnswerAttachmentFileId(String filename, String fileId, long botId) throws Exception{
         if(filename == null || filename.isEmpty())
             throw new Exception(log("Проблема внесения в базу ID фотографии: filename = null или пустой!"));
         if(fileId == null || fileId.isEmpty())
             throw new Exception(log("Проблема внесения в базу ID фотографии: fileId = null или пустой!"));
         log("Вношу в очередь на прикрепление в базу к файлу " + filename + " айдишник " + fileId + " ...");
-        for(Pair<String, String> pair:updateAnswerPhotoIdQueue)
-            if(pair.first.equals(filename))
+        for(Triplet<String, String, Long> pair:updateAnswerPhotoIdQueue)
+            if(pair.getFirst().equals(filename))
                 throw new Exception(log("Попытка внести в очередь несколько ID для файла " + filename));
-        updateAnswerPhotoIdQueue.add(new Pair<>(filename, fileId));
+        updateAnswerPhotoIdQueue.add(new Triplet<>(filename, fileId, botId));
         log("IDшников в очереди: " + updateAnswerPhotoIdQueue.size());
 
         if(updateAnswerPhotoIdQueue.size() >= 3){
@@ -179,9 +181,9 @@ public class AnswerDatabase  extends CommandModule {
                             JSONObject jsonObject = new JSONObject(line);
                             AnswerElement answerElement = new AnswerElement(jsonObject);
                             if (answerElement.hasAnswer()){
-                                for (Pair<String, String> pair:updateAnswerPhotoIdQueue) {
-                                    if(answerElement.getAnswerMessage().hasAttachmentFilename(pair.first)){
-                                        answerElement.getAnswerMessage().addAttachmentFileID(pair.first, pair.second);
+                                for (Triplet<String, String, Long> pair:updateAnswerPhotoIdQueue) {
+                                    if(answerElement.getAnswerMessage().hasAttachmentFilename(pair.getFirst())){
+                                        answerElement.getAnswerMessage().addAttachmentFileID(pair.getFirst(), pair.getSecond(), pair.getThird());
                                         changed++;
                                         log(answerElement.toJson().toString());
                                     }

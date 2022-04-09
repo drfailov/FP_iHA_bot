@@ -156,16 +156,16 @@ public class Message {
     }
 
     /**
-     * Находит в этом ответе вложение которое ссылается на filename и вносит в него FileID
+     * Находит в этом ответе вложение которое ссылается на filename и вносит в него FileID загруженный конкретным ботом
      * Эта функция предназначена для использования в базе ответов: когда файл выгружен на сервер,
      * в базу ответов вносятся его FileID
      * @param filename Имя файла из папки вложений (не путь), который мы ищем
      * @param fileID Данные которые надо прикрепить к Attachment
      */
-    public void addAttachmentFileID(String filename, String fileID){
+    public void addAttachmentFileID(String filename, String fileID, long botId){
         for (Attachment attachment:attachments){
             if(attachment.getFilename().equals(filename))
-                attachment.updateTgFile_id(fileID);
+                attachment.updateTgFile_id(botId, fileID);
         }
     }
 

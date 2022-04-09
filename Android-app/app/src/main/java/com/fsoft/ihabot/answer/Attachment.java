@@ -1,16 +1,17 @@
 package com.fsoft.ihabot.answer;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
 public class Attachment {
-    private final static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
     public final static String TYPE_PHOTO = "photo";
     public final static String TYPE_AUDIO = "audio";
     public final static String TYPE_DOC = "doc";
@@ -19,8 +20,7 @@ public class Attachment {
     private String type = "";      //тип вложения из списка выще
     private String filename = "";  //Имя файла если это вложение есть локально в папке attachments (часть базы).
     private File fileToUpload = null; //обьект файла который нужно выгрузить на сервер не из базы (используется отдельно от filename)
-    private String tg_file_id = "";  //fileID телеграмовскний сообщающий что что файл уже загружен и существует онлайн
-    private String tg_file_id_date = ""; //Дата, когда этот fileId был присвоен
+    private final ArrayList<OnlineFile> onlineFiles = new ArrayList<>();  //например, fileID телеграмовскний сообщающий что что файл уже загружен и существует онлайн.
 
     public Attachment() {
     }
@@ -40,8 +40,14 @@ public class Attachment {
     public boolean isVideo(){
         return type.equals(TYPE_VIDEO);
     }
-    public boolean isOnlineTg(){
-        return !tg_file_id.isEmpty();
+    /**
+     * Проверяет загружен ли был этот ответ на сервер телеграма для конкретного бота (аккаунта)
+     * */
+    public boolean isOnlineTg(long botId){
+        for (OnlineFile onlineFile:onlineFiles)
+            if(onlineFile.isTelegram() && onlineFile.getBotAccount() == botId)
+                return true;
+        return false;
     }
     public boolean isLocal(){
         return !filename.isEmpty() || fileToUpload != null;
@@ -69,10 +75,12 @@ public class Attachment {
             jsonObject.put("type", type);
         if(filename != null)
             jsonObject.put("file", filename);
-        if(tg_file_id != null)
-            jsonObject.put("tg_file_id", tg_file_id);
-        if(tg_file_id_date != null)
-            jsonObject.put("tg_file_id_date", tg_file_id_date);
+        if(onlineFiles != null) {
+            JSONArray jsonArray = new JSONArray();
+            for(OnlineFile onlineFile:onlineFiles)
+                jsonArray.put(onlineFile.toJson());
+            jsonObject.put("onlineFiles", jsonArray);
+        }
         return jsonObject;
     }
     private void fromJson(JSONObject jsonObject)throws JSONException, ParseException {
@@ -80,10 +88,12 @@ public class Attachment {
             type = jsonObject.getString("type");
         if(jsonObject.has("file"))
             filename = jsonObject.getString("file");
-        if(jsonObject.has("tg_file_id"))
-            tg_file_id = jsonObject.getString("tg_file_id");
-        if(jsonObject.has("tg_file_id_date"))
-            tg_file_id_date = jsonObject.getString("tg_file_id_date");
+        onlineFiles.clear();
+        if(jsonObject.has("onlineFiles")) {
+            JSONArray jsonArray = jsonObject.getJSONArray("onlineFiles");
+            for (int i = 0; i < jsonArray.length(); i++)
+                onlineFiles.add(new OnlineFile(jsonArray.getJSONObject(i)));
+        }
     }
 
     public void setType(String type) {
@@ -100,12 +110,94 @@ public class Attachment {
         this.filename = filename;
     }
 
-    public String getTgFile_id() {
-        return tg_file_id;
+    public String getTgFileID(long botId) {
+        for (OnlineFile onlineFile:onlineFiles)
+            if(onlineFile.isTelegram() && onlineFile.getBotAccount() == botId)
+                return onlineFile.fileID;
+        return null;
     }
 
-    public void updateTgFile_id(String file_id) {
-        this.tg_file_id = file_id;
-        tg_file_id_date = sdf.format(new Date());
+    public void updateTgFile_id(long botId, String file_id) {
+        if(!isOnlineTg(botId)) {
+            OnlineFile onlineFile = new OnlineFile(file_id, botId);
+            onlineFiles.add(onlineFile);
+        }
+    }
+
+    public static class OnlineFile{
+        /*Every FileID can be used only with that bot who uploaded this file.
+        So I need to store fileID as well as bot account ID
+        * */
+        private final static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+        static private final String NETWORK_TG = "tg";
+
+        private String network = NETWORK_TG;
+        private String fileID = "";
+        private long botAccount = 0L;
+        private Date uploadDate = new Date();
+
+        public OnlineFile(String fileID, long botAccount) {
+            this.fileID = fileID;
+            this.botAccount = botAccount;
+        }
+
+        public OnlineFile(JSONObject jsonObject)throws JSONException, ParseException {
+            fromJson(jsonObject);
+        }
+
+
+        public boolean isTelegram() {
+            return network.equals(NETWORK_TG);
+        }
+
+        public void setTelegram() {
+            this.network = NETWORK_TG;
+        }
+
+        public String getFileID() {
+            return fileID;
+        }
+
+        public void setFileID(String fileID) {
+            this.fileID = fileID;
+        }
+
+        public long getBotAccount() {
+            return botAccount;
+        }
+
+        public void setBotAccount(long botAccount) {
+            this.botAccount = botAccount;
+        }
+
+        public Date getUploadDate() {
+            return uploadDate;
+        }
+
+        public void setUploadDate(Date uploadDate) {
+            this.uploadDate = uploadDate;
+        }
+
+        public JSONObject toJson() throws JSONException {
+            JSONObject jsonObject = new JSONObject();
+            if(network != null)
+                jsonObject.put("network", network);
+            if(fileID != null)
+                jsonObject.put("fileID", fileID);
+            jsonObject.put("botAccount", botAccount);
+            if(uploadDate != null)
+                jsonObject.put("uploadDate", sdf.format(uploadDate));
+            return jsonObject;
+        }
+        private void fromJson(JSONObject jsonObject)throws JSONException, ParseException {
+            if(jsonObject.has("network"))
+                network = jsonObject.getString("network");
+            if(jsonObject.has("fileID"))
+                fileID = jsonObject.getString("fileID");
+            if(jsonObject.has("botAccount"))
+                botAccount = jsonObject.getLong("botAccount");
+            if(jsonObject.has("uploadDate"))
+                uploadDate = sdf.parse(jsonObject.getString("uploadDate"));
+        }
     }
 }
