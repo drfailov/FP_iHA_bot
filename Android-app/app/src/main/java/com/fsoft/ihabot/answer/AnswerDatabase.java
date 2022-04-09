@@ -5,6 +5,7 @@ import android.util.Pair;
 
 import com.fsoft.ihabot.R;
 import com.fsoft.ihabot.Utils.ApplicationManager;
+import com.fsoft.ihabot.Utils.CommandDesc;
 import com.fsoft.ihabot.Utils.CommandModule;
 import com.fsoft.ihabot.Utils.F;
 import com.fsoft.ihabot.Utils.Triplet;
@@ -156,7 +157,7 @@ public class AnswerDatabase  extends CommandModule {
             throw new Exception(log("Проблема внесения в базу ID фотографии: fileId = null или пустой!"));
         log("Вношу в очередь на прикрепление в базу к файлу " + filename + " айдишник " + fileId + " ...");
         for(Triplet<String, String, Long> pair:updateAnswerPhotoIdQueue)
-            if(pair.getFirst().equals(filename))
+            if(pair.getFirst().equals(filename) && pair.getThird() == botId)
                 throw new Exception(log("Попытка внести в очередь несколько ID для файла " + filename));
         updateAnswerPhotoIdQueue.add(new Triplet<>(filename, fileId, botId));
         log("IDшников в очереди: " + updateAnswerPhotoIdQueue.size());
@@ -819,10 +820,21 @@ public class AnswerDatabase  extends CommandModule {
         public ArrayList<Message> processCommand(Message message) throws Exception {
             ArrayList<Message> result = super.processCommand(message);
             if(message.getText().toLowerCase(Locale.ROOT).trim().equals("выгрузить базу")) {
+
+
+
+
                 Message answer = new Message("Дамп базы прикрепляю файлом.");
                 answer.addAttachment(new Attachment().setDoc().setFileToUpload(fileAnswers));
                 result.add(answer);
             }
+            return result;
+        }
+
+        @Override
+        public ArrayList<CommandDesc> getHelp() {
+            ArrayList<CommandDesc> result = super.getHelp();
+            result.add(new CommandDesc("выгрузить базу", "Отправить во вложении архив с текущей базой и вложениями."));
             return result;
         }
     }

@@ -278,6 +278,7 @@ public class TgAccountCore extends Account {
         try {
             //text = URLEncoder.encode(text, "UTF-8");
             jsonObject.put("chat_id", chat_id);
+            jsonObject.put("parse_mode", "HTML");
             jsonObject.put("text", message.getText());
         }
         catch (Exception e){
@@ -541,6 +542,10 @@ public class TgAccountCore extends Account {
     }
     public void sendPhoto(final SendMessageListener listener, final long chat_id, final String text, final java.io.File f){
         try {
+            if(!f.isFile())
+                throw new Exception("Попытка отправить под видом фотографии файл которого не существует.");
+            if(f.length() > 9000000)
+                throw new Exception("Попытка отправить под видом фотографии файл размер которого больше 9мб.");
             final String url ="https://api.telegram.org/bot"+getId()+":"+getToken()+"/sendPhoto";
             log("Uploading photo file: " + url);
             incrementApiCounter();
@@ -604,9 +609,12 @@ public class TgAccountCore extends Account {
                 listener.error(e);
         }
     }
-
     public void sendDocument(final SendMessageListener listener, final long chat_id, final String text, final java.io.File f){
         try {
+            if(!f.isFile())
+                throw new Exception("Попытка отправить под видом документа файл которого не существует.");
+            if(f.length() > 45000000)
+                throw new Exception("Попытка отправить под видом документа файл размер которого больше 45мб.");
             final String url ="https://api.telegram.org/bot"+getId()+":"+getToken()+"/sendDocument";
             log("Uploading document file: " + url);
             incrementApiCounter();

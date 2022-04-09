@@ -5,22 +5,12 @@ package com.fsoft.ihabot.Utils;
  */
 
 public class CommandDesc {
-    private String name = "";
     private String helpText = "";
     private String example = "";
 
-    public CommandDesc(String name, String helpText, String example) {
-        this.name = name;
+    public CommandDesc(String example, String helpText) {
         this.helpText = helpText;
         this.example = example;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getHelpText() {

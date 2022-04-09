@@ -4,10 +4,14 @@ import android.content.Context;
 
 import com.fsoft.ihabot.BotService;
 import com.fsoft.ihabot.answer.AnswerDatabase;
+import com.fsoft.ihabot.answer.Attachment;
+import com.fsoft.ihabot.answer.Message;
 import com.fsoft.ihabot.communucation.Communicator;
 import com.fsoft.ihabot.configuration.AdminList;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -69,6 +73,8 @@ public class ApplicationManager extends CommandModule {
         childCommands.add(answerDatabase);
         childCommands.add(communicator);
 
+        childCommands.add(new HelpCommand());
+
         new Timer().schedule(new TimerTask() {
             @Override
             public void run() {
@@ -90,5 +96,30 @@ public class ApplicationManager extends CommandModule {
     }
     public AdminList getAdminList() {
         return adminList;
+    }
+
+
+
+    private class HelpCommand extends CommandModule{
+        @Override
+        public ArrayList<Message> processCommand(Message message) throws Exception {
+            ArrayList<Message> result = super.processCommand(message);
+            if(message.getText().toLowerCase(Locale.ROOT).trim().equals("помощь")) {
+                ArrayList<CommandDesc> commands = ApplicationManager.this.getHelp();
+                StringBuilder stringBuilder = new StringBuilder();
+                for (CommandDesc commandDesc:commands)
+                    stringBuilder.append("<b>").append(commandDesc.getExample()).append("</b> - ").append(commandDesc.getHelpText()).append("\n\n");
+                Message answer = new Message(stringBuilder.toString());
+                result.add(answer);
+            }
+            return result;
+        }
+
+        @Override
+        public ArrayList<CommandDesc> getHelp() {
+            ArrayList<CommandDesc> result = super.getHelp();
+            result.add(new CommandDesc("помощь", "Выводит полный список доступных команд"));
+            return result;
+        }
     }
 }
