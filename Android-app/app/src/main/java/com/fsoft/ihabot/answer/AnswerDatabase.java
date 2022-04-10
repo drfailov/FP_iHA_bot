@@ -89,6 +89,7 @@ public class AnswerDatabase  extends CommandModule {
 
         childCommands.add(new TestCommand());
         childCommands.add(new DumpCommand());
+        childCommands.add(new RememberCommand());
     }
 
     /**
@@ -897,6 +898,67 @@ public class AnswerDatabase  extends CommandModule {
         public ArrayList<CommandDesc> getHelp() {
             ArrayList<CommandDesc> result = super.getHelp();
             result.add(new CommandDesc("выгрузить базу", "Отправить во вложении архив с текущей базой и вложениями."));
+            return result;
+        }
+    }
+    private class RememberCommand extends CommandModule{
+        private final int STATE_IDLE = 0;
+        private final int STATE_WAIT_FOR_QUESTION = 1;
+        private final int STATE_WAIT_FOR_ANSWER = 2;
+        private final long commandTimeoutMs = 5 * 60 * 1000; //через сколько минут после получения команды сбрасываться до IDLE
+
+        private int state = STATE_IDLE;
+        private Date commandReceived = null;
+        private Message question = null;
+        private Message answer = null;
+
+
+        @Override
+        public ArrayList<Message> processCommand(Message message) throws Exception {
+            ArrayList<Message> result = super.processCommand(message);
+
+            if(state == STATE_IDLE) {
+                if (message.getText().toLowerCase(Locale.ROOT).trim().equals("запомни")) {
+                    state = STATE_WAIT_FOR_QUESTION;
+                    commandReceived = new Date();
+                    result .add(new Message("")); //отправить пустое сообщение чтобы команда не ушла в базу
+                }
+            }
+            else if(state == STATE_WAIT_FOR_QUESTION){
+                //the number of milliseconds since January 1, 1970, 00:00:00 GMT represented by this date.
+                long difference = new Date().getTime() - commandReceived.getTime();
+                if(difference > commandTimeoutMs){
+                    state = STATE_IDLE;
+                    return result;
+                }
+                question = message;
+                state = STATE_WAIT_FOR_ANSWER;
+                result .add(new Message("")); //отправить пустое сообщение чтобы команда не ушла в базу
+            }
+            else if(state == STATE_WAIT_FOR_ANSWER){
+                //the number of milliseconds since January 1, 1970, 00:00:00 GMT represented by this date.
+                long difference = new Date().getTime() - commandReceived.getTime();
+                if(difference > commandTimeoutMs){
+                    state = STATE_IDLE;
+                    return result;
+                }
+                answer = message;
+                result .add(new Message(
+                        "Буду добавлять в базу такую пару:\n" +
+                                "Вопрос: " + question + "\n" +
+                                "Ответ: " + answer + "."
+                )); //отправить пустое сообщение чтобы команда не ушла в базу
+                state = STATE_IDLE;
+            }
+
+
+            return result;
+        }
+
+        @Override
+        public ArrayList<CommandDesc> getHelp() {
+            ArrayList<CommandDesc> result = super.getHelp();
+            result.add(new CommandDesc("запомни", "После этого сообщения пришли 2 сообщения: вопрос и ответ. Сохранит в базу такую пару вопрос-ответ."));
             return result;
         }
     }
