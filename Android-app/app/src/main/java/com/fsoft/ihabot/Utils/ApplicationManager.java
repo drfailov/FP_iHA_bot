@@ -17,7 +17,13 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 /**
- * Спустя два года самое время всё нахуй переписать.
+ * Это центральный элемент всей цепочки команд.
+ * Главное хранилище обьединяющее программую.
+ *
+ *
+ * 2015 Этот класс начал формироваться
+ * 2017 Спустя два года самое время всё нахуй переписать.
+ * 2022 Спустя ещё 5 лет я переписываю всё снова.
  *
  * Менеджер занимается хранением связи между модулями, является контейнером для команд общего назначения (обслуживание бота,
  * файловой системы, учёт времени, работа с бэкамами, например)
@@ -42,9 +48,6 @@ import java.util.TimerTask;
  * инициируют вызовы других модулей.
  * /// как должны идти сообщения написанные боту изнутри программы?
  *
- *
- *
- *
  * Created by Dr. Failov on 14.08.2018.
  */
 public class ApplicationManager extends CommandModule {
@@ -56,7 +59,7 @@ public class ApplicationManager extends CommandModule {
     private final BotService service;//это в общем то наш сервис. Он должен быть по любому
     private final Communicator communicator;
     private final AnswerDatabase answerDatabase;
-    private final AdminList adminList;
+    private final AdminList adminList; //кто админ, кто не админ, кому что можна
 
 
     public ApplicationManager(BotService service) throws Exception {
@@ -64,18 +67,28 @@ public class ApplicationManager extends CommandModule {
         applicationManagerInstance = this;
         this.service = service;
 
+        //Здесь можно подчистить временнную папку
+        if(!getTempFolder().isDirectory())
+            log("Временной папки нет, создание временной папки: " + getTempFolder().mkdirs());
+        File[] tempFiles = getTempFolder().listFiles();
+        if(tempFiles != null && tempFiles.length != 0){
+            log("Во временной папке есть старые файлы. Очистка временной папки...");
+            for (File file:tempFiles)
+                log("- Удаление файла " + file.getName() + ": " + file.delete());
+        }
+
+        //инициализация основных модулей
         adminList = new AdminList(this);
-
         answerDatabase = new AnswerDatabase(this);
-
         communicator = new Communicator(this);
 
+        //построение вертикали управления
         childCommands.add(adminList);
         childCommands.add(answerDatabase);
         childCommands.add(communicator);
-
         childCommands.add(new HelpCommand());
 
+        //Запусе коммуникатора с задержкой, на всякий случай, чтобы успели прогрзиться остальные модули
         new Timer().schedule(new TimerTask() {
             @Override
             public void run() {
@@ -83,8 +96,22 @@ public class ApplicationManager extends CommandModule {
             }
         }, 1000);
     }
+    /**
+     * Возвращает адрес где у программы есть полный доступ хранить сфои файлы
+     * @return File который указывает туда
+     * @author Dr. Failov
+     */
     public File getHomeFolder(){
         return service.getFilesDir();
+    }
+    /**
+     * Возвращает адрес где у программы есть возможность хранить временные файлы.
+     * Эта папка очищается при каждом запуске.
+     * @return File который указывает во времменнуэ папку.
+     * @author Dr. Failov
+     */
+    public File getTempFolder(){
+        return new File(getHomeFolder(), "Temp");
     }
     public Context getContext() {
         return service;

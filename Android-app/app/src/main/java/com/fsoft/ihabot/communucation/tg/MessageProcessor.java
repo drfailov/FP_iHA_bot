@@ -6,10 +6,12 @@ import com.fsoft.ihabot.Utils.CommandModule;
 import com.fsoft.ihabot.Utils.F;
 import com.fsoft.ihabot.answer.AnswerElement;
 import com.fsoft.ihabot.answer.Attachment;
-
 import java.io.File;
 import java.util.ArrayList;
 
+/**
+ * Этот класс принимает все сообщения в телеге и тут в целом решается судьба каждого сообщения
+ */
 public class MessageProcessor extends CommandModule {
     private TgAccount tgAccount = null;
     private ApplicationManager applicationManager = null;
@@ -226,9 +228,6 @@ public class MessageProcessor extends CommandModule {
             }
         }
 
-
-
-
         //Проверить не является ли пользователь админинистратором. Если является, обработать как команду
         if(applicationManager.getAdminList().has(question.getAuthor())){
             try {
@@ -248,12 +247,6 @@ public class MessageProcessor extends CommandModule {
                 );
             }
         }
-
-
-
-
-
-
 
         //Подобрать ответ из базы и отправить
         try {
@@ -340,10 +333,10 @@ public class MessageProcessor extends CommandModule {
             //}
         };
 
-    private void sendAnswer(long chatId, String answer){
+    public void sendAnswer(long chatId, String answer){
         sendAnswer(chatId, new com.fsoft.ihabot.answer.Message(answer));
     }
-    private void sendAnswer(long chatId, com.fsoft.ihabot.answer.Message answer){
+    public void sendAnswer(long chatId, com.fsoft.ihabot.answer.Message answer){
         if(answer.getAttachments().isEmpty()) {
             tgAccount.sendMessage(new TgAccountCore.SendMessageListener() {
                 @Override

@@ -832,18 +832,6 @@ public class AnswerDatabase  extends CommandModule {
     }
 
     private class DumpCommand extends CommandModule{
-        File tempFolder = new File(applicationManager.getHomeFolder(), "DumpCommandTemp");
-        public DumpCommand() { //выполняется при старте программы. Здесь можно подчистить временнную папку
-            if(!tempFolder.isDirectory())
-                log("Временной папки для DumpCommand нет, создание временной папки: " + tempFolder.mkdirs());
-            File[] tempFiles = tempFolder.listFiles();
-            if(tempFiles != null && tempFiles.length != 0){
-                log("Во временной папке для DumpCommand есть старые файлы. Очистка временной папки...");
-                for (File file:tempFiles)
-                    log("- Удаление файла " + file.getName() + ": " + file.delete());
-            }
-        }
-
         @Override
         public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
             ArrayList<Message> result = super.processCommand(message, tgAccount);
@@ -851,10 +839,10 @@ public class AnswerDatabase  extends CommandModule {
                 log("Выполнение команды выгрузки дампа базы. Выбор имени для архива...");
                 //Выбрать имя для нового файла
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
-                File tmpZipFile = new File(tempFolder, sdf.format(new Date())+"_DatabaseDump.zip");
+                File tmpZipFile = new File(applicationManager.getTempFolder(), sdf.format(new Date())+"_DatabaseDump.zip");
                 //если файл сегодня уже создавался, ему придумается новое имя. И так до тех пор, пока имя не будет уникальным.
                 for(int i=2; tmpZipFile.isFile(); i++) {
-                    tmpZipFile = new File(tempFolder, sdf.format(new Date()) + "_DatabaseDump" + i + ".zip");
+                    tmpZipFile = new File(applicationManager.getTempFolder(), sdf.format(new Date()) + "_DatabaseDump" + i + ".zip");
                 }
                 log("Создание архива "+tmpZipFile.getName()+"...");
                 try {
@@ -869,7 +857,7 @@ public class AnswerDatabase  extends CommandModule {
                 }
 
                 log("Вот какие файлы теперь валяются во временной папке: ");
-                File[] tmpFiles = tempFolder.listFiles();
+                File[] tmpFiles = applicationManager.getTempFolder().listFiles();
                 if(tmpFiles != null) {
                     for (File file : tmpFiles) {
                         log("- " + file.getName() + " : " + file.length() + " байт.");
@@ -945,6 +933,16 @@ public class AnswerDatabase  extends CommandModule {
                 }
                 answer = message;
                 //добавить в базу используя полученные данные
+                {
+                    ArrayList<Attachment> attachments = answer.getAttachments();
+                    for (Attachment attachment:attachments){
+                        if(attachment.isPhoto() && attachment.isOnlineTg(tgAccount.getId())){
+                            String fileId = attachment.getTgFileID(tgAccount.getId());
+                            File file = tgAccount.downloadPhotoAttachment(fileId);
+                        }
+                    }
+                }
+
 
                 result .add(new Message(
                         "Буду добавлять в базу такую пару:\n" +
