@@ -217,6 +217,14 @@ public class MessageProcessor extends CommandModule {
         question.setAuthor(message.getFrom());
         question.setSourceDialog();
         question.setDate(message.getDate());
+        { //в сообщениие добавить фото
+            String photoId = message.getPhotoId();
+            if (photoId != null){
+                Attachment attachment = new Attachment().setPhoto();
+                attachment.updateTgFile_id(tgAccount.getId(), photoId);
+                question.addAttachment(attachment);
+            }
+        }
 
 
 
@@ -224,7 +232,7 @@ public class MessageProcessor extends CommandModule {
         //Проверить не является ли пользователь админинистратором. Если является, обработать как команду
         if(applicationManager.getAdminList().has(question.getAuthor())){
             try {
-                ArrayList<com.fsoft.ihabot.answer.Message> results = applicationManager.processCommand(question);
+                ArrayList<com.fsoft.ihabot.answer.Message> results = applicationManager.processCommand(question, tgAccount);
                 for (com.fsoft.ihabot.answer.Message item:results) {
                     if (!item.isEmpty())
                         sendAnswer(message.getChat().getId(), item);

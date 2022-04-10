@@ -9,6 +9,7 @@ import com.fsoft.ihabot.Utils.CommandDesc;
 import com.fsoft.ihabot.Utils.CommandModule;
 import com.fsoft.ihabot.Utils.F;
 import com.fsoft.ihabot.Utils.Triplet;
+import com.fsoft.ihabot.communucation.tg.TgAccount;
 
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.Zip4jConfig;
@@ -822,8 +823,8 @@ public class AnswerDatabase  extends CommandModule {
 
     private static class TestCommand extends CommandModule{
         @Override
-        public ArrayList<Message> processCommand(Message message) throws Exception {
-            ArrayList<Message> result = super.processCommand(message);
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount);
             if(message.getText().toLowerCase(Locale.ROOT).trim().equals("проверка базы"))
                 result.add(new Message("Команда работает нормально!"));
             return result;
@@ -844,8 +845,8 @@ public class AnswerDatabase  extends CommandModule {
         }
 
         @Override
-        public ArrayList<Message> processCommand(Message message) throws Exception {
-            ArrayList<Message> result = super.processCommand(message);
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount);
             if(message.getText().toLowerCase(Locale.ROOT).trim().equals("выгрузить базу")) {
                 log("Выполнение команды выгрузки дампа базы. Выбор имени для архива...");
                 //Выбрать имя для нового файла
@@ -914,8 +915,8 @@ public class AnswerDatabase  extends CommandModule {
 
 
         @Override
-        public ArrayList<Message> processCommand(Message message) throws Exception {
-            ArrayList<Message> result = super.processCommand(message);
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount);
 
             if(state == STATE_IDLE) {
                 if (message.getText().toLowerCase(Locale.ROOT).trim().equals("запомни")) {
@@ -943,11 +944,13 @@ public class AnswerDatabase  extends CommandModule {
                     return result;
                 }
                 answer = message;
+                //добавить в базу используя полученные данные
+
                 result .add(new Message(
                         "Буду добавлять в базу такую пару:\n" +
                                 "Вопрос: " + question + "\n" +
                                 "Ответ: " + answer + "."
-                )); //отправить пустое сообщение чтобы команда не ушла в базу
+                ));
                 state = STATE_IDLE;
             }
 

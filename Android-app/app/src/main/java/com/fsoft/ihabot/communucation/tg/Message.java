@@ -110,16 +110,20 @@ public class Message {
         }
     }
 
-    /*
-    * returns photoId if available. If not available, returns NULL.
+    /**
+    * returns photoId of biggest photo if available. If not available, returns NULL.
     * */
     @Nullable
     public String getPhotoId(){
-        if(photo.isEmpty())
-            return null;
-        if(photo.get(0) == null)
-            return null;
-        return photo.get(0).getFile_id();
+        String resultId = null;
+        int maxWidth = 0;
+        for (PhotoSize photoSize:photo){
+            if(photoSize.getWidth() > maxWidth){
+                maxWidth = photoSize.getWidth();
+                resultId = photoSize.getFile_id();
+            }
+        }
+        return resultId;
     }
 
     public long getMessage_id() {

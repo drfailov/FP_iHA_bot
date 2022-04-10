@@ -1,6 +1,7 @@
 package com.fsoft.ihabot.Utils;
 
 import com.fsoft.ihabot.answer.Message;
+import com.fsoft.ihabot.communucation.tg.TgAccount;
 
 import java.util.ArrayList;
 
@@ -24,7 +25,7 @@ public interface Command {
      * Если модули прислали пустые ответы на команду - ничего не будет отправлено. Базой ответов это сообщение не будет обработано.
      * Если модули не прислали ни одного ответа на команду - будет выполнена обработка сообщения как обычного ответа
     * */
-    ArrayList<Message> processCommand(Message message)  throws Exception; //На вход принимается текст без botcmd
+    ArrayList<Message> processCommand(Message message, TgAccount tgAccount)  throws Exception; //На вход принимается текст без botcmd
 
     ArrayList<CommandDesc> getHelp();
 }

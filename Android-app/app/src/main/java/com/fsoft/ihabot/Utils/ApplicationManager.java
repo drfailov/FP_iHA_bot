@@ -7,6 +7,7 @@ import com.fsoft.ihabot.answer.AnswerDatabase;
 import com.fsoft.ihabot.answer.Attachment;
 import com.fsoft.ihabot.answer.Message;
 import com.fsoft.ihabot.communucation.Communicator;
+import com.fsoft.ihabot.communucation.tg.TgAccount;
 import com.fsoft.ihabot.configuration.AdminList;
 
 import java.io.File;
@@ -102,8 +103,8 @@ public class ApplicationManager extends CommandModule {
 
     private class HelpCommand extends CommandModule{
         @Override
-        public ArrayList<Message> processCommand(Message message) throws Exception {
-            ArrayList<Message> result = super.processCommand(message);
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount);
             if(message.getText().toLowerCase(Locale.ROOT).trim().equals("помощь")) {
                 ArrayList<CommandDesc> commands = ApplicationManager.this.getHelp();
                 StringBuilder stringBuilder = new StringBuilder();
