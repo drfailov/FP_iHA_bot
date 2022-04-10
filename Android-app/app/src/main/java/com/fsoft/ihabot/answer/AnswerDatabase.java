@@ -10,14 +10,22 @@ import com.fsoft.ihabot.Utils.CommandModule;
 import com.fsoft.ihabot.Utils.F;
 import com.fsoft.ihabot.Utils.Triplet;
 
+import net.lingala.zip4j.ZipFile;
+import net.lingala.zip4j.model.Zip4jConfig;
+import net.lingala.zip4j.model.ZipParameters;
+import net.lingala.zip4j.model.enums.CompressionLevel;
+import net.lingala.zip4j.model.enums.CompressionMethod;
+
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Locale;
 import java.util.Random;
 
@@ -53,8 +61,9 @@ public class AnswerDatabase  extends CommandModule {
     private final ApplicationManager applicationManager;
     private final JaroWinkler jaroWinkler;
     private final Synonyme synonyme;
+    private final File folderAnswerDatabase;
     private final File fileAnswers;
-    private File folderAttachments = null;
+    private final File folderAttachments;
 
 
     public AnswerDatabase(ApplicationManager applicationManager)  throws Exception {
@@ -62,14 +71,19 @@ public class AnswerDatabase  extends CommandModule {
         jaroWinkler = new JaroWinkler();
         synonyme = new Synonyme(applicationManager);
         if(applicationManager == null) {
+            folderAnswerDatabase = null;
             fileAnswers = null;
+            folderAttachments = null;
             return;
         }
 
-        folderAttachments = new File(applicationManager.getHomeFolder(), "attachments");
-        fileAnswers = new File(applicationManager.getHomeFolder(), "answer_database.txt");
+        folderAnswerDatabase = new File(applicationManager.getHomeFolder(), "AnswerDatabase");
+        if(!folderAnswerDatabase.isDirectory())
+            log("Папки для AnswerDatabase нет. Создание папки: " + folderAnswerDatabase.mkdirs());
+        folderAttachments = new File(folderAnswerDatabase, "attachments");
+        fileAnswers = new File(folderAnswerDatabase, "answer_database.txt");
         if(!fileAnswers.isFile()){
-            log(". Файла базы нет. Загрузка файла answer_database.zip из ресурсов...");
+            log("Файла базы нет. Загрузка файла answer_database.zip из ресурсов...");
             loadDefaultDatabase();
         }
 
@@ -503,7 +517,7 @@ public class AnswerDatabase  extends CommandModule {
         if (applicationManager.getContext() != null)
             resources = applicationManager.getContext().getResources();
         //copy zip
-        File tmpZip = new File(applicationManager.getHomeFolder(), "answer_database.zip");
+        File tmpZip = new File(folderAnswerDatabase, "answer_database.zip");
         log(". Копирование файла answer_database.zip из ресурсов...");
         F.copyFile(defaultDatabaseResourceZip, resources, tmpZip);
         //unzip
@@ -816,17 +830,65 @@ public class AnswerDatabase  extends CommandModule {
     }
 
     private class DumpCommand extends CommandModule{
+        File tempFolder = new File(applicationManager.getHomeFolder(), "DumpCommandTemp");
+        public DumpCommand() { //выполняется при старте программы. Здесь можно подчистить временнную папку
+            if(!tempFolder.isDirectory())
+                log("Временной папки для DumpCommand нет, создание временной папки: " + tempFolder.mkdirs());
+            File[] tempFiles = tempFolder.listFiles();
+            if(tempFiles != null && tempFiles.length != 0){
+                log("Во временной папке для DumpCommand есть старые файлы. Очистка временной папки...");
+                for (File file:tempFiles)
+                    log("- Удаление файла " + file.getName() + ": " + file.delete());
+            }
+        }
+
         @Override
         public ArrayList<Message> processCommand(Message message) throws Exception {
             ArrayList<Message> result = super.processCommand(message);
             if(message.getText().toLowerCase(Locale.ROOT).trim().equals("выгрузить базу")) {
+                log("Выполнение команды выгрузки дампа базы. Выбор имени для архива...");
+                //Выбрать имя для нового файла
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+                File tmpZipFile = new File(tempFolder, sdf.format(new Date())+"_DatabaseDump.zip");
+                //если файл сегодня уже создавался, ему придумается новое имя. И так до тех пор, пока имя не будет уникальным.
+                for(int i=2; tmpZipFile.isFile(); i++) {
+                    tmpZipFile = new File(tempFolder, sdf.format(new Date()) + "_DatabaseDump" + i + ".zip");
+                }
+                log("Создание архива "+tmpZipFile.getName()+"...");
+                try {
+                    ZipFile zipFile = new ZipFile(tmpZipFile);
+                    ZipParameters parameters = new ZipParameters();
+                    parameters.setCompressionMethod(CompressionMethod.DEFLATE);
+                    parameters.setCompressionLevel(CompressionLevel.NORMAL);
+                    zipFile.createSplitZipFileFromFolder(folderAnswerDatabase, parameters, true, 45485760);
+                    log("Архив создан без ошибок.");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 
+                log("Вот какие файлы теперь валяются во временной папке: ");
+                File[] tmpFiles = tempFolder.listFiles();
+                if(tmpFiles != null) {
+                    for (File file : tmpFiles) {
+                        log("- " + file.getName() + " : " + file.length() + " байт.");
+                    }
+                }
 
-
-
-                Message answer = new Message("Дамп базы прикрепляю файлом.");
-                answer.addAttachment(new Attachment().setDoc().setFileToUpload(fileAnswers));
-                result.add(answer);
+                String archiveName = tmpZipFile.getName().split("\\.")[0];
+                log("Имя текущего архива: " + archiveName);
+                if(tmpZipFile.isFile()) {
+                    log("Файлы к отправке: ");
+                    if(tmpFiles != null) {
+                        for (File file : tmpFiles) {
+                            if(file.getName().contains(archiveName)) {
+                                Message answer = new Message("Дамп базы прикрепляю файлом.");
+                                log("- " + file.getName() + " : " + file.length() + " байт.");
+                                answer.addAttachment(new Attachment().setDoc().setFileToUpload(file));
+                                result.add(answer);
+                            }
+                        }
+                    }
+                }
             }
             return result;
         }
