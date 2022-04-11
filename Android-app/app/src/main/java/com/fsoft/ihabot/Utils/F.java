@@ -87,6 +87,14 @@ public class F {
 
             return md5Hex;
         }
+        public static String getFileExtension(String name) {
+            //String name = file.getName();
+            int lastIndexOf = name.lastIndexOf(".");
+            if (lastIndexOf == -1) {
+                return ""; // empty extension
+            }
+            return name.substring(lastIndexOf);
+        }
         public static String[] splitText(String text, int size){
             //разделить длинное сообщение на части поменьше
             ArrayList<String> parts = new ArrayList<>();

@@ -475,7 +475,12 @@ public class TgAccountCore extends Account {
                             }
                             JSONObject result = jsonObject.getJSONObject("result");
                             File file = new File(result);
-                            listener.gotFile(file);
+                            new Thread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    listener.gotFile(file);
+                                }
+                            }).start();
                             state("Успешно загружена информация о файле по ID");
                         }
                         catch (Exception e){

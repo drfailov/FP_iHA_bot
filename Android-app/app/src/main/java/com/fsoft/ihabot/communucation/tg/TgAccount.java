@@ -3,9 +3,17 @@ package com.fsoft.ihabot.communucation.tg;
 import com.fsoft.ihabot.Utils.ApplicationManager;
 import com.fsoft.ihabot.Utils.F;
 
+import java.io.DataInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.concurrent.TimeoutException;
 
@@ -61,8 +69,42 @@ public class TgAccount extends TgAccountCore {
                     return;
                 }
                 String directLink = "https://api.telegram.org/file/bot"+getId()+":"+getToken() + "/" + file.getFile_path();
-                log("Ссылка на файл получена: " +directLink);
-                files.add(new java.io.File(""));
+                log("Ссылка на файл получена. Попытка скачать файл: " +directLink);
+                String fileRes = F.getFileExtension(file.getFile_path());
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmssSS", Locale.US);
+                String filename = simpleDateFormat.format(new Date());
+                if(!fileRes.isEmpty())
+                    filename += fileRes;
+                java.io.File placeToSave = new java.io.File(ApplicationManager.getInstance().getTempFolder(), filename);
+                log("Скачивать файл будем сюда: " + placeToSave.getAbsolutePath());
+
+                try  {
+                    URL u = new URL(directLink);
+                    try(InputStream is = u.openStream()) {
+                        DataInputStream dis = new DataInputStream(is);
+                        byte[] buffer = new byte[1024];
+                        int length;
+                        try(FileOutputStream fos = new FileOutputStream(placeToSave)) {
+                            while ((length = dis.read(buffer)) > 0) {
+                                fos.write(buffer, 0, length);
+                            }
+                        }
+                    }
+                    log("Загрузка файла прошла без ошибок. Загружено " + placeToSave.length() + " байт.");
+                } catch (MalformedURLException mue) {
+                    exceptions.add(new Exception(log("Ошибка MalformedURLException скачивания файла: " + mue)));
+                    mue.printStackTrace();
+                    return;
+                } catch (IOException ioe) {
+                    exceptions.add(new Exception(log("Ошибка IOException скачивания файла: " + ioe.getLocalizedMessage())));
+                    ioe.printStackTrace();
+                    return;
+                } catch (SecurityException se) {
+                    exceptions.add(new Exception(log("Ошибка SecurityException скачивания файла: " + se.getLocalizedMessage())));
+                    se.printStackTrace();
+                    return;
+                }
+                files.add(placeToSave);
             }
 
             @Override
