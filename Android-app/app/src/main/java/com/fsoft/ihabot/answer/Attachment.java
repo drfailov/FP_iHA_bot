@@ -1,5 +1,7 @@
 package com.fsoft.ihabot.answer;
 
+import com.fsoft.ihabot.Utils.ApplicationManager;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -42,6 +44,9 @@ public class Attachment {
     }
     /**
      * Проверяет загружен ли был этот ответ на сервер телеграма для конкретного бота (аккаунта)
+     * Поскольку использование FileID допускается только в пределах одного аккаунта,
+     * для проверки требуется знать  ID бота, с аккаунта которого нужно использовать файл
+     * @author Dr. Failov
      * */
     public boolean isOnlineTg(long botId){
         for (OnlineFile onlineFile:onlineFiles)
@@ -49,6 +54,28 @@ public class Attachment {
                 return true;
         return false;
     }
+
+    /**
+     * Проверяет содержится ли это вложение в папке Attachments
+     * Это показывает, подходит ли оно для добавления в базу ответов.
+     * @param applicationManager Требуется для получения адреса папки вложений
+     * @return  true если файл содержится во вложениях и его можно смело добавлять с базу
+     * @author Dr. Failov
+     */
+    public boolean isLocalInAttachmentFolder(ApplicationManager applicationManager){
+        if(filename == null)
+            return false;
+        if(filename.isEmpty())
+            return false;
+        return new File(applicationManager.getAnswerDatabase().getFolderAttachments(), filename).isFile();
+    }
+
+    /**
+     * Проверяет существует ли этот файл локально, и соответственно,
+     * подходит ли он для загрузки на сервер (есть ли откуда взять файл)
+     * @return true если файл есть откуда взять.
+     * @author Dr. Failov
+     */
     public boolean isLocal(){
         return !filename.isEmpty() || fileToUpload != null;
     }

@@ -44,6 +44,37 @@ public class AnswerElement {
         return answerMessage != null;
     }
 
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    /**
+     * Используется для быстрого подбора унимального максимального ID.
+     * Эта функция задаёт ID на единицу больше того что принят, при условии,
+     * что принятый ID больше или такой же как текущий.
+     * @param id ID, больше которого надо сделать ID этого ответа
+     */
+    public void setIdBiggerThan(long id) {
+        if(id >= this.id)
+            this.id = id+1;
+    }
+
+    public void setQuestionMessage(Message questionMessage) {
+        this.questionMessage = questionMessage;
+    }
+
+    public void setAnswerMessage(Message answerMessage) {
+        this.answerMessage = answerMessage;
+    }
+
+    public int getTimesUsed() {
+        return timesUsed;
+    }
+
+    public void setTimesUsed(int timesUsed) {
+        this.timesUsed = timesUsed;
+    }
+
     public JSONObject toJson() throws JSONException {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("id", id);

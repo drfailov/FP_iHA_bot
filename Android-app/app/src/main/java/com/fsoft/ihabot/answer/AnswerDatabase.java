@@ -20,8 +20,11 @@ import net.lingala.zip4j.model.enums.CompressionMethod;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -227,6 +230,110 @@ public class AnswerDatabase  extends CommandModule {
             updateAnswerPhotoIdQueue.clear();
             log("Готово, FileID успешно внесены в базу. Очередь сброшена.");
         }
+    }
+
+    /**
+     * Сохранить два сообщения в базу, вопрос-ответ.
+     * Если в ответе присутствуют вложения, которые ссылаются на файлы на серверах телеграм, функция попытается их
+     * скачать используя tgAccount. При этом это должен быть тот аккаунт, который получил те FileID которые во вложениях.
+     * (FileID действителен только для одного аккаунта)
+     * Если tgAccount не передать, загрузка с сервера не будет произведена и файлы должны уже присутствовать в папке attachments
+     */
+    public AnswerElement addAnswerToDatabase(Message question, Message answer, TgAccount tgAccount) throws Exception{
+        //сохранить все вложения в ответе локально в папку Attachments
+        if(tgAccount != null)
+            answer = saveAttachmentsToLocal(answer, tgAccount);
+        //предотвратить добавление в базу не локальных вложений
+        for(Attachment attachment : answer.getAttachments()) {
+            if (!attachment.isLocalInAttachmentFolder(applicationManager))
+                throw new Exception("В сообщении-ответе не все вложения в сохранены локально в папку attachments. Я не могу добавить в базу вложения без локальных файлов.");
+        }
+
+        if(question.getText().isEmpty())
+            throw new Exception("Поскольку бот не умеет учитывать в ответе вложения, вопросы без текста не допускаются.");
+        if(question.getText().length() > 80)
+            throw new Exception("Бот крайне плохо отвечает на длинные сообщения, поэтому нет смысла их добавлять в базу в качестве вопроса.");
+        AnswerElement answerElement = new AnswerElement();
+        answerElement.setAnswerMessage(answer);
+        answerElement.setQuestionMessage(question);
+        log("Добавляю в базу ответ: " + answerElement);
+
+        log("Прошерстим базу для подбора максимального ID для текущего ответа...");
+        {
+            String line;
+            int lineNumber = 0;
+            synchronized (fileAnswers) {
+                BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers));
+                while ((line = bufferedReader.readLine()) != null) {
+                    if (lineNumber % 1289 == 0)
+                        log("Шерстим базу для подбора ID... (" + lineNumber + " уже проверено) ...");
+                    try {
+                        JSONObject jsonObject = new JSONObject(line);
+                        AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
+                        answerElement.setIdBiggerThan(currentAnswerElement.getId());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        log("! Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                    }
+                    lineNumber++;
+                }
+                //завешить сессию
+                bufferedReader.close();
+            }
+            System.gc();
+        }
+
+        log("Вписываем новый ответ в базу...");
+        {
+            synchronized (fileAnswers) {
+                try (FileWriter fw = new FileWriter(fileAnswers, true);
+                     BufferedWriter bw = new BufferedWriter(fw);
+                     PrintWriter out = new PrintWriter(bw)) {
+                    out.println(answerElement.toJson());
+                } catch (IOException e) {
+                    throw new Exception("Все этапы перед этим прошли нормально, но не могу дописать ответ в файл базы ответов.");
+                }
+            }
+        }
+
+
+        return answerElement;
+    }
+
+    /**
+     *  Допустим, мы получили Message от собеседника в телеграме.
+     *  При этом все вложения которые в нём есть, они представлены FileID, которые ссылаются на файл на сервере.
+     *  Но если мы хотим добавить ответ в базу, нам нужны будут ответы локально, не на сервере. Чтобы из базы их можно было отправлять.
+     *  Эта функция находит в обьекте Message вложения которых нет локально и пытается их скачать, используя TgAccount.
+     *  Файлы этой командой сохраняются сразу в папку attachments и становятся частью базы.
+     *  @param  answer сообщение, вложения в коротом требуется сохранить локально.
+     *  @param  tgAccount аккаунт телеграм, который получил те FileID которые во вложениях. (FileID действителен только для одного аккаунта)
+     *  @return Message, тот же который и был принят, только после процедуры обновления вложений в нём.
+     *  Использовать возвращаемое значение функции не обязательно, поскольку изменения производятся с тем обьектом, который был прислан на входе.
+     *  @author Dr. Failov
+     *
+     * */
+    public Message saveAttachmentsToLocal(Message answer, TgAccount tgAccount) throws Exception{
+        ArrayList<Attachment> attachments = answer.getAttachments();
+        for (Attachment attachment:attachments){
+            if(attachment.isPhoto() && attachment.isOnlineTg(tgAccount.getId()) && !attachment.isLocalInAttachmentFolder(applicationManager)){
+                log("Сохраняю фото из сообщения в локальную папку...");
+                String fileId = attachment.getTgFileID(tgAccount.getId());
+                File tmpFile = tgAccount.downloadPhotoAttachment(fileId);
+                if(tmpFile != null && tmpFile.isFile()) {
+                    File destFile = new File(folderAttachments, tmpFile.getName());
+                    log("Перемещение файла " + tmpFile.getName() + " из " + tmpFile.getParentFile() + " в " + destFile.getParentFile() + "...");
+                    if(tmpFile.renameTo(destFile)) {
+                        log("Файл перемещен. Прикрепляю файл к ответу.");
+                        attachment.setFilename(destFile.getName());
+                    }
+                    else {
+                        throw new Exception("Ошибка скачивания вложений: Не получается сохранить файл в папке вложений.");
+                    }
+                }
+            }
+        }
+        return answer;
     }
 
     /**
@@ -914,41 +1021,37 @@ public class AnswerDatabase  extends CommandModule {
                 }
             }
             else if(state == STATE_WAIT_FOR_QUESTION){
-                //the number of milliseconds since January 1, 1970, 00:00:00 GMT represented by this date.
-                long difference = new Date().getTime() - commandReceived.getTime();
-                if(difference > commandTimeoutMs){
-                    state = STATE_IDLE;
-                    return result;
+                {//Проверить не слишком ли дофига времени собеседник тупил и актуальна ли ещё вообще его команда
+                    long difference = new Date().getTime() - commandReceived.getTime();
+                    if (difference > commandTimeoutMs) {
+                        state = STATE_IDLE;
+                        return result;
+                    }
                 }
                 question = message;
                 state = STATE_WAIT_FOR_ANSWER;
                 result .add(new Message("")); //отправить пустое сообщение чтобы команда не ушла в базу
             }
             else if(state == STATE_WAIT_FOR_ANSWER){
-                //the number of milliseconds since January 1, 1970, 00:00:00 GMT represented by this date.
-                long difference = new Date().getTime() - commandReceived.getTime();
-                if(difference > commandTimeoutMs){
-                    state = STATE_IDLE;
-                    return result;
-                }
-                answer = message;
-                //добавить в базу используя полученные данные
-                {
-                    ArrayList<Attachment> attachments = answer.getAttachments();
-                    for (Attachment attachment:attachments){
-                        if(attachment.isPhoto() && attachment.isOnlineTg(tgAccount.getId())){
-                            String fileId = attachment.getTgFileID(tgAccount.getId());
-                            File file = tgAccount.downloadPhotoAttachment(fileId);
-                        }
+                {//Проверить не слишком ли дофига времени собеседник тупил и актуальна ли ещё вообще его команда
+                    long difference = new Date().getTime() - commandReceived.getTime();
+                    if (difference > commandTimeoutMs) {
+                        state = STATE_IDLE;
+                        return result;
                     }
+                    answer = message;
                 }
-
-
-                result .add(new Message(
-                        "Буду добавлять в базу такую пару:\n" +
-                                "Вопрос: " + question + "\n" +
-                                "Ответ: " + answer + "."
-                ));
+                //добавить в базу используя полученные данные
+                try {
+                    AnswerElement answerElement = addAnswerToDatabase(question, answer, tgAccount);
+                    result .add(new Message(
+                            "<b>Добавлено в базу:</b> " + answerElement +
+                            "\n<b>ID:</b> " + answerElement.getId()));
+                }
+                catch (Exception e){
+                    e.printStackTrace();
+                    result .add(new Message("<b>Ошибка:</b> " + e.getLocalizedMessage()));
+                }
                 state = STATE_IDLE;
             }
 
