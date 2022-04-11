@@ -30,6 +30,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Random;
 
@@ -267,7 +268,7 @@ public class AnswerDatabase  extends CommandModule {
                 synchronized (fileAnswers) {
                     BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers));
                     while ((line = bufferedReader.readLine()) != null) {
-                        if (lineNumber % 1289 == 0)
+                        if (lineNumber % 5289 == 0)
                             log("Шерстим базу для подбора ID... (" + lineNumber + " уже проверено) ...");
                         try {
                             JSONObject jsonObject = new JSONObject(line);
@@ -1006,63 +1007,79 @@ public class AnswerDatabase  extends CommandModule {
         }
     }
     private class RememberCommand extends CommandModule{
-        private final int STATE_IDLE = 0;
-        private final int STATE_WAIT_FOR_QUESTION = 1;
-        private final int STATE_WAIT_FOR_ANSWER = 2;
-        private final long commandTimeoutMs = 5 * 60 * 1000; //через сколько минут после получения команды сбрасываться до IDLE
-
-        private int state = STATE_IDLE;
-        private Date commandReceived = null;
-        private Message question = null;
-        private Message answer = null;
-
+        private final HashMap<Long, RememberCommandSession> sessions = new HashMap<>();
 
         @Override
         public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
+            //через сколько минут после получения команды сбрасываться до IDLE
+            long commandTimeoutMs = 5 * 60 * 1000;
             ArrayList<Message> result = super.processCommand(message, tgAccount);
+            Long userId = message.getAuthor().getId();
 
-            if(state == STATE_IDLE) {
-                if (message.getText().toLowerCase(Locale.ROOT).trim().equals("запомни")) {
-                    state = STATE_WAIT_FOR_QUESTION;
-                    commandReceived = new Date();
-                    result .add(new Message("")); //отправить пустое сообщение чтобы команда не ушла в базу
-                }
-            }
-            else if(state == STATE_WAIT_FOR_QUESTION){
-                {//Проверить не слишком ли дофига времени собеседник тупил и актуальна ли ещё вообще его команда
-                    long difference = new Date().getTime() - commandReceived.getTime();
-                    if (difference > commandTimeoutMs) {
-                        state = STATE_IDLE;
+            synchronized (sessions) {
+                RememberCommandSession session = sessions.get(userId);
+
+                if (session == null) { //начать новую сессию
+                    if (message.getText().toLowerCase(Locale.ROOT).trim().equals("запомни")) {
+                        log("Команда \"запомни\" получена. Ожидаю поступления сообщений.");
+                        sessions.put(userId, new RememberCommandSession());
+                        result.add(new Message(
+                                "Теперь пришли 2 сообщения, вопрос и ответ." +
+                                        "\nЕсли передумал, напиши <code>отмена</code>."));
+                    }
+                } else { //сессия уже есть и активна
+
+                    {//Проверить не слишком ли дофига времени собеседник тупил и актуальна ли ещё вообще его команда
+                        long difference = new Date().getTime() - session.sessionStarted.getTime();
+                        if (difference > commandTimeoutMs) {
+                            sessions.remove(userId);
+                            log("Команда \"запомни\" отклонена поскольку вопроса пришлось ждать слишком долго.");
+                            return result;
+                        }
+                    }
+                    if (message.getText().toLowerCase(Locale.ROOT).trim().equals("отмена")) {
+                        sessions.remove(userId);
+                        result.add(new Message(log("Команда \"запомни\" отклонена по команде пользователя.")));
                         return result;
                     }
-                }
-                question = message;
-                state = STATE_WAIT_FOR_ANSWER;
-                result .add(new Message("")); //отправить пустое сообщение чтобы команда не ушла в базу
-            }
-            else if(state == STATE_WAIT_FOR_ANSWER){
-                {//Проверить не слишком ли дофига времени собеседник тупил и актуальна ли ещё вообще его команда
-                    long difference = new Date().getTime() - commandReceived.getTime();
-                    if (difference > commandTimeoutMs) {
-                        state = STATE_IDLE;
+                    session.messages.add(message);
+                    log("Команда \"запомни\" получила сообщение "+session.messages.size()+".");
+                    if (session.messages.size() == 1) {
+                        result .add(new Message("")); //чтобы пропустить ответ из базы
                         return result;
                     }
-                    answer = message;
+                    if (session.messages.size() == 2) {
+                        Message question = null;
+                        Message answer = null;
+                        if(session.messages.get(0).getMessage_id() < session.messages.get(1).getMessage_id()) {
+                            question = session.messages.get(0);
+                            answer = session.messages.get(1);
+                        }
+                        else {
+                            question = session.messages.get(1);
+                            answer = session.messages.get(0);
+                        }
+                        log("Команда \"запомни\" присвоила сообщениям такую последовательность: \n" +
+                                question + " -> " + answer);
+                        //добавить в базу используя полученные данные
+                        log("Команда \"запомни\" добавляет вопрос и ответ в базу данных...");
+                        try {
+                            AnswerElement answerElement = addAnswerToDatabase(question, answer, tgAccount);
+                            log("Команда \"запомни\" завершена.");
+                            sessions.remove(userId);
+                            result .add(new Message(
+                                    "<b>Добавлено в базу:</b> " + answerElement +
+                                            "\n<b>ID:</b> <code>" + answerElement.getId() + "</code>"));
+                        }
+                        catch (Exception e){
+                            log("Команда \"запомни\" не смогла добавить ответ в базу, вот почему: " + e.getLocalizedMessage());
+                            e.printStackTrace();
+                            sessions.remove(userId);
+                            result .add(new Message("<b>Ошибка:</b> " + e.getLocalizedMessage()));
+                        }
+                    }
                 }
-                //добавить в базу используя полученные данные
-                try {
-                    AnswerElement answerElement = addAnswerToDatabase(question, answer, tgAccount);
-                    result .add(new Message(
-                            "<b>Добавлено в базу:</b> " + answerElement +
-                            "\n<b>ID:</b> " + answerElement.getId()));
-                }
-                catch (Exception e){
-                    e.printStackTrace();
-                    result .add(new Message("<b>Ошибка:</b> " + e.getLocalizedMessage()));
-                }
-                state = STATE_IDLE;
             }
-
 
             return result;
         }
@@ -1072,6 +1089,16 @@ public class AnswerDatabase  extends CommandModule {
             ArrayList<CommandDesc> result = super.getHelp();
             result.add(new CommandDesc("запомни", "После этого сообщения пришли 2 сообщения: вопрос и ответ. Сохранит в базу такую пару вопрос-ответ."));
             return result;
+        }
+
+        private class RememberCommandSession{
+            ArrayList<Message> messages;
+            Date sessionStarted;
+
+            public RememberCommandSession() {
+                sessionStarted = new Date();
+                messages = new ArrayList<>();
+            }
         }
     }
 

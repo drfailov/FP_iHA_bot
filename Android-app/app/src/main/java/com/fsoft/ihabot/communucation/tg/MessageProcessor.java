@@ -215,8 +215,17 @@ public class MessageProcessor extends CommandModule {
 
         //сформировать обьект вопроса
         com.fsoft.ihabot.answer.Message question = new com.fsoft.ihabot.answer.Message();
+        question.setMessage_id(message.getMessage_id());
         question.setText(message.getText());
         question.setAuthor(message.getFrom());
+        /*
+        //Вариант с использованием автора сообщения  из пересланного - ГОВНО.
+        // Может быть использован как средство получения неавторизованного доступа к командам,
+        // а также делает невозможным испольщование в обучении пересланных сообщений.
+        // Не надо использовать этот метод.
+        // Автор сообщения тот, кто прислал. Всё.
+        if(message.getForward_from() != null)
+            question.setAuthor(message.getForward_from());*/
         question.setSourceDialog();
         question.setDate(message.getDate());
         { //в сообщениие добавить фото

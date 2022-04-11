@@ -20,6 +20,7 @@ import java.util.Date;
 public class Message {
     private long message_id = 0;
     private User from = null;
+    private User forward_from = null;
     private Date date = null;
     private Chat chat = null;
     private String text = "";
@@ -56,6 +57,8 @@ public class Message {
         jsonObject.put("message_id", message_id);
         if(from != null)
             jsonObject.put("from", from.toJson());
+        if(forward_from != null)
+            jsonObject.put("forward_from", forward_from.toJson());
         if(date != null)
             jsonObject.put("date", date.getTime()/1000L);
         if(chat != null)
@@ -83,6 +86,8 @@ public class Message {
         message_id = jsonObject.getLong("message_id");
         if(jsonObject.has("from"))
             from = new User(jsonObject.getJSONObject("from"));
+        if(jsonObject.has("forward_from"))
+            forward_from = new User(jsonObject.getJSONObject("forward_from"));
         if(jsonObject.has("date"))
             date = new Date(jsonObject.getLong("date") * 1000L);
         if(jsonObject.has("chat"))
@@ -164,5 +169,11 @@ public class Message {
     }
     public void setReply_to_message(Message reply_to_message) {
         this.reply_to_message = reply_to_message;
+    }
+    public User getForward_from() {
+        return forward_from;
+    }
+    public void setForward_from(User forward_from) {
+        this.forward_from = forward_from;
     }
 }
