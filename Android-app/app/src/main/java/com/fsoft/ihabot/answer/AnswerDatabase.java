@@ -241,8 +241,9 @@ public class AnswerDatabase  extends CommandModule {
      */
     public AnswerElement addAnswerToDatabase(Message question, Message answer, TgAccount tgAccount) throws Exception{
         //сохранить все вложения в ответе локально в папку Attachments
-        if(tgAccount != null)
+        if(tgAccount != null) {
             answer = saveAttachmentsToLocal(answer, tgAccount);
+        }
         //предотвратить добавление в базу не локальных вложений
         for(Attachment attachment : answer.getAttachments()) {
             if (!attachment.isLocalInAttachmentFolder(applicationManager))
@@ -260,25 +261,31 @@ public class AnswerDatabase  extends CommandModule {
 
         log("Прошерстим базу для подбора максимального ID для текущего ответа...");
         {
-            String line;
-            int lineNumber = 0;
-            synchronized (fileAnswers) {
-                BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers));
-                while ((line = bufferedReader.readLine()) != null) {
-                    if (lineNumber % 1289 == 0)
-                        log("Шерстим базу для подбора ID... (" + lineNumber + " уже проверено) ...");
-                    try {
-                        JSONObject jsonObject = new JSONObject(line);
-                        AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
-                        answerElement.setIdBiggerThan(currentAnswerElement.getId());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        log("! Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+            try {
+                String line;
+                int lineNumber = 0;
+                synchronized (fileAnswers) {
+                    BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers));
+                    while ((line = bufferedReader.readLine()) != null) {
+                        if (lineNumber % 1289 == 0)
+                            log("Шерстим базу для подбора ID... (" + lineNumber + " уже проверено) ...");
+                        try {
+                            JSONObject jsonObject = new JSONObject(line);
+                            AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
+                            answerElement.setIdBiggerThan(currentAnswerElement.getId());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            log("! Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                        }
+                        lineNumber++;
                     }
-                    lineNumber++;
+                    //завешить сессию
+                    bufferedReader.close();
                 }
-                //завешить сессию
-                bufferedReader.close();
+            }
+            catch (Exception e){
+                e.printStackTrace();
+                throw new Exception("Ошибка прочтения базы данных для подбора ID нового ответа: " + e.getLocalizedMessage());
             }
             System.gc();
         }
@@ -291,6 +298,7 @@ public class AnswerDatabase  extends CommandModule {
                      PrintWriter out = new PrintWriter(bw)) {
                     out.println(answerElement.toJson());
                 } catch (IOException e) {
+                    e.printStackTrace();
                     throw new Exception("Все этапы перед этим прошли нормально, но не могу дописать ответ в файл базы ответов.");
                 }
             }
