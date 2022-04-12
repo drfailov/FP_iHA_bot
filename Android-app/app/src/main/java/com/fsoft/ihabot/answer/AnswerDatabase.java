@@ -95,6 +95,8 @@ public class AnswerDatabase  extends CommandModule {
         childCommands.add(new TestCommand());
         childCommands.add(new DumpCommand());
         childCommands.add(new RememberCommand());
+        childCommands.add(new GetAnswersByIdCommand());
+        childCommands.add(new GetAnswerByIdCommand());
     }
 
     /**
@@ -103,7 +105,7 @@ public class AnswerDatabase  extends CommandModule {
      * @return AnswerElement из базы который описывает элемент базы ответов который подходит под этот вопрос
      */
     public AnswerElement pickAnswer(Message question) throws Exception{
-        if(question.getText().split(" +").length > 4)
+        if(question.getText().split(" +").length > 7)
             throw new Exception("Я на сообщение с таким количеством слов не смогу подобрать ответ.");
         if(question.getText().length() > 25)
             throw new Exception("Я на такое длинное сообщение не смогу подобрать ответ.");
@@ -114,28 +116,27 @@ public class AnswerDatabase  extends CommandModule {
         int lineNumber = 0;
         int errors = 0;
         synchronized (fileAnswers) {
-            BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers));
-            while ((line = bufferedReader.readLine()) != null) {
-                if (lineNumber % 1289 == 0)
-                    log(". Поиск ответа в базе (" + lineNumber + " уже проверено) ...");
-                try {
-                    JSONObject jsonObject = new JSONObject(line);
-                    AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
-                    String currentQuestion = currentAnswerElement.getQuestionMessage().getText();
-                    String neededQuestion = question.getText();
+            try(BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers))) {
+                while ((line = bufferedReader.readLine()) != null) {
+                    if (lineNumber % 1289 == 0)
+                        log(". Поиск ответа в базе (" + lineNumber + " уже проверено) ...");
+                    try {
+                        JSONObject jsonObject = new JSONObject(line);
+                        AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
+                        String currentQuestion = currentAnswerElement.getQuestionMessage().getText();
+                        String neededQuestion = question.getText();
 
-                    double similarity = compareMessages(neededQuestion, currentQuestion);
+                        double similarity = compareMessages(neededQuestion, currentQuestion);
 
-                    messageRating.addAnswer(currentAnswerElement, similarity);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    errors++;
-                    log("! Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                        messageRating.addAnswer(currentAnswerElement, similarity);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        errors++;
+                        log("! Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                    }
+                    lineNumber++;
                 }
-                lineNumber++;
             }
-            //завешить сессию
-            bufferedReader.close();
         }
 
         if (errors != 0)
@@ -154,7 +155,7 @@ public class AnswerDatabase  extends CommandModule {
         }
         log("-----------------------------------------------------------");
 
-        if(messageRating.isEmpty() || messageRating.getTopRating() < 0.48)
+        if(messageRating.isEmpty() || messageRating.getTopRating() < 0.40)
             throw new Exception("Нормального ответа найти не получилось");
 
         ArrayList<AnswerElement> answers = messageRating.getTopMessages();
@@ -266,22 +267,21 @@ public class AnswerDatabase  extends CommandModule {
                 String line;
                 int lineNumber = 0;
                 synchronized (fileAnswers) {
-                    BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers));
-                    while ((line = bufferedReader.readLine()) != null) {
-                        if (lineNumber % 5289 == 0)
-                            log("Шерстим базу для подбора ID... (" + lineNumber + " уже проверено) ...");
-                        try {
-                            JSONObject jsonObject = new JSONObject(line);
-                            AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
-                            answerElement.setIdBiggerThan(currentAnswerElement.getId());
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            log("! Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                    try(BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers))) {
+                        while ((line = bufferedReader.readLine()) != null) {
+                            if (lineNumber % 3289 == 0)
+                                log("Шерстим базу для подбора ID... (" + lineNumber + " уже проверено) ...");
+                            try {
+                                JSONObject jsonObject = new JSONObject(line);
+                                AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
+                                answerElement.setIdBiggerThan(currentAnswerElement.getId());
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                log("! Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                            }
+                            lineNumber++;
                         }
-                        lineNumber++;
                     }
-                    //завешить сессию
-                    bufferedReader.close();
                 }
             }
             catch (Exception e){
@@ -307,6 +307,55 @@ public class AnswerDatabase  extends CommandModule {
 
 
         return answerElement;
+    }
+
+    /**
+     * Получить из базы заданное количество ответов, которые находятся после некоторого ID включительно.
+     * Если конкретного ID в базе не будет, будут отправлены ответы которые следуют за ним.
+     * Если в заданном диапазоне ответов будут пропуски ID, в выборку будут отобраны следующие
+     * за ним ответы, будет отсчитано нужное количество.
+     * @param startingId Идентификатор ответа, начиная с коротого начинаем собирать ответы в массив
+     * @param count Количество, которое надо собрать в массив
+     * @return Массив, содержащий ответы в заданном диапазоне значений
+     * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
+     */
+    public ArrayList<AnswerElement> getAnswers(long startingId, long count) throws Exception{
+        log("Поиск в базе "+count+" ответов после ID"+startingId+"...");
+        ArrayList<AnswerElement> result = new ArrayList<>();
+        {
+            try {
+                String line;
+                int lineNumber = 0;
+                synchronized (fileAnswers) {
+                    try(BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers))) {
+                        while ((line = bufferedReader.readLine()) != null) {
+                            if (lineNumber % 3289 == 0)
+                                log("Ищу в базе нужные IDшники... (" + lineNumber + " уже проверено) ...");
+                            try {
+                                JSONObject jsonObject = new JSONObject(line);
+                                AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
+                                if (currentAnswerElement.getId() >= startingId && result.size() < count)
+                                    result.add(currentAnswerElement);
+                                if(result.size() >= count) {
+                                    log("Готово (успешно собрано " + result.size() + " ответов) ...");
+                                    break;
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                log("! Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                            }
+                            lineNumber++;
+                        }
+                    }
+                }
+            }
+            catch (Exception e){
+                e.printStackTrace();
+                throw new Exception("Ошибка прочтения базы данных: " + e.getLocalizedMessage());
+            }
+            System.gc();
+        }
+        return result;
     }
 
     /**
@@ -492,8 +541,8 @@ public class AnswerDatabase  extends CommandModule {
         if(compareMessagesLastS1Question == compareMessagesLastS2Question)
             result += 0.1;
 
-        //учесть длину строк
-        result -= Math.abs(s1.length()-s2.length()) * 0.005;
+        //учесть длину строк. Чем больше это число тем больше значат отличия в длине строк
+        result -= Math.abs(s1.length()-s2.length()) * 0.004;
 
         return result;
     }
@@ -541,6 +590,17 @@ public class AnswerDatabase  extends CommandModule {
                 || (" "+s1).contains(" какая ")
                 || (" "+s1).contains(" какими ")
                 || (" "+s1).contains(" что ");
+    }
+
+    private static boolean isNumber(String s){
+        if(s.isEmpty())
+            return false;
+        final String numbers = "0123456789";
+        for (char c: s.toCharArray()){
+            if(numbers.indexOf(c) == -1)
+                return false;
+        }
+        return true;
     }
 
     /**
@@ -947,6 +1007,9 @@ public class AnswerDatabase  extends CommandModule {
         }
     }
 
+    /**
+     * Команда "выгрузить базу"
+     */
     private class DumpCommand extends CommandModule{
         @Override
         public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
@@ -1006,6 +1069,9 @@ public class AnswerDatabase  extends CommandModule {
             return result;
         }
     }
+    /**
+     * Команда "Запомни"
+     */
     private class RememberCommand extends CommandModule{
         private final HashMap<Long, RememberCommandSession> sessions = new HashMap<>();
 
@@ -1027,7 +1093,8 @@ public class AnswerDatabase  extends CommandModule {
                                 "Теперь пришли 2 сообщения, вопрос и ответ." +
                                         "\nЕсли передумал, напиши <code>отмена</code>."));
                     }
-                } else { //сессия уже есть и активна
+                }
+                else { //сессия уже есть и активна
 
                     {//Проверить не слишком ли дофига времени собеседник тупил и актуальна ли ещё вообще его команда
                         long difference = new Date().getTime() - session.sessionStarted.getTime();
@@ -1078,6 +1145,10 @@ public class AnswerDatabase  extends CommandModule {
                             result .add(new Message("<b>Ошибка:</b> " + e.getLocalizedMessage()));
                         }
                     }
+                    if (session.messages.size() >= 3){
+                        //если в списке более 2 ответов, значит что-то уже пошло не так и эту сессию следует закрывать
+                        sessions.remove(userId);
+                    }
                 }
             }
 
@@ -1099,6 +1170,89 @@ public class AnswerDatabase  extends CommandModule {
                 sessionStarted = new Date();
                 messages = new ArrayList<>();
             }
+        }
+    }
+    /**
+     * Команда "Ответы 15032"
+     */
+    private class GetAnswersByIdCommand extends CommandModule{
+        final int numberOfAnswers = 20;
+        @Override
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount);
+            String[] words = message.getText().toLowerCase(Locale.ROOT).trim().split(" ");
+            if (words.length == 2 && words[0].equals("ответы") && isNumber(words[1])) {
+                long neededIndex = Long.parseLong(words[1]);
+                long startedIndex = neededIndex - (numberOfAnswers / 2);
+                ArrayList<AnswerElement> answerElements = getAnswers(startedIndex, numberOfAnswers);
+                StringBuilder stringBuilder = new StringBuilder();
+                for (AnswerElement answerElement:answerElements) {
+                    stringBuilder.append("<code>").append(answerElement.getId()).append("</code> : ");
+                    if(answerElement.getId() == neededIndex)
+                        stringBuilder.append("<b>");
+                    stringBuilder.append(answerElement);
+                    if(answerElement.getId() == neededIndex)
+                        stringBuilder.append("</b>");
+                    stringBuilder.append("\n");
+                }
+                result.add(new Message(stringBuilder.toString()));
+            }
+            return result;
+        }
+
+        @Override
+        public ArrayList<CommandDesc> getHelp() {
+            ArrayList<CommandDesc> result = super.getHelp();
+            result.add(new CommandDesc("ответы 15032", "Выведет список из "+numberOfAnswers/2+" сообщений до указанного ответа и "+numberOfAnswers/2+" сообщений после указанного ответа."));
+            return result;
+        }
+    }
+    /**
+     * Команда "Ответ 15032"
+     */
+    private class GetAnswerByIdCommand extends CommandModule{
+        @Override
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount);
+            String[] words = message.getText().toLowerCase(Locale.ROOT).trim().split(" ");
+            if (words.length == 2 && words[0].equals("ответ") && isNumber(words[1])) {
+                long neededIndex = Long.parseLong(words[1]);
+                long startedIndex = neededIndex - 2;
+                ArrayList<AnswerElement> answerElements = getAnswers(startedIndex, 5);
+
+
+                for (AnswerElement answerElement:answerElements) {
+                    if(answerElement.getId() == neededIndex){
+                        Message answer = answerElement.getAnswerMessage();
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("<b>ID: </b><code>").append(answerElement.getId()).append("</code>\n");
+                        sb.append("<b>Был использован: </b>").append(answerElement.getTimesUsed()).append(" раз\n");
+                        sb.append("\n");
+                        sb.append("<b>Вопрос: </b>").append(answerElement.getQuestionMessage()).append("\n");
+                        sb.append("<b>Автор вопроса: </b>").append(answerElement.getQuestionMessage().getAuthor()).append("\n");
+                        sb.append("<b>Дата вопроса: </b>").append(answerElement.getQuestionMessage().getDate()).append("\n");
+                        sb.append("\n");
+                        sb.append("<b>Ответ: </b>").append(answer).append("\n");
+                        sb.append("<b>Автор ответа: </b>").append(answerElement.getQuestionMessage().getAuthor()).append("\n");
+                        sb.append("<b>Дата ответа: </b>").append(answerElement.getQuestionMessage().getDate()).append("\n");
+                        if(answer.hasAttachments())
+                            sb.append("<i>Вложения прикреплены к этому сообщению</i>\n");
+
+                        answer.setText(sb.toString());
+                        result.add(answer);
+                        return result;
+                    }
+                }
+                result.add(new Message("Ответа с ID <code>" + neededIndex + "</code> не найдено."));
+            }
+            return result;
+        }
+
+        @Override
+        public ArrayList<CommandDesc> getHelp() {
+            ArrayList<CommandDesc> result = super.getHelp();
+            result.add(new CommandDesc("ответ 15032", "Отправит ответ с заданным ID"));
+            return result;
         }
     }
 

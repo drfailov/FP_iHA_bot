@@ -595,6 +595,7 @@ public class TgAccountCore extends Account {
                 protected Map<String, String> getParams() {
                     Map<String, String> params = new HashMap<>();
                     params.put("chat_id", String.valueOf(chat_id));
+                    params.put("parse_mode", "HTML");
                     params.put("caption", text);
                     return params;
                 }
@@ -664,6 +665,7 @@ public class TgAccountCore extends Account {
                 protected Map<String, String> getParams() {
                     Map<String, String> params = new HashMap<>();
                     params.put("chat_id", String.valueOf(chat_id));
+                    params.put("parse_mode", "HTML");
                     params.put("caption", text);
                     return params;
                 }

@@ -99,9 +99,7 @@ public class AnswerElement {
             answerMessage = new Message(jsonObject.getJSONObject("answerMessage"));
     }
 
-    @NonNull
-    @Override
-    public String toString() {
+    public String toStringWithID() {
         if(getQuestionMessage() == null && getAnswerMessage() == null){
             return String.format(Locale.US, "ID%d NULL -> NULL", getId());
         }
@@ -117,6 +115,25 @@ public class AnswerElement {
         }
         return String.format(Locale.US, "ID%d %s -> %s",
                 getId(),
+                getQuestionMessage().toString().replace("\n", ""),
+                getAnswerMessage().toString().replace("\n", ""));
+
+    }
+    @NonNull
+    @Override
+    public String toString() {
+        if(getQuestionMessage() == null && getAnswerMessage() == null){
+            return "NULL -> NULL";
+        }
+        if(getQuestionMessage() == null){
+            return String.format(Locale.US, "NULL -> %s",
+                    getAnswerMessage().toString().replace("\n", ""));
+        }
+        if(getAnswerMessage() == null){
+            return String.format(Locale.US, "%s -> NULL",
+                    getQuestionMessage().toString().replace("\n", ""));
+        }
+        return String.format(Locale.US, "%s -> %s",
                 getQuestionMessage().toString().replace("\n", ""),
                 getAnswerMessage().toString().replace("\n", ""));
 

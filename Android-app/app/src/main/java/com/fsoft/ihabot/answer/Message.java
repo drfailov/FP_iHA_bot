@@ -135,6 +135,10 @@ public class Message {
     public ArrayList<Attachment> getAttachments() {
         return attachments;
     }
+    public boolean hasAttachments(){
+        return !attachments.isEmpty();
+    }
+
     public void addAttachment(Attachment attachment){
         attachments.add(attachment);
     }
