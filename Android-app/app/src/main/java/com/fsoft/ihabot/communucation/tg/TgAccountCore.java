@@ -280,6 +280,13 @@ public class TgAccountCore extends Account {
             jsonObject.put("chat_id", chat_id);
             jsonObject.put("parse_mode", "HTML");
             jsonObject.put("text", message.getText());
+            if(message.getReplyToMessage() != null){
+                Message replyMessage = new Message();
+                replyMessage.setMessage_id(message.getReplyToMessage().getMessage_id());
+                replyMessage.setText(message.getReplyToMessage().getText());
+                replyMessage.setFrom(message.getReplyToMessage().getAuthor());
+                jsonObject.put("reply_to_message", replyMessage);
+            }
         }
         catch (Exception e){
             log("! Error building JSON: " + e.toString());

@@ -37,6 +37,7 @@ public class Message {
 
     private String source = SOURCE_PROGRAM;//откуда мы эту хуйню получили
     private long message_id = 0L;           //Если это сообщение, то ID сообщения, или же ID коммента на стене, или же...
+    private Message replyToMessage = null; /*Если это ответ на другое сообщение. Не участвует в JSON обмене*/
     private String text = "";               //что в этой хуйне написано
     private User author = null;               //кто эту хуйню написал
     private Date date = null;               //когда мы эту хуйню получили
@@ -130,6 +131,14 @@ public class Message {
 
     public Date getDate() {
         return date;
+    }
+
+    public Message getReplyToMessage() {
+        return replyToMessage;
+    }
+
+    public void setReplyToMessage(Message replyToMessage) {
+        this.replyToMessage = replyToMessage;
     }
 
     public ArrayList<Attachment> getAttachments() {
