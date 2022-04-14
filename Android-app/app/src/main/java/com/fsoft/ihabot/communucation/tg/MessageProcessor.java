@@ -145,6 +145,9 @@ public class MessageProcessor extends CommandModule {
             if(update.getMessage() != null){
                 processMessage(update.getMessage());
             }
+            else if(update.getEdited_message() != null){
+                processMessage(update.getEdited_message());
+            }
         }
     }
     public void processMessage(final Message message){

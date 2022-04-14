@@ -14,6 +14,7 @@ import java.text.ParseException;
 public class Update {
     private long update_id = 0;
     private Message message = null;
+    private Message edited_message = null;
 
     public Update(JSONObject jsonObject) throws JSONException, ParseException {
         fromJson(jsonObject);
@@ -24,12 +25,16 @@ public class Update {
         jsonObject.put("update_id", update_id);
         if(message != null)
             jsonObject.put("message", message.toJson());
+        if(edited_message != null)
+            jsonObject.put("edited_message", edited_message.toJson());
         return jsonObject;
     }
     private void fromJson(JSONObject jsonObject)throws JSONException, ParseException {
         update_id = jsonObject.getLong("update_id");
         if(jsonObject.has("message"))
             message = new Message(jsonObject.getJSONObject("message"));
+        if(jsonObject.has("edited_message"))
+            edited_message = new Message(jsonObject.getJSONObject("edited_message"));
     }
 
     public long getUpdate_id() {
@@ -46,5 +51,13 @@ public class Update {
 
     public void setMessage(Message message) {
         this.message = message;
+    }
+
+    public Message getEdited_message() {
+        return edited_message;
+    }
+
+    public void setEdited_message(Message edited_message) {
+        this.edited_message = edited_message;
     }
 }

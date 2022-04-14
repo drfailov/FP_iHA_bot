@@ -134,7 +134,7 @@ public class ApplicationManager extends CommandModule {
             ArrayList<Message> result = super.processCommand(message, tgAccount);
             if(message.getText().toLowerCase(Locale.ROOT).trim().equals("помощь")) {
                 ArrayList<CommandDesc> commands = ApplicationManager.this.getHelp();
-                StringBuilder stringBuilder = new StringBuilder();
+                StringBuilder stringBuilder = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
                 for (CommandDesc commandDesc:commands)
                     stringBuilder.append("<b>").append(commandDesc.getExample()).append("</b> - ").append(commandDesc.getHelpText()).append("\n\n");
                 Message answer = new Message(stringBuilder.toString());

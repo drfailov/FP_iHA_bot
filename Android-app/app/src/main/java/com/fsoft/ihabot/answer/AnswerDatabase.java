@@ -473,8 +473,12 @@ public class AnswerDatabase  extends CommandModule {
         }
         log("Вложений к удалению: " + attachmentsToDelete.size());
         int changed = 0;
-        for (File file:attachmentsToDelete)
-            log("Удаленние файла: " + file + ": " + file.delete());
+        for (File file:attachmentsToDelete) {
+            if (file.delete()) {
+                log("Успешно удалён файл: " + file + ".");
+                changed ++;
+            }
+        }
         return changed;
     }
 
@@ -1210,7 +1214,7 @@ public class AnswerDatabase  extends CommandModule {
                     if (message.getText().toLowerCase(Locale.ROOT).trim().equals("запомни")) {
                         log("Команда \"запомни\" получена. Ожидаю поступления сообщений.");
                         sessions.put(userId, new RememberCommandSession());
-                        result.add(new Message(
+                        result.add(new Message("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n"+
                                 "Теперь пришли 2 сообщения, вопрос и ответ." +
                                         "\nЕсли передумал, напиши <code>отмена</code>."));
                     }
@@ -1227,7 +1231,9 @@ public class AnswerDatabase  extends CommandModule {
                     }
                     if (message.getText().toLowerCase(Locale.ROOT).trim().equals("отмена")) {
                         sessions.remove(userId);
-                        result.add(new Message(log("Команда \"запомни\" отклонена по команде пользователя.")));
+                        result.add(new Message(log(
+                                "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+                                "Команда \"запомни\" отклонена по команде пользователя.")));
                         return result;
                     }
                     session.messages.add(message);
@@ -1256,6 +1262,7 @@ public class AnswerDatabase  extends CommandModule {
                             log("Команда \"запомни\" завершена.");
                             sessions.remove(userId);
                             result .add(new Message(
+                                    "Ответ на команду \"<b>Запомни</b>\"\n\n"+
                                     "<b>Добавлено в базу:</b> " + answerElement +
                                             "\n<b>ID:</b> <code>" + answerElement.getId() + "</code>"));
                         }
@@ -1263,7 +1270,9 @@ public class AnswerDatabase  extends CommandModule {
                             log("Команда \"запомни\" не смогла добавить ответ в базу, вот почему: " + e.getLocalizedMessage());
                             e.printStackTrace();
                             sessions.remove(userId);
-                            result .add(new Message("<b>Ошибка:</b> " + e.getLocalizedMessage()));
+                            result .add(new Message(
+                                    "Ответ на команду \"<b>Запомни</b>\"\n\n"+
+                                            "<b>Ошибка:</b> " + e.getLocalizedMessage()));
                         }
                     }
                     if (session.messages.size() >= 3){
@@ -1306,7 +1315,10 @@ public class AnswerDatabase  extends CommandModule {
                 long neededIndex = Long.parseLong(words[1]);
                 long startedIndex = neededIndex - (numberOfAnswers / 2);
                 ArrayList<AnswerElement> answerElements = getAnswers(startedIndex, numberOfAnswers);
-                StringBuilder stringBuilder = new StringBuilder();
+                StringBuilder stringBuilder = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
+                if(answerElements.isEmpty()){
+                    stringBuilder.append("В заданном диапазоне ID ответов не найдено.");
+                }
                 for (AnswerElement answerElement:answerElements) {
                     stringBuilder.append("<code>").append(answerElement.getId()).append("</code> : ");
                     if(answerElement.getId() == neededIndex)
@@ -1347,7 +1359,7 @@ public class AnswerDatabase  extends CommandModule {
                 for (AnswerElement answerElement:answerElements) {
                     if(answerElement.getId() == neededIndex){
                         Message answer = answerElement.getAnswerMessage();
-                        StringBuilder sb = new StringBuilder();
+                        StringBuilder sb = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
                         sb.append("<b>ID: </b><code>").append(answerElement.getId()).append("</code>\n");
                         sb.append("<b>Был использован: </b>").append(answerElement.getTimesUsed()).append(" раз\n");
                         sb.append("\n");
@@ -1391,6 +1403,7 @@ public class AnswerDatabase  extends CommandModule {
                 int deletedAnswers = removeAnswerFromDatabase(neededIndex);
                 int deletedAttachments = cleanUnusedAttachments();
                 result.add(new Message("" +
+                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
                         "Удаление ответа с ID <code>" + neededIndex + "</code>...\n" +
                         "<b>Удалено ответов:</b> " + deletedAnswers + ";\n"+
                         "<b>Удалено вложений:</b> " + deletedAttachments + ";\n"));
