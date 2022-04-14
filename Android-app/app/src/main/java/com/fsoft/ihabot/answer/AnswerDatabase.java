@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.Random;
 
@@ -97,6 +98,7 @@ public class AnswerDatabase  extends CommandModule {
         childCommands.add(new RememberCommand());
         childCommands.add(new GetAnswersByIdCommand());
         childCommands.add(new GetAnswerByIdCommand());
+        childCommands.add(new RemoveAnswerByIdCommand());
     }
 
     /**
@@ -170,6 +172,8 @@ public class AnswerDatabase  extends CommandModule {
      * В дальнейшем эта команда будет формировать очередь, чтобы не перезаписывать файл по каждой мелочи
      * @param filename Имя файла из папки вложений, который был отправлен
      * @param fileId ID файла на сервере телеграм, который следует внести в базу
+     * @author Dr. Failov
+     * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
      */
     public void updateAnswerAttachmentFileId(String filename, String fileId, long botId) throws Exception{
         if(filename == null || filename.isEmpty())
@@ -186,7 +190,7 @@ public class AnswerDatabase  extends CommandModule {
         if(updateAnswerPhotoIdQueue.size() >= 3){
             log("Накопилось достаточно элементов в очереди чтобы внести данные в базу...");
 
-            File fileTmp = new File(applicationManager.getHomeFolder(), "Answer_database.tmp");
+            File fileTmp = new File(applicationManager.getTempFolder(), "Answer_database.tmp");
             PrintWriter fileTmpWriter = new PrintWriter(fileTmp);
             BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers));
             String line;
@@ -240,6 +244,8 @@ public class AnswerDatabase  extends CommandModule {
      * скачать используя tgAccount. При этом это должен быть тот аккаунт, который получил те FileID которые во вложениях.
      * (FileID действителен только для одного аккаунта)
      * Если tgAccount не передать, загрузка с сервера не будет произведена и файлы должны уже присутствовать в папке attachments
+     * @author Dr. Failov
+     * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
      */
     public AnswerElement addAnswerToDatabase(Message question, Message answer, TgAccount tgAccount) throws Exception{
         //сохранить все вложения в ответе локально в папку Attachments
@@ -317,6 +323,7 @@ public class AnswerDatabase  extends CommandModule {
      * @param startingId Идентификатор ответа, начиная с коротого начинаем собирать ответы в массив
      * @param count Количество, которое надо собрать в массив
      * @return Массив, содержащий ответы в заданном диапазоне значений
+     * @author Dr. Failov
      * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
      */
     public ArrayList<AnswerElement> getAnswers(long startingId, long count) throws Exception{
@@ -359,6 +366,119 @@ public class AnswerDatabase  extends CommandModule {
     }
 
     /**
+     * Производится полный проход по базе, и удаление ответа с конкретным ID из базы.
+     * База при этом копируется во временную папку, а оттуда перезаписывает текущую
+     * @param answerID Имя файла из папки вложений, который был отправлен
+     * @return количество записей, которые были удалены
+     * @author Dr. Failov
+     * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
+     */
+    public int removeAnswerFromDatabase(long answerID) throws Exception{
+        log("Удаляю из базы ответов ответ с ID "+answerID+"...");
+        File fileTmp = new File(applicationManager.getTempFolder(), "Answer_database.tmp");
+        PrintWriter fileTmpWriter = new PrintWriter(fileTmp);
+        BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers));
+        String line;
+        int lineNumber = 0;
+        int errors = 0;
+        int changed = 0;
+        synchronized (fileAnswers) {
+            try {
+                while ((line = bufferedReader.readLine()) != null) {
+                    lineNumber++;
+                    if (lineNumber % 1484 == 0)
+                        log("Удаление ответа ID"+answerID+" в базе (" + lineNumber + " уже пройдено)");
+                    try {
+                        JSONObject jsonObject = new JSONObject(line);
+                        AnswerElement answerElement = new AnswerElement(jsonObject);
+                        if(answerElement.getId() == answerID){
+                            changed ++;
+                        }
+                        else {
+                            fileTmpWriter.println(answerElement.toJson().toString());
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        errors++;
+                        log("Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                    }
+                }
+            }
+            finally {
+                bufferedReader.close();
+                fileTmpWriter.close();
+            }
+            if (errors != 0)
+                log("При удалении ответа по ID из базы возникло ошибок: " + errors + ".");
+            log("В базе удалено " + changed + " ответов.");
+            log("Удаление старой базы: " + fileAnswers.delete());
+            log("Замена старой базы новой: " + fileTmp.renameTo(fileAnswers));
+        }
+        return changed;
+    }
+
+    /**
+     * Выполняется поиск неиспользуемых вложений, с просмотром всей базы.
+     * Если находятся неиспользованные вложения, они удаляются из папки.
+     * @return количество файлов которые были удалены.
+     * @author Dr. Failov
+     * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
+     */
+    public int cleanUnusedAttachments() throws Exception{
+        log("Удаляю из базы неиспользуемые вложения...");
+        if(folderAttachments == null)
+            throw new Exception("Невозможно выполнить очистку несипользуемых вложений, потому что папка с вложениями не задана.");
+        if(!folderAttachments.isDirectory())
+            throw new Exception("Невозможно выполнить очистку несипользуемых вложений, потому что папка с вложениями не создана.");
+        File[] attachmentsToDeleteArray = folderAttachments.listFiles();
+        if(attachmentsToDeleteArray == null)
+            throw new Exception("Невозможно выполнить очистку несипользуемых вложений, потому что папка с вложениями пуста, или к ней нет доступа.");
+        ArrayList<File> attachmentsToDelete = new ArrayList<>(Arrays.asList(attachmentsToDeleteArray));
+        log("Всего вложений до удаления: " + attachmentsToDelete.size());
+        {
+            try {
+                String line;
+                int lineNumber = 0;
+                synchronized (fileAnswers) {
+                    try(BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers))) {
+                        while ((line = bufferedReader.readLine()) != null) {
+                            if (lineNumber % 1289 == 0)
+                                log("Шерстим базу для анализа используемых вложений... (" + lineNumber + " уже проверено) ...");
+                            try {
+                                JSONObject jsonObject = new JSONObject(line);
+                                AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
+                                if(currentAnswerElement.hasAnswer()){
+                                    for(Attachment attachment:currentAnswerElement.getAnswerMessage().getAttachments()){
+                                        String filename = attachment.getFilename();
+                                        if(filename != null && !filename.isEmpty()){
+                                            //тут происходит работа с каждым файлом каждого вложения каждого ответа из базы
+                                            attachmentsToDelete.removeIf(file -> file.getName().equals(filename));
+                                        }
+                                    }
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                log("! Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                            }
+                            lineNumber++;
+                        }
+                    }
+                }
+            }
+            catch (Exception e){
+                e.printStackTrace();
+                throw new Exception("Ошибка прочтения базы данных для анализа использования вложений: " + e.getLocalizedMessage());
+            }
+            System.gc();
+        }
+        log("Вложений к удалению: " + attachmentsToDelete.size());
+        int changed = 0;
+        for (File file:attachmentsToDelete)
+            log("Удаленние файла: " + file + ": " + file.delete());
+        return changed;
+    }
+
+    /**
      *  Допустим, мы получили Message от собеседника в телеграме.
      *  При этом все вложения которые в нём есть, они представлены FileID, которые ссылаются на файл на сервере.
      *  Но если мы хотим добавить ответ в базу, нам нужны будут ответы локально, не на сервере. Чтобы из базы их можно было отправлять.
@@ -369,6 +489,7 @@ public class AnswerDatabase  extends CommandModule {
      *  @return Message, тот же который и был принят, только после процедуры обновления вложений в нём.
      *  Использовать возвращаемое значение функции не обязательно, поскольку изменения производятся с тем обьектом, который был прислан на входе.
      *  @author Dr. Failov
+     *  @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
      *
      * */
     public Message saveAttachmentsToLocal(Message answer, TgAccount tgAccount) throws Exception{
@@ -1194,6 +1315,8 @@ public class AnswerDatabase  extends CommandModule {
                     if(answerElement.getId() == neededIndex)
                         stringBuilder.append("</b>");
                     stringBuilder.append("\n");
+                    if(stringBuilder.length() > 3800)
+                        break;
                 }
                 result.add(new Message(stringBuilder.toString()));
             }
@@ -1255,5 +1378,31 @@ public class AnswerDatabase  extends CommandModule {
             return result;
         }
     }
+    /**
+     * Команда "Забудь 15032"
+     */
+    private class RemoveAnswerByIdCommand extends CommandModule{
+        @Override
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount);
+            String[] words = message.getText().toLowerCase(Locale.ROOT).trim().split(" ");
+            if (words.length == 2 && words[0].equals("забудь") && isNumber(words[1])) {
+                long neededIndex = Long.parseLong(words[1]);
+                int deletedAnswers = removeAnswerFromDatabase(neededIndex);
+                int deletedAttachments = cleanUnusedAttachments();
+                result.add(new Message("" +
+                        "Удаление ответа с ID <code>" + neededIndex + "</code>...\n" +
+                        "<b>Удалено ответов:</b> " + deletedAnswers + ";\n"+
+                        "<b>Удалено вложений:</b> " + deletedAttachments + ";\n"));
+            }
+            return result;
+        }
 
+        @Override
+        public ArrayList<CommandDesc> getHelp() {
+            ArrayList<CommandDesc> result = super.getHelp();
+            result.add(new CommandDesc("забудь 15032", "удалит ответ с заданным ID из базы и почистит вложения"));
+            return result;
+        }
+    }
 }

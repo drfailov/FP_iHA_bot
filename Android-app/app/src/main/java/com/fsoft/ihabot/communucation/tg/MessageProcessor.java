@@ -254,6 +254,7 @@ public class MessageProcessor extends CommandModule {
                         message.getChat().getId(),
                         "Ошибка обработки команды: "+e.getLocalizedMessage()
                 );
+                return;
             }
         }
 
