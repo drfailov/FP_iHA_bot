@@ -23,6 +23,7 @@ public class Message {
     private User forward_from = null;
     private Date date = null;
     private Chat chat = null;
+    private Sticker sticker = null;
     private String text = "";
     private Message reply_to_message = null;
     private final ArrayList<PhotoSize> photo = new ArrayList<>();
@@ -63,6 +64,8 @@ public class Message {
             jsonObject.put("date", date.getTime()/1000L);
         if(chat != null)
             jsonObject.put("chat", chat.toJson());
+        if(sticker != null)
+            jsonObject.put("sticker", sticker.toJson());
         if(reply_to_message != null)
             jsonObject.put("reply_to_message", reply_to_message.toJson());
         if(text != null)
@@ -92,6 +95,8 @@ public class Message {
             date = new Date(jsonObject.getLong("date") * 1000L);
         if(jsonObject.has("chat"))
             chat = new Chat(jsonObject.getJSONObject("chat"));
+        if(jsonObject.has("sticker"))
+            sticker = new Sticker(jsonObject.getJSONObject("sticker"));
         if(jsonObject.has("reply_to_message"))
             reply_to_message = new Message(jsonObject.getJSONObject("reply_to_message"));
         if(jsonObject.has("text"))
@@ -175,5 +180,13 @@ public class Message {
     }
     public void setForward_from(User forward_from) {
         this.forward_from = forward_from;
+    }
+
+    public Sticker getSticker() {
+        return sticker;
+    }
+
+    public void setSticker(Sticker sticker) {
+        this.sticker = sticker;
     }
 }

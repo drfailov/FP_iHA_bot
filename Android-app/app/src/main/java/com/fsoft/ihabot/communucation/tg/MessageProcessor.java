@@ -220,10 +220,20 @@ public class MessageProcessor extends CommandModule {
         question.setDate(message.getDate());
         { //в сообщениие добавить фото
             String photoId = message.getPhotoId();
-            if (photoId != null){
+            if (photoId != null && !photoId.isEmpty()){
                 Attachment attachment = new Attachment().setPhoto();
                 attachment.updateTgFile_id(tgAccount.getId(), photoId);
                 question.addAttachment(attachment);
+            }
+        }
+        { //в сообщениие добавить стикер
+            if(message.getSticker() != null) {
+                String photoId = message.getSticker().getFile_id();
+                if (photoId != null && !photoId.isEmpty()) {
+                    Attachment attachment = new Attachment().setPhoto();
+                    attachment.updateTgFile_id(tgAccount.getId(), photoId);
+                    question.addAttachment(attachment);
+                }
             }
         }
 
