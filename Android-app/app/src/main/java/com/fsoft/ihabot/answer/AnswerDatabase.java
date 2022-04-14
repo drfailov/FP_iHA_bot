@@ -167,9 +167,10 @@ public class AnswerDatabase  extends CommandModule {
     //filename, fileId, botId
     ArrayList<Triplet<String, String, Long>> updateAnswerPhotoIdQueue = new ArrayList<>();
     /**
+     * В очередь добавляется информация о том что файлу был присвоен ID конкретным ботом.
+     * Когда в очереди накапливается некоторое количество элемнетов, очередь записывается в файл
      * Производится полный проход по базе, по всем вложениям. И везде где в ответе во вложении используется файл filename,
      * вписывается fileId для дальнейшего использования при отправке.
-     * В дальнейшем эта команда будет формировать очередь, чтобы не перезаписывать файл по каждой мелочи
      * @param filename Имя файла из папки вложений, который был отправлен
      * @param fileId ID файла на сервере телеграм, который следует внести в базу
      * @author Dr. Failov
@@ -187,7 +188,7 @@ public class AnswerDatabase  extends CommandModule {
         updateAnswerPhotoIdQueue.add(new Triplet<>(filename, fileId, botId));
         log("IDшников в очереди: " + updateAnswerPhotoIdQueue.size());
 
-        if(updateAnswerPhotoIdQueue.size() >= 3){
+        if(updateAnswerPhotoIdQueue.size() >= 5){
             log("Накопилось достаточно элементов в очереди чтобы внести данные в базу...");
 
             File fileTmp = new File(applicationManager.getTempFolder(), "Answer_database.tmp");
@@ -236,6 +237,11 @@ public class AnswerDatabase  extends CommandModule {
             updateAnswerPhotoIdQueue.clear();
             log("Готово, FileID успешно внесены в базу. Очередь сброшена.");
         }
+    }
+
+    ArrayList<Long> updateAnswerUsedTimesQueue = new ArrayList<>();
+    public void updateAnswerUsedTimes(long answerID){
+
     }
 
     /**
@@ -368,13 +374,13 @@ public class AnswerDatabase  extends CommandModule {
     /**
      * Производится полный проход по базе, и удаление ответа с конкретным ID из базы.
      * База при этом копируется во временную папку, а оттуда перезаписывает текущую
-     * @param answerID Имя файла из папки вложений, который был отправлен
+     * @param answersID список ID которые надо удалить
      * @return количество записей, которые были удалены
      * @author Dr. Failov
      * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
      */
-    public int removeAnswerFromDatabase(long answerID) throws Exception{
-        log("Удаляю из базы ответов ответ с ID "+answerID+"...");
+    public int removeAnswersFromDatabase(ArrayList<Long> answersID) throws Exception{
+        log("Удаляю из базы ответов ответы с ID "+F.text(answersID)+"...");
         File fileTmp = new File(applicationManager.getTempFolder(), "Answer_database.tmp");
         PrintWriter fileTmpWriter = new PrintWriter(fileTmp);
         BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers));
@@ -387,11 +393,11 @@ public class AnswerDatabase  extends CommandModule {
                 while ((line = bufferedReader.readLine()) != null) {
                     lineNumber++;
                     if (lineNumber % 1484 == 0)
-                        log("Удаление ответа ID"+answerID+" в базе (" + lineNumber + " уже пройдено)");
+                        log("Удаление ответов с ID "+F.text(answersID)+" в базе (" + lineNumber + " уже пройдено)");
                     try {
                         JSONObject jsonObject = new JSONObject(line);
                         AnswerElement answerElement = new AnswerElement(jsonObject);
-                        if(answerElement.getId() == answerID){
+                        if(answersID.contains(answerElement.getId())){
                             changed ++;
                         }
                         else {
@@ -1400,7 +1406,9 @@ public class AnswerDatabase  extends CommandModule {
             String[] words = message.getText().toLowerCase(Locale.ROOT).trim().split(" ");
             if (words.length == 2 && words[0].equals("забудь") && isNumber(words[1])) {
                 long neededIndex = Long.parseLong(words[1]);
-                int deletedAnswers = removeAnswerFromDatabase(neededIndex);
+                ArrayList<Long> toDelete = new ArrayList<>();
+                toDelete.add(neededIndex);
+                int deletedAnswers = removeAnswersFromDatabase(toDelete);
                 int deletedAttachments = cleanUnusedAttachments();
                 result.add(new Message("" +
                         "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +

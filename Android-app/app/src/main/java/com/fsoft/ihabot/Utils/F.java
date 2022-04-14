@@ -87,6 +87,22 @@ public class F {
 
             return md5Hex;
         }
+        public static String text(ArrayList<Long> arrayList){
+            StringBuilder sb = new StringBuilder();
+            if(arrayList.size() > 5){
+                sb.append("[").append(arrayList.size()).append(" items]");
+            }
+            else {
+                sb.append("[");
+                for (int i = 0; i < arrayList.size(); i++) {
+                    sb.append(arrayList.get(i));
+                    if (i < arrayList.size() - 1)
+                        sb.append(", ");
+                }
+                sb.append("]");
+            }
+            return sb.toString();
+        }
         public static String getFileExtension(String name) {
             //String name = file.getName();
             int lastIndexOf = name.lastIndexOf(".");
