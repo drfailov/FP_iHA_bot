@@ -136,27 +136,45 @@ public class AccountsAdapter extends BaseAdapter {
                 tgAccount.getMyPhotoUrl(new TgAccountCore.GetUserPhotoListener() {
                     @Override
                     public void gotPhoto(String url) {
-                        Picasso.get()
-                                .load(url)
-                                .placeholder(R.drawable.tg_account_placeholder)
-                                .transform(new CropCircleTransformation())
-                                .into(imageView);
+                        imageView.getHandler().post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Picasso.get()
+                                        .load(url)
+                                        .placeholder(R.drawable.tg_account_placeholder)
+                                        .transform(new CropCircleTransformation())
+                                        .into(imageView);
+                            }
+                        });
+
                     }
 
                     @Override
                     public void noPhoto() {
-                        Picasso.get()
-                                .load(R.drawable.tg_account_placeholder)
-                                .transform(new CropCircleTransformation())
-                                .into(imageView);
+                        imageView.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Picasso.get()
+                                        .load(R.drawable.tg_account_placeholder)
+                                        .transform(new CropCircleTransformation())
+                                        .into(imageView);
+                            }
+                        });
+
                     }
 
                     @Override
                     public void error(Throwable error) {
-                        Picasso.get()
-                                .load(R.drawable.tg_account_placeholder)
-                                .transform(new CropCircleTransformation())
-                                .into(imageView);
+                        imageView.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Picasso.get()
+                                        .load(R.drawable.tg_account_placeholder)
+                                        .transform(new CropCircleTransformation())
+                                        .into(imageView);
+                            }
+                        });
+
                         error.printStackTrace();
                     }
                 });

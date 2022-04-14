@@ -109,7 +109,7 @@ public class AnswerDatabase  extends CommandModule {
     public AnswerElement pickAnswer(Message question) throws Exception{
         if(question.getText().split(" +").length > 7)
             throw new Exception("Я на сообщение с таким количеством слов не смогу подобрать ответ.");
-        if(question.getText().length() > 25)
+        if(question.getText().length() > 40)
             throw new Exception("Я на такое длинное сообщение не смогу подобрать ответ.");
 
         MessageRating messageRating = new MessageRating(50);
@@ -1209,7 +1209,7 @@ public class AnswerDatabase  extends CommandModule {
         @Override
         public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
             //через сколько минут после получения команды сбрасываться до IDLE
-            long commandTimeoutMs = 5 * 60 * 1000;
+            long commandTimeoutMs = 5 * 60 * 1000; //5 мин
             ArrayList<Message> result = super.processCommand(message, tgAccount);
             Long userId = message.getAuthor().getId();
 
@@ -1221,8 +1221,9 @@ public class AnswerDatabase  extends CommandModule {
                         log("Команда \"запомни\" получена. Ожидаю поступления сообщений.");
                         sessions.put(userId, new RememberCommandSession());
                         result.add(new Message("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n"+
-                                "Теперь пришли 2 сообщения, вопрос и ответ." +
-                                        "\nЕсли передумал, напиши <code>отмена</code>."));
+                                "Это команда для добавления ответа в базу ответов.\n" +
+                                "Теперь пришли 2 сообщения, вопрос и ответ.\n" +
+                                "Если передумал, напиши <code>отмена</code>."));
                     }
                 }
                 else { //сессия уже есть и активна
@@ -1322,6 +1323,7 @@ public class AnswerDatabase  extends CommandModule {
                 long startedIndex = neededIndex - (numberOfAnswers / 2);
                 ArrayList<AnswerElement> answerElements = getAnswers(startedIndex, numberOfAnswers);
                 StringBuilder stringBuilder = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
+                stringBuilder.append("Вот список ответов в базе, находящихся рядом с заданным  ID:\n");
                 if(answerElements.isEmpty()){
                     stringBuilder.append("В заданном диапазоне ID ответов не найдено.");
                 }
@@ -1366,6 +1368,7 @@ public class AnswerDatabase  extends CommandModule {
                     if(answerElement.getId() == neededIndex){
                         Message answer = answerElement.getAnswerMessage();
                         StringBuilder sb = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
+                        sb.append("Вот информация об ответе в базе с заданным ID:");
                         sb.append("<b>ID: </b><code>").append(answerElement.getId()).append("</code>\n");
                         sb.append("<b>Был использован: </b>").append(answerElement.getTimesUsed()).append(" раз\n");
                         sb.append("\n");
@@ -1412,7 +1415,7 @@ public class AnswerDatabase  extends CommandModule {
                 int deletedAttachments = cleanUnusedAttachments();
                 result.add(new Message("" +
                         "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
-                        "Удаление ответа с ID <code>" + neededIndex + "</code>...\n" +
+                        "Удаление из базы ответа с ID <code>" + neededIndex + "</code>...\n" +
                         "<b>Удалено ответов:</b> " + deletedAnswers + ";\n"+
                         "<b>Удалено вложений:</b> " + deletedAttachments + ";\n"));
             }

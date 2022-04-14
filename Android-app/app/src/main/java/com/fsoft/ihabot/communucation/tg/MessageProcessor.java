@@ -18,9 +18,7 @@ public class MessageProcessor extends CommandModule {
     private long lastUpdateId = 0;
     private boolean isChatsEnabled = true;
     private int errors = 0;
-    private Runnable onMessagesReceivedCounterChangedListener = null;
     private int messagesReceivedCounter = 0;
-    private Runnable onMessagesSentCounterChangedListener = null;
     private int messagesSentCounter = 0;
 
 
@@ -53,16 +51,12 @@ public class MessageProcessor extends CommandModule {
     }
     public void inctementMessagesReceivedCounter(){
         messagesReceivedCounter++;
-        if(onMessagesReceivedCounterChangedListener != null)
-            onMessagesReceivedCounterChangedListener.run();
     }
     public int getMessagesSentCounter() {
         return messagesSentCounter;
     }
-    public void inctementMessagesSentCounter(){
+    public void incrementMessagesSentCounter(){
         messagesSentCounter++;
-        if(onMessagesSentCounterChangedListener != null)
-            onMessagesSentCounterChangedListener.run();
     }
     public boolean isChatsEnabled() {
         return isChatsEnabled;
@@ -70,13 +64,6 @@ public class MessageProcessor extends CommandModule {
     public void setChatsEnabled(boolean chatsEnabled) {
         isChatsEnabled = chatsEnabled;
         tgAccount.getFileStorage().put("chatsEnabled", isChatsEnabled).commit();
-    }
-
-    public void setOnMessagesReceivedCounterChangedListener(Runnable onMessagesReceivedCounterChangedListener) {
-        this.onMessagesReceivedCounterChangedListener = onMessagesReceivedCounterChangedListener;
-    }
-    public void setOnMessagesSentCounterChangedListener(Runnable onMessagesSentCounterChangedListener) {
-        this.onMessagesSentCounterChangedListener = onMessagesSentCounterChangedListener;
     }
 
     public void update(){
@@ -244,9 +231,23 @@ public class MessageProcessor extends CommandModule {
         if(applicationManager.getAdminList().has(question.getAuthor())){
             try {
                 ArrayList<com.fsoft.ihabot.answer.Message> results = applicationManager.processCommand(question, tgAccount);
+                /*
+                Модули команд получают ВСЕ сообщения если пользователь администратор, и если хотят,
+                присылают от себя ответы.
+
+                Если по результатам обработки команды есть ответы от модулей команд,
+                * отправить ответы в виде отдельных сообщений и не пустить сообщение на обработку базой.
+                *
+                * Если есть ответы и они пустые - не отправлять ответы и не пустить
+                * сообщение на обработку базой.
+                *
+                * Если ответов нет, пустить сообщение на обработку базой.*/
+
                 for (com.fsoft.ihabot.answer.Message item:results) {
-                    if (!item.isEmpty())
+                    if (!item.isEmpty()) {
+                        item.setReplyToMessage(question);
                         sendAnswer(message.getChat().getId(), item);
+                    }
                 }
                 if(!results.isEmpty())
                     return;
@@ -255,7 +256,8 @@ public class MessageProcessor extends CommandModule {
                 e.printStackTrace();
                 sendAnswer(
                         message.getChat().getId(),
-                        "Ошибка обработки команды: "+e.getLocalizedMessage()
+                        "Ответ на команду <b>" + question.getText() + "</b>\n\n" +
+                                "Ошибка обработки команды: "+e.getLocalizedMessage()
                 );
                 return;
             }
@@ -356,7 +358,7 @@ public class MessageProcessor extends CommandModule {
                 @Override
                 public void sentMessage(Message message) {
                     log(". Отправлено сообщение: " + message);
-                    inctementMessagesSentCounter();
+                    incrementMessagesSentCounter();
                 }
 
                 @Override
@@ -388,7 +390,7 @@ public class MessageProcessor extends CommandModule {
                                     log("Не могу записать в базу айдишник фотографии: " + e.getLocalizedMessage());
                                 }
                             }
-                            inctementMessagesSentCounter();
+                            incrementMessagesSentCounter();
                         }
 
                         @Override
@@ -422,7 +424,7 @@ public class MessageProcessor extends CommandModule {
                                     log("Не могу записать в базу айдишник документа: " + e.getLocalizedMessage());
                                 }
                             }
-                            inctementMessagesSentCounter();
+                            incrementMessagesSentCounter();
                         }
 
                         @Override
