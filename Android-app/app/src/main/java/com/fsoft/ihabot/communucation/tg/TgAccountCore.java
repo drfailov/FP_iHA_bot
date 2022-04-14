@@ -281,11 +281,7 @@ public class TgAccountCore extends Account {
             jsonObject.put("parse_mode", "HTML");
             jsonObject.put("text", message.getText());
             if(message.getReplyToMessage() != null){
-                Message replyMessage = new Message();
-                replyMessage.setMessage_id(message.getReplyToMessage().getMessage_id());
-                replyMessage.setText(message.getReplyToMessage().getText());
-                replyMessage.setFrom(message.getReplyToMessage().getAuthor());
-                jsonObject.put("reply_to_message", replyMessage);
+                jsonObject.put("reply_to_message_id", message.getReplyToMessage().getMessage_id());
             }
         }
         catch (Exception e){
@@ -294,6 +290,7 @@ public class TgAccountCore extends Account {
         }
         final String url ="https://api.telegram.org/bot"+getId()+":"+getToken()+"/sendMessage";//?chat_id="+chat_id+"&text="+text;
         log("Sending message: " + url);
+        log(jsonObject.toString());
         incrementApiCounter();
         // Request a string response from the provided URL.
         JsonObjectRequest stringRequest = new JsonObjectRequest(Request.Method.POST, url, jsonObject,
@@ -552,7 +549,7 @@ public class TgAccountCore extends Account {
         //stringRequest.setRetryPolicy(new DefaultRetryPolicy( 30000, 5, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
         queue.add(stringRequest);
     }
-    public void sendPhoto(final SendMessageListener listener, final long chat_id, final String text, final java.io.File f){
+    public void sendPhoto(final SendMessageListener listener, final long chat_id, final String text, final java.io.File f, final long reply_to_message_id){
         try {
             if(!f.isFile())
                 throw new Exception("Попытка отправить под видом фотографии файл которого не существует.");
@@ -604,6 +601,9 @@ public class TgAccountCore extends Account {
                     params.put("chat_id", String.valueOf(chat_id));
                     params.put("parse_mode", "HTML");
                     params.put("caption", text);
+                    if(reply_to_message_id != 0){
+                        params.put("reply_to_message_id", String.valueOf(reply_to_message_id));
+                    }
                     return params;
                 }
 
@@ -622,7 +622,16 @@ public class TgAccountCore extends Account {
                 listener.error(e);
         }
     }
-    public void sendDocument(final SendMessageListener listener, final long chat_id, final String text, final java.io.File f){
+
+    /**
+     * Отправить этим аккаунтом телеграма файл вложением. Ограничение составляет 45 мегабайт.
+     * @param listener Что делать при успешной загрузке либо при ошибке
+     * @param chat_id Айди чата к кому надо отправлять.
+     * @param text Подпись к документу
+     * @param f Собственно файл. У программы должен быть полный к нему доступ.
+     * @param reply_to_message_id Если нужно отправить сообщение как ответ, использовать айди сообшения в чате. Если нет, отправить 0
+     */
+    public void sendDocument(final SendMessageListener listener, final long chat_id, final String text, final java.io.File f, final long reply_to_message_id){
         try {
             if(!f.isFile())
                 throw new Exception("Попытка отправить под видом документа файл которого не существует.");
@@ -674,6 +683,9 @@ public class TgAccountCore extends Account {
                     params.put("chat_id", String.valueOf(chat_id));
                     params.put("parse_mode", "HTML");
                     params.put("caption", text);
+                    if(reply_to_message_id != 0){
+                        params.put("reply_to_message_id", String.valueOf(reply_to_message_id));
+                    }
                     return params;
                 }
 

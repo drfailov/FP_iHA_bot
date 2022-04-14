@@ -37,7 +37,7 @@ public class Message {
 
     private String source = SOURCE_PROGRAM;//откуда мы эту хуйню получили
     private long message_id = 0L;           //Если это сообщение, то ID сообщения, или же ID коммента на стене, или же...
-    private Message replyToMessage = null; /*Если это ответ на другое сообщение. Не участвует в JSON обмене*/
+    private Message replyToMessage = null; /*Если это ответ на другое сообщение.*/
     private String text = "";               //что в этой хуйне написано
     private User author = null;               //кто эту хуйню написал
     private Date date = null;               //когда мы эту хуйню получили
@@ -63,6 +63,8 @@ public class Message {
             jsonObject.put("text", text);
         if(author != null)
             jsonObject.put("author", author.toJson());
+        if(replyToMessage != null)
+            jsonObject.put("reply_to_message", replyToMessage.toJson());
         if(date != null)
             jsonObject.put("date", sdf.format(date));
         if(!attachments.isEmpty()){
@@ -83,6 +85,8 @@ public class Message {
             text = jsonObject.getString("text");
         if(jsonObject.has("author"))
             author = new User(jsonObject.getJSONObject("author"));
+        if(jsonObject.has("reply_to_message"))
+            replyToMessage = new Message(jsonObject.getJSONObject("reply_to_message"));
         if(jsonObject.has("date"))
             date = sdf.parse(jsonObject.getString("date"));
         attachments.clear();

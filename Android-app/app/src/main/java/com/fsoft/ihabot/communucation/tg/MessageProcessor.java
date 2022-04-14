@@ -265,6 +265,7 @@ public class MessageProcessor extends CommandModule {
         try {
             AnswerElement answerElement = applicationManager.getAnswerDatabase().pickAnswer(question);
             com.fsoft.ihabot.answer.Message answer = answerElement.getAnswerMessage();
+            answer.setReplyToMessage(question);
             sendAnswer(message.getChat().getId(), answer);
         }
         catch (Exception e){
@@ -369,6 +370,9 @@ public class MessageProcessor extends CommandModule {
                 //send photo
                 if(attachment.isPhoto() && attachment.isLocal()){
                     File file = new File(applicationManager.getAnswerDatabase().getFolderAttachments(), attachment.getFilename());
+                    long reply_to_message_id = 0;
+                    if(answer.getReplyToMessage() != null)
+                        reply_to_message_id = answer.getReplyToMessage().getMessage_id();
                     tgAccount.sendPhoto(new TgAccountCore.SendMessageListener() {
                         @Override
                         public void sentMessage(Message message) {
@@ -391,7 +395,7 @@ public class MessageProcessor extends CommandModule {
                         public void error(Throwable error) {
                             log(error.getClass().getName() + " while sending photo");
                         }
-                    }, chatId, answer.getText(), file);
+                    }, chatId, answer.getText(), file, reply_to_message_id);
                 }
 
                 //send document, from attachment or from file
@@ -399,6 +403,9 @@ public class MessageProcessor extends CommandModule {
                     File file = attachment.getFileToUpload();
                     if(file == null)
                         file = new File(applicationManager.getAnswerDatabase().getFolderAttachments(), attachment.getFilename());
+                    long reply_to_message_id = 0;
+                    if(answer.getReplyToMessage() != null)
+                        reply_to_message_id = answer.getReplyToMessage().getMessage_id();
                     tgAccount.sendDocument(new TgAccountCore.SendMessageListener() {
                         @Override
                         public void sentMessage(Message message) {
@@ -422,7 +429,7 @@ public class MessageProcessor extends CommandModule {
                         public void error(Throwable error) {
                             log(error.getClass().getName() + " while sending document");
                         }
-                    }, chatId, answer.getText(), file);
+                    }, chatId, answer.getText(), file, reply_to_message_id);
                 }
 
 
