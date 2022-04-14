@@ -268,6 +268,8 @@ public class AnswerDatabase  extends CommandModule {
             throw new Exception("Поскольку бот не умеет учитывать в ответе вложения, вопросы без текста не допускаются.");
         if(question.getText().length() > 80)
             throw new Exception("Бот крайне плохо отвечает на длинные сообщения, поэтому нет смысла их добавлять в базу в качестве вопроса.");
+        if(answer.getText().isEmpty() && answer.getAttachments().isEmpty())
+            throw new Exception("Нельзя добавлять в базу ответ, если в ответе не содержится ни вложений ни текста.");
         AnswerElement answerElement = new AnswerElement();
         answerElement.setAnswerMessage(answer);
         answerElement.setQuestionMessage(question);

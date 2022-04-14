@@ -229,7 +229,7 @@ public class MessageProcessor extends CommandModule {
         { //в сообщениие добавить стикер
             if(message.getSticker() != null) {
                 String photoId = message.getSticker().getFile_id();
-                if (photoId != null && !photoId.isEmpty()) {
+                if (photoId != null && !photoId.isEmpty() && !message.getSticker().isIs_animated() && !message.getSticker().isIs_video()) {
                     Attachment attachment = new Attachment().setPhoto();
                     attachment.updateTgFile_id(tgAccount.getId(), photoId);
                     question.addAttachment(attachment);
