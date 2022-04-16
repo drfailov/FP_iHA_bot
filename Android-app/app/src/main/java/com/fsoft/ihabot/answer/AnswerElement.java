@@ -71,8 +71,8 @@ public class AnswerElement {
         return timesUsed;
     }
 
-    public void setTimesUsed(int timesUsed) {
-        this.timesUsed = timesUsed;
+    public void incrementTimesUsed() {
+        this.timesUsed++;
     }
 
     public JSONObject toJson() throws JSONException {

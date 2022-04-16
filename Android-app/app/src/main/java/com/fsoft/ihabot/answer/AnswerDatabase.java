@@ -125,7 +125,9 @@ public class AnswerDatabase  extends CommandModule {
             throw new Exception("Нормального ответа найти не получилось");
 
         ArrayList<AnswerElement> answers = messageRating.getTopMessages();
-        return answers.get(new Random().nextInt(answers.size()));
+        AnswerElement answerElement = answers.get(new Random().nextInt(answers.size()));
+        updateAnswerUsedTimes(answerElement.getId());
+        return answerElement;
     }
 
     //filename, fileId, botId
@@ -232,8 +234,69 @@ public class AnswerDatabase  extends CommandModule {
 
 
     ArrayList<Long> updateAnswerUsedTimesQueue = new ArrayList<>();
-    public void updateAnswerUsedTimes(long answerID){
 
+    /**
+     * Вносит в базу информацию о том, что какой-то ответ был использован при подборе ответа.
+     * Для статистики.
+     * Внесение в файл происходит раз в некоторое количество ответв, чтобы не дёргать файл по каждой мелочи.
+     *
+     * @param answerID ID ответа в который надо внести информацию о статистике использования
+     * @author Dr. Failov
+     * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
+     */
+    public void updateAnswerUsedTimes(long answerID) throws Exception{
+        updateAnswerUsedTimesQueue.add(answerID);
+        log("Ответ " + answerID + " добавлен в очередь("+updateAnswerUsedTimesQueue.size()+") для обновления количества его использований...");
+        if(updateAnswerUsedTimesQueue.size() > 10){
+            //записать в файл инфу
+            log("Внесение в файл базы ответов информации о количестве использований ответов " + F.text(updateAnswerUsedTimesQueue) + "...");
+            File fileTmp = new File(applicationManager.getTempFolder(), "Answer_database.tmp");
+            PrintWriter fileTmpWriter = new PrintWriter(fileTmp);
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers));
+            String line;
+            int lineNumber = 0;
+            int errors = 0;
+            int changed = 0;
+            synchronized (fileAnswers) {
+                try {
+                    while ((line = bufferedReader.readLine()) != null) {
+                        lineNumber++;
+                        if (lineNumber % 1884 == 0)
+                            log("Внесение "+F.text(updateAnswerUsedTimesQueue)+" использований ответов в базу (" + lineNumber + " уже пройдено)");
+                        try {
+                            JSONObject jsonObject = new JSONObject(line);
+                            AnswerElement answerElement = new AnswerElement(jsonObject);
+                            boolean isChanged = false;
+                            for(Iterator<Long> i = updateAnswerUsedTimesQueue.iterator(); i.hasNext();) {
+                                Long current = i.next();
+                                if(current.equals(answerElement.getId())) {
+                                    isChanged = true;
+                                    answerElement.incrementTimesUsed();
+                                    i.remove();
+                                }
+                            }
+                            if(isChanged)
+                                changed ++;
+                            fileTmpWriter.println(answerElement.toJson().toString());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            errors++;
+                            log("Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                        }
+                    }
+                }
+                finally {
+                    bufferedReader.close();
+                    fileTmpWriter.close();
+                }
+                if (errors != 0)
+                    log("При внесении в базу информации о количестве использований ответов возникло ошибок: " + errors + ".");
+                log("В файл базы ответов внесено " + changed + " изменений.");
+                log("Удаление старой базы: " + fileAnswers.delete());
+                log("Замена старой базы новой: " + fileTmp.renameTo(fileAnswers));
+            }
+            updateAnswerUsedTimesQueue.clear();
+        }
     }
 
     /**
@@ -1441,17 +1504,17 @@ public class AnswerDatabase  extends CommandModule {
                     if(answerElement.getId() == neededIndex){
                         Message answer = answerElement.getAnswerMessage();
                         StringBuilder sb = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
-                        sb.append("Вот информация об ответе в базе с заданным ID:");
+                        sb.append("Полная информация об ответе:\n");
                         sb.append("<b>ID: </b><code>").append(answerElement.getId()).append("</code>\n");
                         sb.append("<b>Был использован: </b>").append(answerElement.getTimesUsed()).append(" раз\n");
                         sb.append("\n");
                         sb.append("<b>Вопрос: </b>").append(answerElement.getQuestionMessage()).append("\n");
                         sb.append("<b>Автор вопроса: </b>").append(answerElement.getQuestionMessage().getAuthor()).append("\n");
-                        sb.append("<b>Дата вопроса: </b>").append(answerElement.getQuestionMessage().getDate()).append("\n");
+                        sb.append("<b>Дата вопроса: </b>").append(new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(answerElement.getQuestionMessage().getDate())).append("\n");
                         sb.append("\n");
                         sb.append("<b>Ответ: </b>").append(answer).append("\n");
                         sb.append("<b>Автор ответа: </b>").append(answerElement.getQuestionMessage().getAuthor()).append("\n");
-                        sb.append("<b>Дата ответа: </b>").append(answerElement.getQuestionMessage().getDate()).append("\n");
+                        sb.append("<b>Дата ответа: </b>").append(new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(answerElement.getQuestionMessage().getDate())).append("\n");
                         if(answer.hasAttachments())
                             sb.append("<i>Вложения прикреплены к этому сообщению</i>\n");
 
