@@ -27,6 +27,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -93,6 +94,7 @@ public class AnswerDatabase  extends CommandModule {
         childCommands.add(new GetAnswersByIdCommand());
         childCommands.add(new GetAnswerByIdCommand());
         childCommands.add(new RemoveAnswerByIdCommand());
+        childCommands.add(new GetAnswersByQuestionCommand());
     }
 
 
@@ -1365,6 +1367,54 @@ public class AnswerDatabase  extends CommandModule {
         public ArrayList<CommandDesc> getHelp() {
             ArrayList<CommandDesc> result = super.getHelp();
             result.add(new CommandDesc("ответы 15032", "Выведет список из "+numberOfAnswers/2+" сообщений до указанного ответа и "+numberOfAnswers/2+" сообщений после указанного ответа."));
+            return result;
+        }
+    }
+    /**
+     * Команда "Ответы на Иди нахуй!"
+     */
+    private class GetAnswersByQuestionCommand extends CommandModule{
+        final int numberOfAnswers = 20;
+        @Override
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount);
+            if (message.getText().toLowerCase(Locale.ROOT).trim().startsWith("ответы на")) {
+                String questionText = message.getText().toLowerCase(Locale.ROOT).trim().replace("ответы на", "");
+                Message question = new Message(questionText);
+                question.setAuthor(message.getAuthor());
+                for (Attachment attachment:message.getAttachments())
+                    question.addAttachment(attachment);
+
+                MessageRating messageRating = pickAnswers(question);
+
+                StringBuilder stringBuilder = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
+                stringBuilder.append("Вот список ответов в базе, подобранных на вопрос:\n");
+
+                if(messageRating.isEmpty()){
+                    stringBuilder.append("Нет ни одного ответа. Возможно, база пустая?");
+                }
+
+                for(int i = 0; i<messageRating.getCapacity() && i < numberOfAnswers; i++){
+                    double rating = messageRating.getTopRating(i);
+                    AnswerElement answerElement = messageRating.getTopMessage(i);
+                    if(answerElement != null) {
+                        stringBuilder.append("<code>").append(answerElement.getId()).append("</code> \t");
+                        stringBuilder.append("<b>").append(String.format(Locale.US,"%.3f", rating)).append("</b>:\t");
+                        stringBuilder.append(answerElement).append("\n");
+                        if(stringBuilder.length() > 3800)
+                            break;
+                    }
+                }
+
+                result.add(new Message(stringBuilder.toString()));
+            }
+            return result;
+        }
+
+        @Override
+        public ArrayList<CommandDesc> getHelp() {
+            ArrayList<CommandDesc> result = super.getHelp();
+            result.add(new CommandDesc("ответы на Привет!", "Выведет список из "+numberOfAnswers+" ответов на заданный вопрос с указанием их рейтинга."));
             return result;
         }
     }
