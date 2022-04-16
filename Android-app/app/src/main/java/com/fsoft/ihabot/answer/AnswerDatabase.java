@@ -99,55 +99,6 @@ public class AnswerDatabase  extends CommandModule {
 
 
     /**
-     * Подбирает ответ на вопрос исходя из базы вопросв. Эта функция просматривает файл полностью в поисках ответа.
-     * @param question Входящее сообщение типа Message в исходном виде, без никакиз преобразований
-     * @return MessageRating описывающий что подходит в качестве ответа
-     * @author Dr. Failov
-     * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
-     */
-    public MessageRating pickAnswers(Message question) throws Exception{
-        if(question.getText().split(" +").length > 7)
-            throw new Exception("Я на сообщение с таким количеством слов не смогу подобрать ответ.");
-        if(question.getText().length() > 40)
-            throw new Exception("Я на такое длинное сообщение не смогу подобрать ответ.");
-
-        MessageRating messageRating = new MessageRating(50);
-
-        String line;
-        int lineNumber = 0;
-        int errors = 0;
-        synchronized (fileAnswers) {
-            try(BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers))) {
-                while ((line = bufferedReader.readLine()) != null) {
-                    if (lineNumber % 1289 == 0)
-                        log(". Поиск ответа в базе (" + lineNumber + " уже проверено) ...");
-                    try {
-                        JSONObject jsonObject = new JSONObject(line);
-                        AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
-                        String currentQuestion = currentAnswerElement.getQuestionMessage().getText();
-                        String neededQuestion = question.getText();
-
-                        double similarity = compareMessages(neededQuestion, currentQuestion);
-
-                        messageRating.addAnswer(currentAnswerElement, similarity);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        errors++;
-                        log("! Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
-                    }
-                    lineNumber++;
-                }
-            }
-        }
-        if (errors != 0)
-            log("! При загрузке базы ответов возникло ошибок: " + errors + ".");
-        System.gc();
-
-        return messageRating;
-
-    }
-
-    /**
      * Подбирает ответ на вопрос исходя из базы вопросв. Эта обращается к фукнуии pickAnswers
      * @param question Входящее сообщение типа Message в исходном виде, без никакиз преобразований
      * @return AnswerElement из базы который описывает элемент базы ответов который подходит под этот вопрос
@@ -252,8 +203,85 @@ public class AnswerDatabase  extends CommandModule {
         }
     }
 
+    /**
+     * @return ApplicationManager который хранится в этом модуле.
+     * Используется например для передачи его дочерним модулям.
+     */
+    public ApplicationManager getApplicationManager() {
+        return applicationManager;
+    }
+
+    /**
+     * Выдает папку где хранятся вложения к ответам в базе
+     * Чтобы, к примеру, коммуникатор знал откуда брать файлы для звгрузки
+     * @return File который папке где лежат аттачи
+     */
+    public File getFolderAttachments() {
+        return folderAttachments;
+    }
+
+    /**
+     * Выдает папку где хранится всё что связано с базой ответов. Ответы, аттачи, синонимы
+     * Чтобы модули знали где брать файлы, к примеру провайдер синонимов.
+     * @return File который папка где лежит база
+     */
+    public File getFolderAnswerDatabase() {
+        return folderAnswerDatabase;
+    }
+
+
+
     ArrayList<Long> updateAnswerUsedTimesQueue = new ArrayList<>();
     public void updateAnswerUsedTimes(long answerID){
+
+    }
+
+    /**
+     * Подбирает ответ на вопрос исходя из базы вопросв. Эта функция просматривает файл полностью в поисках ответа.
+     * @param question Входящее сообщение типа Message в исходном виде, без никакиз преобразований
+     * @return MessageRating описывающий что подходит в качестве ответа
+     * @author Dr. Failov
+     * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
+     */
+    private MessageRating pickAnswers(Message question) throws Exception{
+        if(question.getText().split(" +").length > 7)
+            throw new Exception("Я на сообщение с таким количеством слов не смогу подобрать ответ.");
+        if(question.getText().length() > 40)
+            throw new Exception("Я на такое длинное сообщение не смогу подобрать ответ.");
+
+        MessageRating messageRating = new MessageRating(50);
+
+        String line;
+        int lineNumber = 0;
+        int errors = 0;
+        synchronized (fileAnswers) {
+            try(BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers))) {
+                while ((line = bufferedReader.readLine()) != null) {
+                    if (lineNumber % 1289 == 0)
+                        log(". Поиск ответа в базе (" + lineNumber + " уже проверено) ...");
+                    try {
+                        JSONObject jsonObject = new JSONObject(line);
+                        AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
+                        String currentQuestion = currentAnswerElement.getQuestionMessage().getText();
+                        String neededQuestion = question.getText();
+
+                        double similarity = compareMessages(neededQuestion, currentQuestion);
+
+                        messageRating.addAnswer(currentAnswerElement, similarity);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        errors++;
+                        log("! Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                    }
+                    lineNumber++;
+                }
+            }
+        }
+        if (errors != 0)
+            log("! При загрузке базы ответов возникло ошибок: " + errors + ".");
+        System.gc();
+
+        return messageRating;
 
     }
 
@@ -266,7 +294,7 @@ public class AnswerDatabase  extends CommandModule {
      * @author Dr. Failov
      * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
      */
-    public AnswerElement addAnswerToDatabase(Message question, Message answer, TgAccount tgAccount) throws Exception{
+    private AnswerElement addAnswerToDatabase(Message question, Message answer, TgAccount tgAccount) throws Exception{
         //сохранить все вложения в ответе локально в папку Attachments
         if(tgAccount != null) {
             answer = saveAttachmentsToLocal(answer, tgAccount);
@@ -347,7 +375,7 @@ public class AnswerDatabase  extends CommandModule {
      * @author Dr. Failov
      * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
      */
-    public ArrayList<AnswerElement> getAnswers(long startingId, long count) throws Exception{
+    private ArrayList<AnswerElement> getAnswers(long startingId, long count) throws Exception{
         log("Поиск в базе "+count+" ответов после ID"+startingId+"...");
         ArrayList<AnswerElement> result = new ArrayList<>();
         {
@@ -394,7 +422,7 @@ public class AnswerDatabase  extends CommandModule {
      * @author Dr. Failov
      * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
      */
-    public int removeAnswersFromDatabase(ArrayList<Long> answersID) throws Exception{
+    private int removeAnswersFromDatabase(ArrayList<Long> answersID) throws Exception{
         log("Удаляю из базы ответов ответы с ID "+F.text(answersID)+"...");
         File fileTmp = new File(applicationManager.getTempFolder(), "Answer_database.tmp");
         PrintWriter fileTmpWriter = new PrintWriter(fileTmp);
@@ -445,7 +473,7 @@ public class AnswerDatabase  extends CommandModule {
      * @author Dr. Failov
      * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
      */
-    public int cleanUnusedAttachments() throws Exception{
+    private int cleanUnusedAttachments() throws Exception{
         log("Удаляю из базы неиспользуемые вложения...");
         if(folderAttachments == null)
             throw new Exception("Невозможно выполнить очистку несипользуемых вложений, потому что папка с вложениями не задана.");
@@ -517,7 +545,7 @@ public class AnswerDatabase  extends CommandModule {
      *  @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
      *
      * */
-    public Message saveAttachmentsToLocal(Message answer, TgAccount tgAccount) throws Exception{
+    private Message saveAttachmentsToLocal(Message answer, TgAccount tgAccount) throws Exception{
         ArrayList<Attachment> attachments = answer.getAttachments();
         for (Attachment attachment:attachments){
             if(attachment.isPhoto() && attachment.isOnlineTg(tgAccount.getId()) && !attachment.isLocalInAttachmentFolder(applicationManager)){
@@ -538,29 +566,6 @@ public class AnswerDatabase  extends CommandModule {
             }
         }
         return answer;
-    }
-
-    /**
-     * @return ApplicationManager который хранится в этом модуле. Используется например для передачи его дочерним модулям.
-     */
-    public ApplicationManager getApplicationManager() {
-        return applicationManager;
-    }
-
-    /**
-     * Выдает папку где хранятся вложения к ответам в базе
-     * @return File который папке где лежат аттачи
-     */
-    public File getFolderAttachments() {
-        return folderAttachments;
-    }
-
-    /**
-     * Выдает папку где хранится всё что связано с базой ответов. Ответы, аттачи, синонимы
-     * @return File который папка где лежит база
-     */
-    public File getFolderAnswerDatabase() {
-        return folderAnswerDatabase;
     }
 
     private String compareMessagesLastS1Text = ""; //данные для оптимизации compareMessages. Хранит строку с прошлого вызова, чтобы понять актуальны ли следующие поля
