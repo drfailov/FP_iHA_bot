@@ -46,11 +46,15 @@ public class AdminList  extends CommandModule {
         if(userList.isEmpty()){
             log("Поскольку список администраторов пустой, добавляю тестовую запись.");
             User userTg = new User(248067313, "DrFailov", "Dr.","Failov");
-            add(userTg, userTg, "Разработчик бота.");
+            add(userTg, userTg, "Разработчик бота.", true,
+                    true, true, true,
+                    true, true);
         }
     }
 
-    public void add(User userToAdd, User responsible, String comment) throws Exception {
+    public void add(User userToAdd, User responsible, String comment, boolean allowDatabaseDump,
+                    boolean allowDatabaseRead, boolean allowDatabaseEdit, boolean allowLearning,
+                    boolean allowAdminsRead, boolean allowAdminsAdd) throws Exception {
         if(userToAdd == null)
             throw new Exception("Не могу добавить пользователя в список: Не получен пользователь чтобы его добавить.");
         if(responsible == null)
@@ -59,7 +63,9 @@ public class AdminList  extends CommandModule {
             throw new Exception("Не могу добавить пользователя в список: Не получен комментарий по поводу этого пользователя.");
         if(has(userToAdd))
             throw new Exception("Не могу добавить пользователя в список: Пользователь уже содержится в списке.");
-        AdminListItem adminListItem = new AdminListItem(userToAdd, responsible, comment);
+        AdminListItem adminListItem = new AdminListItem(userToAdd, responsible, comment,
+                allowDatabaseDump, allowDatabaseRead, allowDatabaseEdit,
+                allowLearning, allowAdminsRead, allowAdminsAdd);
         userList.add(adminListItem);
         log(adminListItem + " добавлен в список администраторов. Количество администраторов сейчас: " + userList.size());
         saveArrayToFile();
@@ -103,10 +109,24 @@ public class AdminList  extends CommandModule {
         private User user;
         private User responsible;
         private String comment;
-        private boolean allowDatabaseDump = false;
 
-        public AdminListItem(){
+        private boolean allowDatabaseDump = false; //выгрузка базы целиком
+        private boolean allowDatabaseRead = false; //просмотр ответов по ID, по вопросу и т.п.
+        private boolean allowDatabaseEdit = false; //Добавление, удаление ответов, и т.п.
+        private boolean allowLearning = false;     //Ещё пока не реализованная функциональность обучения
+        private boolean allowAdminsRead = false;    //Разрешить или нет просмотр списка администраторов
+        private boolean allowAdminsAdd = false;    //Разрешить или нет добавление администраторов
 
+        public AdminListItem(User user, User responsible, String comment, boolean allowDatabaseDump, boolean allowDatabaseRead, boolean allowDatabaseEdit, boolean allowLearning, boolean allowAdminsRead, boolean allowAdminsAdd) {
+            this.user = user;
+            this.responsible = responsible;
+            this.comment = comment;
+            this.allowDatabaseDump = allowDatabaseDump;
+            this.allowDatabaseRead = allowDatabaseRead;
+            this.allowDatabaseEdit = allowDatabaseEdit;
+            this.allowLearning = allowLearning;
+            this.allowAdminsRead = allowAdminsRead;
+            this.allowAdminsAdd = allowAdminsAdd;
         }
 
         public AdminListItem(User user, User responsible, String comment) {
@@ -117,6 +137,43 @@ public class AdminList  extends CommandModule {
 
         public AdminListItem(JSONObject jsonObject) throws Exception{
             fromJson(jsonObject);
+        }
+
+        public JSONObject toJson() throws JSONException {
+            JSONObject jsonObject = new JSONObject();
+            if(user != null)
+                jsonObject.put("user", user.toJson());
+            if(responsible != null)
+                jsonObject.put("responsible", responsible.toJson());
+            if(comment != null)
+                jsonObject.put("comment", comment);
+            jsonObject.put("allowDatabaseDump", allowDatabaseDump);
+            jsonObject.put("allowDatabaseRead", allowDatabaseRead);
+            jsonObject.put("allowDatabaseEdit", allowDatabaseEdit);
+            jsonObject.put("allowLearning", allowLearning);
+            jsonObject.put("allowAdminsRead", allowAdminsRead);
+            jsonObject.put("allowAdminsAdd", allowAdminsAdd);
+            return jsonObject;
+        }
+        private void fromJson(JSONObject jsonObject)throws JSONException, ParseException {
+            if(jsonObject.has("user"))
+                user = new User(jsonObject.getJSONObject("user"));
+            if(jsonObject.has("responsible"))
+                responsible = new User(jsonObject.getJSONObject("responsible"));
+            if(jsonObject.has("comment"))
+                comment = jsonObject.getString("comment");
+            if(jsonObject.has("allowDatabaseDump"))
+                allowDatabaseDump = jsonObject.getBoolean("allowDatabaseDump");
+            if(jsonObject.has("allowDatabaseRead"))
+                allowDatabaseRead = jsonObject.getBoolean("allowDatabaseRead");
+            if(jsonObject.has("allowDatabaseEdit"))
+                allowDatabaseEdit = jsonObject.getBoolean("allowDatabaseEdit");
+            if(jsonObject.has("allowLearning"))
+                allowLearning = jsonObject.getBoolean("allowLearning");
+            if(jsonObject.has("allowAdminsRead"))
+                allowAdminsRead = jsonObject.getBoolean("allowAdminsRead");
+            if(jsonObject.has("allowAdminsAdd"))
+                allowAdminsAdd = jsonObject.getBoolean("allowAdminsAdd");
         }
 
         public User getUser() {
@@ -143,36 +200,77 @@ public class AdminList  extends CommandModule {
             this.comment = comment;
         }
 
+        /**
+         * @return Можно ли этому администратору выгружать базу целиком
+         */
         public boolean isAllowDatabaseDump() {
             return allowDatabaseDump;
         }
 
-        public void setAllowDatabaseDump(boolean allowDatabaseDump) {
+        public AdminListItem setAllowDatabaseDump(boolean allowDatabaseDump) {
             this.allowDatabaseDump = allowDatabaseDump;
+            return this;
         }
 
+        /**
+         * @return Можно ли этому администратору просматривать ответы из базы, анализировать их
+         */
+        public boolean isAllowDatabaseRead() {
+            return allowDatabaseRead;
+        }
 
-        public JSONObject toJson() throws JSONException {
-            JSONObject jsonObject = new JSONObject();
-            if(user != null)
-                jsonObject.put("user", user.toJson());
-            if(responsible != null)
-                jsonObject.put("responsible", responsible.toJson());
-            if(comment != null)
-                jsonObject.put("comment", comment);
-            jsonObject.put("allowDatabaseDump", allowDatabaseDump);
-            return jsonObject;
+        public AdminListItem setAllowDatabaseRead(boolean allowDatabaseRead) {
+            this.allowDatabaseRead = allowDatabaseRead;
+            return this;
         }
-        private void fromJson(JSONObject jsonObject)throws JSONException, ParseException {
-            if(jsonObject.has("user"))
-                user = new User(jsonObject.getJSONObject("user"));
-            if(jsonObject.has("responsible"))
-                responsible = new User(jsonObject.getJSONObject("responsible"));
-            if(jsonObject.has("comment"))
-                comment = jsonObject.getString("comment");
-            if(jsonObject.has("allowDatabaseDump"))
-                allowDatabaseDump = jsonObject.getBoolean("allowDatabaseDump");
+
+        /**
+         * @return Можно ли этому администратору добавлять и удалять ответы из базы
+         */
+        public boolean isAllowDatabaseEdit() {
+            return allowDatabaseEdit;
         }
+
+        public AdminListItem setAllowDatabaseEdit(boolean allowDatabaseEdit) {
+            this.allowDatabaseEdit = allowDatabaseEdit;
+            return this;
+        }
+
+        /**
+         * @return Можно ли этому администратору пользоваться инфраструктурой обучения
+         */
+        public boolean isAllowLearning() {
+            return allowLearning;
+        }
+
+        public AdminListItem setAllowLearning(boolean allowLearning) {
+            this.allowLearning = allowLearning;
+            return this;
+        }
+
+        /**
+         * @return Можно ли этому администратору просматривать список администраторов
+         */
+        public boolean isAllowAdminsRead() {
+            return allowAdminsRead;
+        }
+
+        public void setAllowAdminsRead(boolean allowAdminsRead) {
+            this.allowAdminsRead = allowAdminsRead;
+        }
+
+        /**
+         * @return Можно ли этому администратору добавлять других администраторов
+         */
+        public boolean isAllowAdminsAdd() {
+            return allowAdminsAdd;
+        }
+
+        public AdminListItem setAllowAdminsAdd(boolean allowAdminsAdd) {
+            this.allowAdminsAdd = allowAdminsAdd;
+            return this;
+        }
+
 
         @NonNull
         @Override

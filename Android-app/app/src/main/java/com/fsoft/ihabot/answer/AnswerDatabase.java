@@ -74,26 +74,20 @@ public class AnswerDatabase  extends CommandModule {
 
     public AnswerDatabase(ApplicationManager applicationManager)  throws Exception {
         this.applicationManager = applicationManager;
-        jaroWinkler = new JaroWinkler();
-        synonyme = new Synonyme(applicationManager);
-        if(applicationManager == null) {
-            folderAnswerDatabase = null;
-            fileAnswers = null;
-            folderAttachments = null;
-            return;
-        }
-
         folderAnswerDatabase = new File(applicationManager.getHomeFolder(), "AnswerDatabase");
         if(!folderAnswerDatabase.isDirectory())
             log("Папки для AnswerDatabase нет. Создание папки: " + folderAnswerDatabase.mkdirs());
         folderAttachments = new File(folderAnswerDatabase, "attachments");
         fileAnswers = new File(folderAnswerDatabase, "answer_database.txt");
+        jaroWinkler = new JaroWinkler();
+        synonyme = new Synonyme(this);
+
+
         if(!fileAnswers.isFile()){
             log("Файла базы нет. Загрузка файла answer_database.zip из ресурсов...");
             loadDefaultDatabase();
         }
 
-        childCommands.add(new TestCommand());
         childCommands.add(new DumpCommand());
         childCommands.add(new RememberCommand());
         childCommands.add(new GetAnswersByIdCommand());
@@ -101,12 +95,15 @@ public class AnswerDatabase  extends CommandModule {
         childCommands.add(new RemoveAnswerByIdCommand());
     }
 
+
     /**
      * Подбирает ответ на вопрос исходя из базы вопросв. Эта функция просматривает файл полностью в поисках ответа.
      * @param question Входящее сообщение типа Message в исходном виде, без никакиз преобразований
-     * @return AnswerElement из базы который описывает элемент базы ответов который подходит под этот вопрос
+     * @return MessageRating описывающий что подходит в качестве ответа
+     * @author Dr. Failov
+     * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
      */
-    public AnswerElement pickAnswer(Message question) throws Exception{
+    public MessageRating pickAnswers(Message question) throws Exception{
         if(question.getText().split(" +").length > 7)
             throw new Exception("Я на сообщение с таким количеством слов не смогу подобрать ответ.");
         if(question.getText().length() > 40)
@@ -140,10 +137,24 @@ public class AnswerDatabase  extends CommandModule {
                 }
             }
         }
-
         if (errors != 0)
             log("! При загрузке базы ответов возникло ошибок: " + errors + ".");
         System.gc();
+
+        return messageRating;
+
+    }
+
+    /**
+     * Подбирает ответ на вопрос исходя из базы вопросв. Эта обращается к фукнуии pickAnswers
+     * @param question Входящее сообщение типа Message в исходном виде, без никакиз преобразований
+     * @return AnswerElement из базы который описывает элемент базы ответов который подходит под этот вопрос
+     * @author Dr. Failov
+     * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
+     */
+    public AnswerElement pickAnswer(Message question) throws Exception{
+        MessageRating messageRating = pickAnswers(question);
+
 
         log("-----------------------------------------------------------");
         log("Вопрос: " + question.getText());
@@ -528,11 +539,26 @@ public class AnswerDatabase  extends CommandModule {
     }
 
     /**
+     * @return ApplicationManager который хранится в этом модуле. Используется например для передачи его дочерним модулям.
+     */
+    public ApplicationManager getApplicationManager() {
+        return applicationManager;
+    }
+
+    /**
      * Выдает папку где хранятся вложения к ответам в базе
      * @return File который папке где лежат аттачи
      */
     public File getFolderAttachments() {
         return folderAttachments;
+    }
+
+    /**
+     * Выдает папку где хранится всё что связано с базой ответов. Ответы, аттачи, синонимы
+     * @return File который папка где лежит база
+     */
+    public File getFolderAnswerDatabase() {
+        return folderAnswerDatabase;
     }
 
     private String compareMessagesLastS1Text = ""; //данные для оптимизации compareMessages. Хранит строку с прошлого вызова, чтобы понять актуальны ли следующие поля
@@ -1127,16 +1153,6 @@ public class AnswerDatabase  extends CommandModule {
                     return;
                 }
             }
-        }
-    }
-
-    private static class TestCommand extends CommandModule{
-        @Override
-        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
-            ArrayList<Message> result = super.processCommand(message, tgAccount);
-            if(message.getText().toLowerCase(Locale.ROOT).trim().equals("проверка базы"))
-                result.add(new Message("Команда работает нормально!"));
-            return result;
         }
     }
 

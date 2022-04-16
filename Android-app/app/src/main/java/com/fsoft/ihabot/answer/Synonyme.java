@@ -30,16 +30,16 @@ public class Synonyme extends CommandModule {
     private File fileSynonyme = null;
     private final ArrayList<ArrayList<String>> synonymeRows = new ArrayList<>();
 
-    public Synonyme(ApplicationManager applicationManager)  throws Exception {
-        this.applicationManager = applicationManager;
+    public Synonyme(AnswerDatabase answerDatabase)  throws Exception {
+        this.applicationManager = answerDatabase.getApplicationManager();
         if(applicationManager == null)
             return;
-        fileSynonyme = new File(applicationManager.getHomeFolder(), "synonyme.txt");
+        fileSynonyme = new File(answerDatabase.getFolderAnswerDatabase(), "synonyme.txt");
         if(!fileSynonyme.isFile()){
-            log(". Файла базы нет. Загрузка файла synonyme.zip из ресурсов...");
+            log(". Файла синонимов нет. Загрузка файла synonyme.zip из ресурсов...");
             loadDefaultDatabase();
         }
-        loadDefaultDatabase(); //todo это для отладки!
+        //loadDefaultDatabase(); //tod это для отладки!
 
         BufferedReader bufferedReader = new BufferedReader(new FileReader(fileSynonyme));
         String line;
