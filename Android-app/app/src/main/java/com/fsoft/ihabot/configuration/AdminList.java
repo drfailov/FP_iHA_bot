@@ -45,11 +45,19 @@ public class AdminList  extends CommandModule {
         log("Загружено список: " + userList.size() + " администраторов");
         if(userList.isEmpty()){
             log("Поскольку список администраторов пустой, добавляю тестовую запись.");
-            User userTg = new User(248067313, "DrFailov", "Dr.","Failov");
-            add(userTg, userTg, "Разработчик бота.", true,
-                    true, true, true,
-                    true, true);
+            {
+                User userTg = new User(248067313, "DrFailov", "Dr.", "Failov");
+                add(userTg, userTg, "Разработчик бота.", true,
+                        true, true, true,
+                        true, true);
+            }
         }
+//        {
+//            User userTg = new User(914020479, "Polyasha00", "", "");
+//            add(userTg, userTg, "Подруга разработчика. Так надо.", true,
+//                    true, true, true,
+//                    true, true);
+//        }
     }
 
     public void add(User userToAdd, User responsible, String comment, boolean allowDatabaseDump,

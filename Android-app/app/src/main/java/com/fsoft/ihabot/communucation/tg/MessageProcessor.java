@@ -439,7 +439,8 @@ public class MessageProcessor extends CommandModule {
 
                         @Override
                         public void error(Throwable error) {
-                            log(error.getClass().getName() + " while sending document");
+                            error.printStackTrace();
+                            log(error.getLocalizedMessage() + " while sending document");
                         }
                     }, chatId, answer.getText(), file, reply_to_message_id);
                 }

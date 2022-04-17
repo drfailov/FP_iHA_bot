@@ -224,7 +224,7 @@ public class TgAccountCore extends Account {
     }
     public void getUpdates(final GetUpdatesListener listener, long offset, int timeout){
         final String url ="https://api.telegram.org/bot"+getId()+":"+getToken()+"/getUpdates?offset="+offset+"&timeout="+timeout;
-        log("Getting photos: " + url);
+        log("Getting updates: " + url);
         incrementApiCounter();
         // Request a string response from the provided URL.
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
@@ -635,7 +635,7 @@ public class TgAccountCore extends Account {
         try {
             if(!f.isFile())
                 throw new Exception("Попытка отправить под видом документа файл которого не существует.");
-            if(f.length() > 45000000)
+            if(f.length() > 47000000)
                 throw new Exception("Попытка отправить под видом документа файл размер которого больше 45мб.");
             final String url ="https://api.telegram.org/bot"+getId()+":"+getToken()+"/sendDocument";
             log("Uploading document file: " + url);

@@ -88,7 +88,6 @@ public class AnswerDatabase  extends CommandModule {
             log("Файла базы нет. Загрузка файла answer_database.zip из ресурсов...");
             loadDefaultDatabase();
         }
-        loadDefaultDatabase();
 
         childCommands.add(new DumpCommand());
         childCommands.add(new RememberCommand());
@@ -1270,7 +1269,7 @@ public class AnswerDatabase  extends CommandModule {
                     ZipParameters parameters = new ZipParameters();
                     parameters.setCompressionMethod(CompressionMethod.DEFLATE);
                     parameters.setCompressionLevel(CompressionLevel.NORMAL);
-                    zipFile.createSplitZipFileFromFolder(folderAnswerDatabase, parameters, true, 45485760);
+                    zipFile.createSplitZipFileFromFolder(folderAnswerDatabase, parameters, true, 40485760);
                     log("Архив создан без ошибок.");
                 } catch (Exception e) {
                     e.printStackTrace();
