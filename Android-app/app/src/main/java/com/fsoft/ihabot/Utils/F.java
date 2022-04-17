@@ -832,6 +832,16 @@ public class F {
             }
             return result;
         }
-
+    public static boolean deleteDir(File dirFile) {
+        if (dirFile.isDirectory()) {
+            File[] dirs = dirFile.listFiles();
+            if(dirs != null) {
+                for (File dir : dirs) {
+                    deleteDir(dir);
+                }
+            }
+        }
+        return dirFile.delete();
+    }
 
 }

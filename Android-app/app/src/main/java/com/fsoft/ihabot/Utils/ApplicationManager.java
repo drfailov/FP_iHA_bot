@@ -1,5 +1,7 @@
 package com.fsoft.ihabot.Utils;
 
+import static com.fsoft.ihabot.Utils.F.deleteDir;
+
 import android.content.Context;
 
 import com.fsoft.ihabot.BotService;
@@ -9,6 +11,8 @@ import com.fsoft.ihabot.answer.Message;
 import com.fsoft.ihabot.communucation.Communicator;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
 import com.fsoft.ihabot.configuration.AdminList;
+
+import net.lingala.zip4j.util.FileUtils;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -73,8 +77,12 @@ public class ApplicationManager extends CommandModule {
         File[] tempFiles = getTempFolder().listFiles();
         if(tempFiles != null && tempFiles.length != 0){
             log("Во временной папке есть старые файлы. Очистка временной папки...");
-            for (File file:tempFiles)
-                log("- Удаление файла " + file.getName() + ": " + file.delete());
+            for (File file:tempFiles) {
+                if(file.isFile())
+                    log("- Удаление файла " + file.getName() + ": " + file.delete());
+                if(file.isDirectory())
+                    log("- Удаление папки " + file.getName() + ": " + deleteDir(file));
+            }
         }
 
         //инициализация основных модулей
@@ -134,7 +142,9 @@ public class ApplicationManager extends CommandModule {
             ArrayList<Message> result = super.processCommand(message, tgAccount);
             if(message.getText().toLowerCase(Locale.ROOT).trim().equals("помощь")) {
                 ArrayList<CommandDesc> commands = ApplicationManager.this.getHelp();
-                StringBuilder stringBuilder = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
+                StringBuilder stringBuilder = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+                        "Эти команды доступны только администраторам <i>(если ты получил этот ответ, значит ты один из них)</i>. " +
+                        "Но для некоторых команд могут потребоваться дополнительные права доступа.\n\n");
                 for (CommandDesc commandDesc:commands)
                     stringBuilder.append("<b>").append(commandDesc.getExample()).append("</b> - ").append(commandDesc.getHelpText()).append("\n\n");
                 Message answer = new Message(stringBuilder.toString());
@@ -146,7 +156,7 @@ public class ApplicationManager extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp() {
             ArrayList<CommandDesc> result = super.getHelp();
-            result.add(new CommandDesc("помощь", "Выводит полный список доступных команд"));
+            result.add(new CommandDesc("Помощь", "Выводит полный список доступных команд (эта команда)."));
             return result;
         }
     }

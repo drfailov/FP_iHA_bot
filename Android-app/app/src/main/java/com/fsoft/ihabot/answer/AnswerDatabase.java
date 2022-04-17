@@ -87,6 +87,7 @@ public class AnswerDatabase  extends CommandModule {
         }
 
         childCommands.add(new DumpCommand());
+        childCommands.add(new RestoreCommand());
         childCommands.add(new DownloadCommand());
         childCommands.add(new RememberCommand());
         childCommands.add(new GetAnswersByIdCommand());
@@ -119,7 +120,7 @@ public class AnswerDatabase  extends CommandModule {
         }
         log("-----------------------------------------------------------");
 
-        if(messageRating.isEmpty() || messageRating.getTopRating() < 0.40)
+        if(messageRating.isEmpty() || messageRating.getTopRating() < 0.20)
             throw new Exception("Нормального ответа найти не получилось");
 
         ArrayList<AnswerElement> answers = messageRating.getTopMessages();
@@ -769,6 +770,17 @@ public class AnswerDatabase  extends CommandModule {
                     String s1word = s1words.get(i);
                     String s2word = s2words.get(j);
                     double similarity = jaroWinkler.similarity(s1word, s2word);
+                    {//вопросительные слова не так важны как остальные.
+                        if (isQuestionWord(s1word)) // Поэтому приоритет вопросительных слов принижаем.
+                            similarity *= 0.5;
+                    }
+                    {//Слово НЕ очень важное
+                        if (s1word.toLowerCase(Locale.ROOT).trim().equals("не")) // Поэтому приоритет вопросительных слов принижаем.
+                            similarity *= 1.3;
+                    }
+//                    { //Учитываем длину слов. Чем длинее слово тем оно важнее
+//                        similarity *= s1word.length()/5f;
+//                    }
                     if(similarity >= maxSimilarity){
                         s1wordMax = s1word;
                         s2wordMax = s2word;
@@ -790,7 +802,7 @@ public class AnswerDatabase  extends CommandModule {
             result += 0.1;
 
         //учесть длину строк. Чем больше это число тем больше значат отличия в длине строк
-        result -= Math.abs(s1.length()-s2.length()) * 0.004;
+        result -= Math.abs(s1.length()-s2.length()) * 0.001;
 
         return result;
     }
@@ -823,21 +835,33 @@ public class AnswerDatabase  extends CommandModule {
      * @return true если это вопрос, false если это не вопрос.
      */
     private static boolean isQuestion(String s1){
-        return  (" "+s1).contains("?")
-                || (" "+s1).contains(" где ")
-                || (" "+s1).contains(" ли ")
-                || (" "+s1).contains(" сколько ")
-                || (" "+s1).contains(" когда ")
-                || (" "+s1).contains(" как ")
-                || (" "+s1).contains(" какие ")
-                || (" "+s1).contains(" кем ")
-                || (" "+s1).contains(" каким ")
-                || (" "+s1).contains(" с кем ")
-                || (" "+s1).contains(" в каком ")
-                || (" "+s1).contains(" какой ")
-                || (" "+s1).contains(" какая ")
-                || (" "+s1).contains(" какими ")
-                || (" "+s1).contains(" что ");
+        if(s1.contains("?"))
+            return true;
+        String[] strings = s1.split(" ");
+        for (String s:strings)
+            if(isQuestionWord(s))
+                return true;
+        return false;
+    }
+
+    /**
+     * определяет является ли конкретное слово вопростительным. На русском только работает.
+     * @param in входящее слово
+     * @return true если слово является вопросительным на русском.
+     */
+    private static boolean isQuestionWord(String in){
+        in = in.toLowerCase(Locale.ROOT).trim();
+        String[] questionWords =
+                {"где", "ли", "сколько", "когда", "как",
+                        "какие", "кем", "каким", "какой",
+                        "какая", "какими", "что", "который",
+                        "какова", "которая"
+                };
+        for (String s:questionWords){
+            if(s.equals(in))
+                return true;
+        }
+        return false;
     }
 
     private static boolean isNumber(String s){
@@ -918,6 +942,7 @@ public class AnswerDatabase  extends CommandModule {
         result = result.replace('ї', 'і');
         result = result.replace('щ', 'ш');
         result = result.replace('ъ', 'ь');
+        result = result.replace("ь", ""); //пользователи его часто упустают
         return result;
     }
 
@@ -1309,6 +1334,91 @@ public class AnswerDatabase  extends CommandModule {
             return result;
         }
     }
+
+    /**
+     * Команда "восстановить базу 2022-04-17_DatabaseDump.zip"
+     */
+    private class RestoreCommand extends CommandModule{
+        @Override
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount);
+            if(message.getText().toLowerCase(Locale.ROOT).trim().startsWith("восстановить базу")) {
+                String fileName = message.getText().toLowerCase(Locale.ROOT).replace("восстановить базу", "").trim();
+                log("Выполнение команды восстановления дампа базы. Файл который будем восстанавливать: " + fileName);
+                File backupFile =  new File(applicationManager.getTempFolder(), fileName);
+                if(!backupFile.isFile()){
+                    result.add(new Message("Ответ на команду <b>\""+message.getText()+"\"</b>\n\n"+
+                            "\"Не могу восстановить базу данных, поскольку файла с именем \""+fileName+"\" не существует."));
+                    return result;
+                }
+                if(!fileName.toLowerCase(Locale.ROOT).endsWith(".zip")){
+                    result.add(new Message("Ответ на команду <b>\""+message.getText()+"\"</b>\n\n"+
+                            "Не могу восстановить базу данных, поскольку для восстановления базы данных требуется файл формата ZIP."));
+                    return result;
+                }
+
+
+
+
+
+
+//                //Выбрать имя для нового файла
+//                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+//                File tmpZipFile = new File(applicationManager.getTempFolder(), sdf.format(new Date())+"_DatabaseDump.zip");
+//                //если файл сегодня уже создавался, ему придумается новое имя. И так до тех пор, пока имя не будет уникальным.
+//                for(int i=2; tmpZipFile.isFile(); i++) {
+//                    tmpZipFile = new File(applicationManager.getTempFolder(), sdf.format(new Date()) + "_DatabaseDump" + i + ".zip");
+//                }
+//                log("Создание архива "+tmpZipFile.getName()+"...");
+//                try {
+//                    ZipFile zipFile = new ZipFile(tmpZipFile);
+//                    ZipParameters parameters = new ZipParameters();
+//                    parameters.setCompressionMethod(CompressionMethod.DEFLATE);
+//                    parameters.setCompressionLevel(CompressionLevel.NORMAL);
+//                    zipFile.createSplitZipFileFromFolder(folderAnswerDatabase, parameters, true, 19111000);
+//                    log("Архив создан без ошибок.");
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                    result.add(new Message("" +
+//                            "Ошибка создания архива с базой данных: " + e.getLocalizedMessage()));
+//                    return result;
+//                }
+//
+//                log("Вот какие файлы теперь валяются во временной папке: ");
+//                File[] tmpFiles = applicationManager.getTempFolder().listFiles();
+//                if(tmpFiles != null) {
+//                    for (File file : tmpFiles) {
+//                        log("- " + file.getName() + " : " + file.length() + " байт.");
+//                    }
+//                }
+//
+//                String archiveName = tmpZipFile.getName().split("\\.")[0];
+//                log("Имя текущего архива: " + archiveName);
+//                if(tmpZipFile.isFile()) {
+//                    log("Файлы к отправке: ");
+//                    if(tmpFiles != null) {
+//                        for (File file : tmpFiles) {
+//                            if(file.getName().contains(archiveName)) {
+//                                Message answer = new Message("Дамп базы прикрепляю файлом.");
+//                                log("- " + file.getName() + " : " + file.length() + " байт.");
+//                                answer.addAttachment(new Attachment().setDoc().setFileToUpload(file));
+//                                result.add(answer);
+//                            }
+//                        }
+//                    }
+//                }
+            }
+            return result;
+        }
+
+        @Override
+        public ArrayList<CommandDesc> getHelp() {
+            ArrayList<CommandDesc> result = super.getHelp();
+            result.add(new CommandDesc("Восстановить базу file.zip", "Восстановить базу ответов их архива, который ранее был загружен во временную папку"));
+            return result;
+        }
+    }
+
     /**
      * Команда загрузки файла "📄"
      */
@@ -1335,7 +1445,7 @@ public class AnswerDatabase  extends CommandModule {
                         resultingFile = new File(tmpFolder, attachment.getReceivedFilename());
                         log("Перенос файла в правильное место: "+downloadedFile.renameTo(resultingFile));
                     }
-                    sb.append("Файл был загружен: <code>").append(resultingFile.getName()).append("</code>\n");
+                    sb.append("Файл был загружен: \n<code>").append(resultingFile.getName()).append("</code>\n\n");
 
                     sb.append("<b>Содержимое временной папки сейчас:</b>\n");
                     File[] files = tmpFolder.listFiles();
@@ -1516,7 +1626,7 @@ public class AnswerDatabase  extends CommandModule {
      * Команда "Ответы на Иди нахуй!"
      */
     private class GetAnswersByQuestionCommand extends CommandModule{
-        final int numberOfAnswers = 20;
+        final int numberOfAnswers = 14;
         @Override
         public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
             ArrayList<Message> result = super.processCommand(message, tgAccount);
@@ -1556,7 +1666,7 @@ public class AnswerDatabase  extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp() {
             ArrayList<CommandDesc> result = super.getHelp();
-            result.add(new CommandDesc("ответы на Привет!", "Выведет список из "+numberOfAnswers+" ответов на заданный вопрос с указанием их рейтинга."));
+            result.add(new CommandDesc("Ответы на Привет!", "Выведет список из "+numberOfAnswers+" ответов на заданный вопрос с указанием их рейтинга."));
             return result;
         }
     }
@@ -1605,7 +1715,7 @@ public class AnswerDatabase  extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp() {
             ArrayList<CommandDesc> result = super.getHelp();
-            result.add(new CommandDesc("ответ 15032", "Отправит ответ с заданным ID"));
+            result.add(new CommandDesc("Ответ 15032", "Отправит ответ с заданным ID"));
             return result;
         }
     }
@@ -1635,7 +1745,7 @@ public class AnswerDatabase  extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp() {
             ArrayList<CommandDesc> result = super.getHelp();
-            result.add(new CommandDesc("забудь 15032", "удалит ответ с заданным ID из базы и почистит вложения"));
+            result.add(new CommandDesc("Забудь 15032", "Удалит ответ с заданным ID из базы и почистит вложения"));
             return result;
         }
     }

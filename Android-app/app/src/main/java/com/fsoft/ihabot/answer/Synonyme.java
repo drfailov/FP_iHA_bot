@@ -39,7 +39,7 @@ public class Synonyme extends CommandModule {
             log(". Файла синонимов нет. Загрузка файла synonyme.zip из ресурсов...");
             loadDefaultDatabase();
         }
-        //loadDefaultDatabase(); //tod это для отладки!
+        loadDefaultDatabase(); //todo это для отладки!
 
         BufferedReader bufferedReader = new BufferedReader(new FileReader(fileSynonyme));
         String line;
