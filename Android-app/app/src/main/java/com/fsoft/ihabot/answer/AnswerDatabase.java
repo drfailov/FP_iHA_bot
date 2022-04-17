@@ -197,8 +197,14 @@ public class AnswerDatabase  extends CommandModule {
                 if (errors != 0)
                     log("При внесении FileID в базу возникло ошибок: " + errors + ".");
                 log("В базе изменено " + changed + " FileID.");
-                log("Удаление старой базы: " + fileAnswers.delete());
-                log("Замена старой базы новой: " + fileTmp.renameTo(fileAnswers));
+                File databaseTmpStorage = new File(applicationManager.getTempFolder(), "Answer_database_"+new Date().getTime()+".tmp");
+                log("Убираем старую базу: " + fileAnswers.renameTo(databaseTmpStorage));
+                boolean databaseReplaced = fileTmp.renameTo(fileAnswers);
+                log("Замена старой базы новой: " + databaseReplaced);
+                if(!databaseReplaced){
+                    log("!!! Возникла проблема с заменой базы данных! Восстановление резервной копии: " + databaseTmpStorage.getName());
+                    log("Замена базы из файла резервной кории: " + databaseTmpStorage.renameTo(fileAnswers));
+                }
             }
             updateAnswerPhotoIdQueue.clear();
             log("Готово, FileID успешно внесены в базу. Очередь сброшена.");
@@ -247,7 +253,7 @@ public class AnswerDatabase  extends CommandModule {
     public void updateAnswerUsedTimes(long answerID) throws Exception{
         updateAnswerUsedTimesQueue.add(answerID);
         log("Ответ " + answerID + " добавлен в очередь("+updateAnswerUsedTimesQueue.size()+") для обновления количества его использований...");
-        if(updateAnswerUsedTimesQueue.size() > 10){
+        if(updateAnswerUsedTimesQueue.size() > 2){
             //записать в файл инфу
             log("Внесение в файл базы ответов информации о количестве использований ответов " + F.text(updateAnswerUsedTimesQueue) + "...");
             File fileTmp = new File(applicationManager.getTempFolder(), "Answer_database.tmp");
@@ -292,8 +298,14 @@ public class AnswerDatabase  extends CommandModule {
                 if (errors != 0)
                     log("При внесении в базу информации о количестве использований ответов возникло ошибок: " + errors + ".");
                 log("В файл базы ответов внесено " + changed + " изменений.");
-                log("Удаление старой базы: " + fileAnswers.delete());
-                log("Замена старой базы новой: " + fileTmp.renameTo(fileAnswers));
+                File databaseTmpStorage = new File(applicationManager.getTempFolder(), "Answer_database_"+new Date().getTime()+".tmp");
+                log("Убираем старую базу: " + fileAnswers.renameTo(databaseTmpStorage));
+                boolean databaseReplaced = fileTmp.renameTo(fileAnswers);
+                log("Замена старой базы новой: " + databaseReplaced);
+                if(!databaseReplaced){
+                    log("!!! Возникла проблема с заменой базы данных! Восстановление резервной копии: " + databaseTmpStorage.getName());
+                    log("Замена базы из файла резервной кории: " + databaseTmpStorage.renameTo(fileAnswers));
+                }
             }
             updateAnswerUsedTimesQueue.clear();
         }
@@ -523,8 +535,14 @@ public class AnswerDatabase  extends CommandModule {
             if (errors != 0)
                 log("При удалении ответа по ID из базы возникло ошибок: " + errors + ".");
             log("В базе удалено " + changed + " ответов.");
-            log("Удаление старой базы: " + fileAnswers.delete());
-            log("Замена старой базы новой: " + fileTmp.renameTo(fileAnswers));
+            File databaseTmpStorage = new File(applicationManager.getTempFolder(), "Answer_database_"+new Date().getTime()+".tmp");
+            log("Убираем старую базу: " + fileAnswers.renameTo(databaseTmpStorage));
+            boolean databaseReplaced = fileTmp.renameTo(fileAnswers);
+            log("Замена старой базы новой: " + databaseReplaced);
+            if(!databaseReplaced){
+                log("!!! Возникла проблема с заменой базы данных! Восстановление резервной копии: " + databaseTmpStorage.getName());
+                log("Замена базы из файла резервной кории: " + databaseTmpStorage.renameTo(fileAnswers));
+            }
         }
         return changed;
     }
