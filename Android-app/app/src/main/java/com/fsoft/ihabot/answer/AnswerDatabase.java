@@ -1,7 +1,6 @@
 package com.fsoft.ihabot.answer;
 
 import android.content.res.Resources;
-import android.util.Pair;
 
 import com.fsoft.ihabot.R;
 import com.fsoft.ihabot.Utils.ApplicationManager;
@@ -12,7 +11,6 @@ import com.fsoft.ihabot.Utils.Triplet;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
 
 import net.lingala.zip4j.ZipFile;
-import net.lingala.zip4j.model.Zip4jConfig;
 import net.lingala.zip4j.model.ZipParameters;
 import net.lingala.zip4j.model.enums.CompressionLevel;
 import net.lingala.zip4j.model.enums.CompressionMethod;
@@ -27,7 +25,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -90,6 +87,7 @@ public class AnswerDatabase  extends CommandModule {
         }
 
         childCommands.add(new DumpCommand());
+        childCommands.add(new DownloadCommand());
         childCommands.add(new RememberCommand());
         childCommands.add(new GetAnswersByIdCommand());
         childCommands.add(new GetAnswerByIdCommand());
@@ -582,7 +580,7 @@ public class AnswerDatabase  extends CommandModule {
                                     AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
                                     if (currentAnswerElement.hasAnswer()) {
                                         for (Attachment attachment : currentAnswerElement.getAnswerMessage().getAttachments()) {
-                                            String filename = attachment.getFilename();
+                                            String filename = attachment.getAttachmentsFilename();
                                             if (filename != null && !filename.isEmpty()) {
                                                 //тут происходит работа с каждым файлом каждого вложения каждого ответа из базы
                                                 attachmentsToDelete.removeIf(file -> file.getName().equals(filename));
@@ -641,7 +639,7 @@ public class AnswerDatabase  extends CommandModule {
                     log("Перемещение файла " + tmpFile.getName() + " из " + tmpFile.getParentFile() + " в " + destFile.getParentFile() + "...");
                     if(tmpFile.renameTo(destFile)) {
                         log("Файл перемещен. Прикрепляю файл к ответу.");
-                        attachment.setFilename(destFile.getName());
+                        attachment.setAttachmentsFilename(destFile.getName());
                     }
                     else {
                         throw new Exception("Ошибка скачивания вложений: Не получается сохранить файл в папке вложений.");
@@ -1269,10 +1267,12 @@ public class AnswerDatabase  extends CommandModule {
                     ZipParameters parameters = new ZipParameters();
                     parameters.setCompressionMethod(CompressionMethod.DEFLATE);
                     parameters.setCompressionLevel(CompressionLevel.NORMAL);
-                    zipFile.createSplitZipFileFromFolder(folderAnswerDatabase, parameters, true, 40485760);
+                    zipFile.createSplitZipFileFromFolder(folderAnswerDatabase, parameters, true, 19111000);
                     log("Архив создан без ошибок.");
                 } catch (Exception e) {
                     e.printStackTrace();
+                    result.add(new Message("Ошибка создания архива с базой данных: " + e.getLocalizedMessage()));
+                    return result;
                 }
 
                 log("Вот какие файлы теперь валяются во временной папке: ");
@@ -1305,7 +1305,60 @@ public class AnswerDatabase  extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp() {
             ArrayList<CommandDesc> result = super.getHelp();
-            result.add(new CommandDesc("выгрузить базу", "Отправить во вложении архив с текущей базой и вложениями."));
+            result.add(new CommandDesc("Выгрузить базу", "Отправить во вложении архив с текущей базой и вложениями."));
+            return result;
+        }
+    }
+    /**
+     * Команда загрузки файла "📄"
+     */
+    private class DownloadCommand extends CommandModule{
+        @Override
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception{
+            ArrayList<Message> result = super.processCommand(message, tgAccount);
+            if(message.hasAttachments()) {
+                for (Attachment attachment:message.getAttachments()){
+                    if(!attachment.isDoc())//ignore if not document
+                        return result;
+                    if(attachment.getSize() > 19888000){
+                        result.add(new Message("Ответ на команду загрузки файла.\n\n"+
+                                "Команда загрузки работает только с файлами размером менее 20мб."));
+                        return result;
+                    }
+                    StringBuilder sb = new StringBuilder("Ответ на команду загрузки файла.\n\n");
+                    File tmpFolder = applicationManager.getTempFolder();
+                    log("Загрузка полученного файла: "+attachment.getReceivedFilename()+"... ");
+                    File downloadedFile = tgAccount.downloadPhotoAttachment(attachment.getTgFileID(tgAccount.getId()));
+                    log("Файл загружен в: "+downloadedFile+"... ");
+                    File resultingFile = downloadedFile;
+                    if(!attachment.getReceivedFilename().isEmpty()){
+                        resultingFile = new File(tmpFolder, attachment.getReceivedFilename());
+                        log("Перенос файла в правильное место: "+downloadedFile.renameTo(resultingFile));
+                    }
+                    sb.append("Файл был загружен: <code>").append(resultingFile.getName()).append("</code>\n");
+
+                    sb.append("<b>Содержимое временной папки сейчас:</b>\n");
+                    File[] files = tmpFolder.listFiles();
+                    if(files == null || files.length == 0){
+                        sb.append("Папка пуста.\n");
+                    }
+                    else {
+                        for (File file:files){
+                            sb.append("<code>").append(file.getName()).append("</code>, ").append(file.length()).append(" байт.\n");
+                        }
+                    }
+                    result.add(new Message(sb.toString()));
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public ArrayList<CommandDesc> getHelp() {
+            ArrayList<CommandDesc> result = super.getHelp();
+            result.add(new CommandDesc("\uD83D\uDCC4", "Пришли боту документ, чтобы закачать во временную папку файл из вложения. " +
+                    "Такой файл может быть использовал в других командах позднее. " +
+                    "Временная папка очищается при перезапуске бота."));
             return result;
         }
     }
@@ -1404,7 +1457,7 @@ public class AnswerDatabase  extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp() {
             ArrayList<CommandDesc> result = super.getHelp();
-            result.add(new CommandDesc("запомни", "После этого сообщения пришли 2 сообщения: вопрос и ответ. Сохранит в базу такую пару вопрос-ответ."));
+            result.add(new CommandDesc("Запомни", "После этого сообщения пришли 2 сообщения: вопрос и ответ. Сохранит в базу такую пару вопрос-ответ."));
             return result;
         }
 
@@ -1455,7 +1508,7 @@ public class AnswerDatabase  extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp() {
             ArrayList<CommandDesc> result = super.getHelp();
-            result.add(new CommandDesc("ответы 15032", "Выведет список из "+numberOfAnswers/2+" сообщений до указанного ответа и "+numberOfAnswers/2+" сообщений после указанного ответа."));
+            result.add(new CommandDesc("Ответы 15032", "Выведет список из "+numberOfAnswers/2+" сообщений до указанного ответа и "+numberOfAnswers/2+" сообщений после указанного ответа."));
             return result;
         }
     }

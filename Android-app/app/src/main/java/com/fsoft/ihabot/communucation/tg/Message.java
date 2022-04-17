@@ -24,7 +24,9 @@ public class Message {
     private Date date = null;
     private Chat chat = null;
     private Sticker sticker = null;
+    private Document document = null;
     private String text = "";
+    private String caption = "";
     private Message reply_to_message = null;
     private final ArrayList<PhotoSize> photo = new ArrayList<>();
     private final ArrayList<MessageEntity> entities = new ArrayList<>();
@@ -66,10 +68,14 @@ public class Message {
             jsonObject.put("chat", chat.toJson());
         if(sticker != null)
             jsonObject.put("sticker", sticker.toJson());
+        if(document != null)
+            jsonObject.put("document", document.toJson());
         if(reply_to_message != null)
             jsonObject.put("reply_to_message", reply_to_message.toJson());
         if(text != null)
             jsonObject.put("text", text);
+        if(caption != null)
+            jsonObject.put("caption", caption);
         if(!entities.isEmpty()) {
             JSONArray jsonArray = new JSONArray();
             for (int i = 0; i < entities.size(); i++)
@@ -97,10 +103,14 @@ public class Message {
             chat = new Chat(jsonObject.getJSONObject("chat"));
         if(jsonObject.has("sticker"))
             sticker = new Sticker(jsonObject.getJSONObject("sticker"));
+        if(jsonObject.has("document"))
+            document = new Document(jsonObject.getJSONObject("document"));
         if(jsonObject.has("reply_to_message"))
             reply_to_message = new Message(jsonObject.getJSONObject("reply_to_message"));
         if(jsonObject.has("text"))
             text = jsonObject.getString("text");
+        if(jsonObject.has("caption"))
+            caption = jsonObject.getString("caption");
         entities.clear();
         if(jsonObject.has("entities")){
             JSONArray jsonArray = jsonObject.getJSONArray("entities");
@@ -121,8 +131,8 @@ public class Message {
     }
 
     /**
-    * returns photoId of biggest photo if available. If not available, returns NULL.
-    * */
+     * returns photoId of biggest photo if available. If not available, returns NULL.
+     * */
     @Nullable
     public String getPhotoId(){
         String resultId = null;
@@ -134,6 +144,20 @@ public class Message {
             }
         }
         return resultId;
+    }
+    /**
+     * returns file silze of biggest photo if available. If not available, returns 0.
+     * */
+    public long getPhotoFileSize(){
+        long resultSize = 0;
+        int maxWidth = 0;
+        for (PhotoSize photoSize:photo){
+            if(photoSize.getWidth() > maxWidth){
+                maxWidth = photoSize.getWidth();
+                resultSize = photoSize.getFile_size();
+            }
+        }
+        return resultSize;
     }
 
     public long getMessage_id() {
@@ -188,5 +212,21 @@ public class Message {
 
     public void setSticker(Sticker sticker) {
         this.sticker = sticker;
+    }
+
+    public Document getDocument() {
+        return document;
+    }
+
+    public void setDocument(Document document) {
+        this.document = document;
+    }
+
+    public String getCaption() {
+        return caption;
+    }
+
+    public void setCaption(String caption) {
+        this.caption = caption;
     }
 }

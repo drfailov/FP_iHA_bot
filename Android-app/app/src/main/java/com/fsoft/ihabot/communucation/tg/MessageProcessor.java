@@ -195,6 +195,7 @@ public class MessageProcessor extends CommandModule {
         log("\n.");
         log("\nТы: " + message.getFrom());
         log("\nТы написал: " + message.getText());
+        log("\nПодпись: " + message.getCaption());
         log("\nПринято сообщений: " + messagesReceivedCounter);
         log("\nОтправлено сообщений: " + messagesSentCounter);
         log("\nВыполнено запросов к API: " + tgAccount.getApiCounter());
@@ -207,6 +208,8 @@ public class MessageProcessor extends CommandModule {
         com.fsoft.ihabot.answer.Message question = new com.fsoft.ihabot.answer.Message();
         question.setMessage_id(message.getMessage_id());
         question.setText(message.getText());
+        if(question.isEmpty())
+            question.setText(message.getCaption());
         question.setAuthor(message.getFrom());
         /*
         //Вариант с использованием автора сообщения  из пересланного - ГОВНО.
@@ -223,6 +226,7 @@ public class MessageProcessor extends CommandModule {
             if (photoId != null && !photoId.isEmpty()){
                 Attachment attachment = new Attachment().setPhoto();
                 attachment.updateTgFile_id(tgAccount.getId(), photoId);
+                attachment.setSize(message.getPhotoFileSize());
                 question.addAttachment(attachment);
             }
         }
@@ -232,6 +236,19 @@ public class MessageProcessor extends CommandModule {
                 if (photoId != null && !photoId.isEmpty() && !message.getSticker().isIs_animated() && !message.getSticker().isIs_video()) {
                     Attachment attachment = new Attachment().setPhoto();
                     attachment.updateTgFile_id(tgAccount.getId(), photoId);
+                    attachment.setSize(message.getSticker().getFile_size());
+                    question.addAttachment(attachment);
+                }
+            }
+        }
+        { //в сообщениие добавить файл
+            if(message.getDocument() != null) {
+                String file_id = message.getDocument().getFile_id();
+                if (file_id != null && !file_id.isEmpty()) {
+                    Attachment attachment = new Attachment().setDoc();
+                    attachment.updateTgFile_id(tgAccount.getId(), file_id);
+                    attachment.setSize(message.getDocument().getFile_size());
+                    attachment.setReceivedFilename(message.getDocument().getFile_name());
                     question.addAttachment(attachment);
                 }
             }
@@ -381,7 +398,7 @@ public class MessageProcessor extends CommandModule {
             for (Attachment attachment : answer.getAttachments()) {
                 //send photo
                 if(attachment.isPhoto() && attachment.isLocal()){
-                    File file = new File(applicationManager.getAnswerDatabase().getFolderAttachments(), attachment.getFilename());
+                    File file = new File(applicationManager.getAnswerDatabase().getFolderAttachments(), attachment.getAttachmentsFilename());
                     long reply_to_message_id = 0;
                     if(answer.getReplyToMessage() != null)
                         reply_to_message_id = answer.getReplyToMessage().getMessage_id();
@@ -414,7 +431,7 @@ public class MessageProcessor extends CommandModule {
                 if(attachment.isDoc() && attachment.isLocal()){
                     File file = attachment.getFileToUpload();
                     if(file == null)
-                        file = new File(applicationManager.getAnswerDatabase().getFolderAttachments(), attachment.getFilename());
+                        file = new File(applicationManager.getAnswerDatabase().getFolderAttachments(), attachment.getAttachmentsFilename());
                     long reply_to_message_id = 0;
                     if(answer.getReplyToMessage() != null)
                         reply_to_message_id = answer.getReplyToMessage().getMessage_id();
@@ -426,8 +443,8 @@ public class MessageProcessor extends CommandModule {
                             if(fileId != null){
                                 log("ID загруженного документа: " + fileId);
                                 try {
-                                    if(!attachment.getFilename().isEmpty())
-                                        applicationManager.getAnswerDatabase().updateAnswerAttachmentFileId(attachment.getFilename(), fileId, tgAccount.getId());
+                                    if(!attachment.getAttachmentsFilename().isEmpty())
+                                        applicationManager.getAnswerDatabase().updateAnswerAttachmentFileId(attachment.getAttachmentsFilename(), fileId, tgAccount.getId());
                                 }
                                 catch (Exception e){
                                     e.printStackTrace();

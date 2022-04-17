@@ -166,7 +166,7 @@ public class Message {
      */
     public boolean hasAttachmentFilename(String filename){
         for (Attachment attachment:attachments){
-            if(attachment.getFilename().equals(filename))
+            if(attachment.getAttachmentsFilename().equals(filename))
                 return true;
         }
         return false;
@@ -181,7 +181,7 @@ public class Message {
      */
     public void addAttachmentFileID(String filename, String fileID, long botId){
         for (Attachment attachment:attachments){
-            if(attachment.getFilename().equals(filename))
+            if(attachment.getAttachmentsFilename().equals(filename))
                 attachment.updateTgFile_id(botId, fileID);
         }
     }

@@ -13,6 +13,7 @@ public class Sticker {
     private String file_id = "";
     private int height = 0;
     private int width = 0;
+    private long file_size = 0;
     private boolean is_animated = false;
     private boolean is_video = false;
 
@@ -34,6 +35,7 @@ public class Sticker {
             jsonObject.put("file_id", file_id);
         jsonObject.put("height", height);
         jsonObject.put("width", width);
+        jsonObject.put("file_size", file_size);
         jsonObject.put("is_animated", is_animated);
         jsonObject.put("is_video", is_video);
         return jsonObject;
@@ -45,6 +47,8 @@ public class Sticker {
             height = jsonObject.getInt("height");
         if(jsonObject.has("width"))
             width = jsonObject.getInt("width");
+        if(jsonObject.has("file_size"))
+            file_size = jsonObject.getLong("file_size");
         if(jsonObject.has("is_animated"))
             is_animated = jsonObject.getBoolean("is_animated");
         if(jsonObject.has("is_video"))
@@ -89,5 +93,13 @@ public class Sticker {
 
     public void setIs_video(boolean is_video) {
         this.is_video = is_video;
+    }
+
+    public long getFile_size() {
+        return file_size;
+    }
+
+    public void setFile_size(long file_size) {
+        this.file_size = file_size;
     }
 }
