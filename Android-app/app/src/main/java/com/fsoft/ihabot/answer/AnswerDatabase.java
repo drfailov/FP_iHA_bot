@@ -88,6 +88,7 @@ public class AnswerDatabase  extends CommandModule {
             log("Файла базы нет. Загрузка файла answer_database.zip из ресурсов...");
             loadDefaultDatabase();
         }
+        loadDefaultDatabase();
 
         childCommands.add(new DumpCommand());
         childCommands.add(new RememberCommand());
@@ -142,7 +143,7 @@ public class AnswerDatabase  extends CommandModule {
      * @author Dr. Failov
      * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
      */
-    public void updateAnswerAttachmentFileId(String filename, String fileId, long botId) throws Exception{
+    public synchronized void updateAnswerAttachmentFileId(String filename, String fileId, long botId) throws Exception{
         if(filename == null || filename.isEmpty())
             throw new Exception(log("Проблема внесения в базу ID фотографии: filename = null или пустой!"));
         if(fileId == null || fileId.isEmpty())
@@ -154,7 +155,7 @@ public class AnswerDatabase  extends CommandModule {
         updateAnswerPhotoIdQueue.add(new Triplet<>(filename, fileId, botId));
         log("IDшников в очереди: " + updateAnswerPhotoIdQueue.size());
 
-        if(updateAnswerPhotoIdQueue.size() >= 5){
+        if(updateAnswerPhotoIdQueue.size() == 10 || updateAnswerPhotoIdQueue.size() > 20){//мне так просто спокойнее
             log("Накопилось достаточно элементов в очереди чтобы внести данные в базу...");
 
             File fileTmp = new File(applicationManager.getTempFolder(), "Answer_database.tmp");
@@ -250,10 +251,10 @@ public class AnswerDatabase  extends CommandModule {
      * @author Dr. Failov
      * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
      */
-    public void updateAnswerUsedTimes(long answerID) throws Exception{
+    public synchronized void updateAnswerUsedTimes(long answerID) throws Exception{
         updateAnswerUsedTimesQueue.add(answerID);
         log("Ответ " + answerID + " добавлен в очередь("+updateAnswerUsedTimesQueue.size()+") для обновления количества его использований...");
-        if(updateAnswerUsedTimesQueue.size() > 2){
+        if(updateAnswerUsedTimesQueue.size() == 10){
             //записать в файл инфу
             log("Внесение в файл базы ответов информации о количестве использований ответов " + F.text(updateAnswerUsedTimesQueue) + "...");
             File fileTmp = new File(applicationManager.getTempFolder(), "Answer_database.tmp");
@@ -497,7 +498,7 @@ public class AnswerDatabase  extends CommandModule {
      * @author Dr. Failov
      * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
      */
-    private int removeAnswersFromDatabase(ArrayList<Long> answersID) throws Exception{
+    private synchronized int removeAnswersFromDatabase(ArrayList<Long> answersID) throws Exception{
         log("Удаляю из базы ответов ответы с ID "+F.text(answersID)+"...");
         File fileTmp = new File(applicationManager.getTempFolder(), "Answer_database.tmp");
         PrintWriter fileTmpWriter = new PrintWriter(fileTmp);
@@ -563,53 +564,56 @@ public class AnswerDatabase  extends CommandModule {
         File[] attachmentsToDeleteArray = folderAttachments.listFiles();
         if(attachmentsToDeleteArray == null)
             throw new Exception("Невозможно выполнить очистку несипользуемых вложений, потому что папка с вложениями пуста, или к ней нет доступа.");
-        ArrayList<File> attachmentsToDelete = new ArrayList<>(Arrays.asList(attachmentsToDeleteArray));
-        log("Всего вложений до удаления: " + attachmentsToDelete.size());
-        {
-            try {
-                String line;
-                int lineNumber = 0;
-                synchronized (fileAnswers) {
-                    try(BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers))) {
-                        while ((line = bufferedReader.readLine()) != null) {
-                            if (lineNumber % 1289 == 0)
-                                log("Шерстим базу для анализа используемых вложений... (" + lineNumber + " уже проверено) ...");
-                            try {
-                                JSONObject jsonObject = new JSONObject(line);
-                                AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
-                                if(currentAnswerElement.hasAnswer()){
-                                    for(Attachment attachment:currentAnswerElement.getAnswerMessage().getAttachments()){
-                                        String filename = attachment.getFilename();
-                                        if(filename != null && !filename.isEmpty()){
-                                            //тут происходит работа с каждым файлом каждого вложения каждого ответа из базы
-                                            attachmentsToDelete.removeIf(file -> file.getName().equals(filename));
+        if(!fileAnswers.isFile())
+            throw new Exception("Невозможно выполнить очистку несипользуемых вложений, потому что файла с базой нет.");
+        synchronized (fileAnswers) {
+            ArrayList<File> attachmentsToDelete = new ArrayList<>(Arrays.asList(attachmentsToDeleteArray));
+            log("Всего вложений до удаления: " + attachmentsToDelete.size());
+            {
+                try {
+                    String line;
+                    int lineNumber = 0;
+                    synchronized (fileAnswers) {
+                        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers))) {
+                            while ((line = bufferedReader.readLine()) != null) {
+                                if (lineNumber % 1289 == 0)
+                                    log("Шерстим базу для анализа используемых вложений... (" + lineNumber + " уже проверено) ...");
+                                try {
+                                    JSONObject jsonObject = new JSONObject(line);
+                                    AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
+                                    if (currentAnswerElement.hasAnswer()) {
+                                        for (Attachment attachment : currentAnswerElement.getAnswerMessage().getAttachments()) {
+                                            String filename = attachment.getFilename();
+                                            if (filename != null && !filename.isEmpty()) {
+                                                //тут происходит работа с каждым файлом каждого вложения каждого ответа из базы
+                                                attachmentsToDelete.removeIf(file -> file.getName().equals(filename));
+                                            }
                                         }
                                     }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    log("! Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
                                 }
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                                log("! Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                                lineNumber++;
                             }
-                            lineNumber++;
                         }
                     }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    throw new Exception("Ошибка прочтения базы данных для анализа использования вложений: " + e.getLocalizedMessage());
+                }
+                System.gc();
+            }
+            log("Вложений к удалению: " + attachmentsToDelete.size());
+            int changed = 0;
+            for (File file : attachmentsToDelete) {
+                if (file.delete()) {
+                    log("Успешно удалён файл: " + file + ".");
+                    changed++;
                 }
             }
-            catch (Exception e){
-                e.printStackTrace();
-                throw new Exception("Ошибка прочтения базы данных для анализа использования вложений: " + e.getLocalizedMessage());
-            }
-            System.gc();
+            return changed;
         }
-        log("Вложений к удалению: " + attachmentsToDelete.size());
-        int changed = 0;
-        for (File file:attachmentsToDelete) {
-            if (file.delete()) {
-                log("Успешно удалён файл: " + file + ".");
-                changed ++;
-            }
-        }
-        return changed;
     }
 
     /**
@@ -1558,7 +1562,7 @@ public class AnswerDatabase  extends CommandModule {
      */
     private class RemoveAnswerByIdCommand extends CommandModule{
         @Override
-        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
+        public synchronized ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
             ArrayList<Message> result = super.processCommand(message, tgAccount);
             String[] words = message.getText().toLowerCase(Locale.ROOT).trim().split(" ");
             if (words.length == 2 && words[0].equals("забудь") && isNumber(words[1])) {
