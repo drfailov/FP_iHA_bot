@@ -111,7 +111,7 @@ public class AnswerDatabase  extends CommandModule {
         log("-----------------------------------------------------------");
         log("Вопрос: " + question.getText());
         log("Варианты ответов:");
-        for(int i = 0; i<messageRating.getCapacity(); i++){
+        for(int i = 0; i<messageRating.getCapacity() && i<15; i++){
             double rating = messageRating.getTopRating(i);
             AnswerElement answerElement = messageRating.getTopMessage(i);
             if(answerElement != null) {
@@ -745,65 +745,30 @@ public class AnswerDatabase  extends CommandModule {
 
 
         //сравнить все слова со всеми  по алгоритму Жаро-Винклера
-        //
-        //1 записать общее количество слов для обоих фраз
-        //2 Найти между двумя строками пару самых похожих слов (максимальный коэффициент)
-        //3 Их похожесть добавить к сумме по этой паре фраз
-        //4 Эту пару слов удалить из списка
-        //5 Если в каждой фразе ещё остались слова, вернуться к п.2
-        //6 Результат вычислить по формуле: сумма похожести / общее количество слов обоих фраз
 
-        //работает с копиями потому что массив будет редактироваться
-        ArrayList<String> s1words = new ArrayList<>(compareMessagesLastS1Words);
-        ArrayList<String> s2words = new ArrayList<>(compareMessagesLastS2Words);
-        //записать общее количество слов для обоих фраз
-        double wordsSum = s1words.size();// + s2words.size();
+
         double similaritySum = 0;
-        //Если в каждой фразе ещё остались слова, вернуться
-        while(!s1words.isEmpty() && !s2words.isEmpty()){
-            //Найти между двумя строками пару самых похожих слов (максимальный коэффициент)
-            String s1wordMax = null;
-            String s2wordMax = null;
-            double maxSimilarity = 0;
-            for (int i=0; i<s1words.size(); i++){
-                String s1word = s1words.get(i);
-                {//вопросительные слова не так важны как остальные.
-                    if (isQuestionWord(s1word)) // Поэтому приоритет вопросительных слов принижаем.
-                        wordsSum -= 0.5;
+        for (String word2:compareMessagesLastS2Words){
+            if(compareMessagesLastS1Words.contains(word2))
+                similaritySum += 1;
+            else {
+                double maxForWord = 0;
+                for (String word1 : compareMessagesLastS1Words) {
+                    double similarity = jaroWinkler.similarity(word2, word1);
+                    if (similarity > maxForWord)
+                        maxForWord = similarity;
                 }
-                for (int j=0; j<s2words.size(); j++){
-                    String s2word = s2words.get(j);
-                    double similarity = jaroWinkler.similarity(s1word, s2word);
-
-                    {//Слово НЕ очень важное
-                        if (s1word.toLowerCase(Locale.ROOT).trim().equals("не")) // Поэтому приоритет вопросительных слов принижаем.
-                            similarity *= 1.3;
-                    }
-//                    { //Учитываем длину слов. Чем длинее слово тем оно важнее
-//                        similarity *= s1word.length()/5f;
-//                    }
-                    if(similarity >= maxSimilarity){
-                        s1wordMax = s1word;
-                        s2wordMax = s2word;
-                        maxSimilarity = similarity;
-                    }
-                }
+                similaritySum += maxForWord*0.7;
             }
-            //Их похожесть добавить к сумме по этой паре фраз
-            similaritySum += maxSimilarity;
-            //Эту пару слов удалить из списка
-            s1words.remove(s1wordMax);
-            s2words.remove(s2wordMax);
         }
-        //Результат вычислить по формуле: сумма похожести / общее количество слов обоих фраз
-        double result = similaritySum / wordsSum;
+        double result = similaritySum / compareMessagesLastS2Words.size();
 
         //учесть знак вопроса
         if(compareMessagesLastS1Question == compareMessagesLastS2Question)
             result += 0.1;
 
-        //учесть длину строк. Чем больше это число тем больше значат отличия в длине строк
-        result -= Math.abs(s1.length()-s2.length()) * 0.001;
+        //учесть количество слов. Чем сильнее оно отличается, тем меньше строки похожи.
+        result -= Math.abs(compareMessagesLastS2Words.size()-compareMessagesLastS1Words.size()) * 0.1;
 
         return result;
     }
@@ -1627,7 +1592,7 @@ public class AnswerDatabase  extends CommandModule {
      * Команда "Ответы на Иди нахуй!"
      */
     private class GetAnswersByQuestionCommand extends CommandModule{
-        final int numberOfAnswers = 14;
+        final int numberOfAnswers = 10;
         @Override
         public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
             ArrayList<Message> result = super.processCommand(message, tgAccount);
