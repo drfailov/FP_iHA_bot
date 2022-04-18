@@ -757,7 +757,7 @@ public class AnswerDatabase  extends CommandModule {
         ArrayList<String> s1words = new ArrayList<>(compareMessagesLastS1Words);
         ArrayList<String> s2words = new ArrayList<>(compareMessagesLastS2Words);
         //записать общее количество слов для обоих фраз
-        double wordsSum = s1words.size() + s2words.size();
+        double wordsSum = s1words.size();// + s2words.size();
         double similaritySum = 0;
         //Если в каждой фразе ещё остались слова, вернуться
         while(!s1words.isEmpty() && !s2words.isEmpty()){
@@ -766,14 +766,15 @@ public class AnswerDatabase  extends CommandModule {
             String s2wordMax = null;
             double maxSimilarity = 0;
             for (int i=0; i<s1words.size(); i++){
+                String s1word = s1words.get(i);
+                {//вопросительные слова не так важны как остальные.
+                    if (isQuestionWord(s1word)) // Поэтому приоритет вопросительных слов принижаем.
+                        wordsSum -= 0.5;
+                }
                 for (int j=0; j<s2words.size(); j++){
-                    String s1word = s1words.get(i);
                     String s2word = s2words.get(j);
                     double similarity = jaroWinkler.similarity(s1word, s2word);
-                    {//вопросительные слова не так важны как остальные.
-                        if (isQuestionWord(s1word)) // Поэтому приоритет вопросительных слов принижаем.
-                            similarity *= 0.5;
-                    }
+
                     {//Слово НЕ очень важное
                         if (s1word.toLowerCase(Locale.ROOT).trim().equals("не")) // Поэтому приоритет вопросительных слов принижаем.
                             similarity *= 1.3;
