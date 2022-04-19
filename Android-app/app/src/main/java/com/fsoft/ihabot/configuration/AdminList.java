@@ -3,8 +3,12 @@ package com.fsoft.ihabot.configuration;
 import androidx.annotation.NonNull;
 
 import com.fsoft.ihabot.Utils.ApplicationManager;
+import com.fsoft.ihabot.Utils.CommandDesc;
 import com.fsoft.ihabot.Utils.CommandModule;
+import com.fsoft.ihabot.Utils.CommandParser;
 import com.fsoft.ihabot.answer.AnswerElement;
+import com.fsoft.ihabot.answer.Message;
+import com.fsoft.ihabot.communucation.tg.TgAccount;
 import com.fsoft.ihabot.communucation.tg.User;
 
 import org.json.JSONException;
@@ -15,7 +19,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.PrintWriter;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Locale;
 
 public class AdminList  extends CommandModule {
     private final ArrayList<AdminListItem> userList = new ArrayList<>();
@@ -58,6 +64,8 @@ public class AdminList  extends CommandModule {
                         true, true);
             }
         }
+
+        childCommands.add(new AddAdminCommand());
 
     }
 
@@ -298,6 +306,47 @@ public class AdminList  extends CommandModule {
                     result += ", ";
                 result += "Основание: " + comment;
             }
+            return result;
+        }
+    }
+
+
+    private class AddAdminCommand extends CommandModule{
+        @Override
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount);
+            CommandParser commandParser = new CommandParser(message.getText());
+            if(!commandParser.getWord().toLowerCase(Locale.ROOT).equals("админ"))
+                return result;
+            if(!commandParser.getWord().toLowerCase(Locale.ROOT).equals("добавить"))
+                return result;
+            String username = commandParser.getWord();
+            if(username.isEmpty()){
+                result.add(new Message(log(
+                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+                                "Чтобы воспользоваться командой добавления администратора, " +
+                                "нужно указать username пользователя Telegram.\n" +
+                                "Если у пользователя нет username, пусть создаст в настройках своего аккаунта.")));
+                return result;
+            }
+            String reason = commandParser.getText();
+            if(reason.isEmpty()){
+                result.add(new Message(log(
+                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+                                "Чтобы воспользоваться командой добавления администратора, " +
+                                "необходимо указать причину и описание. Кто это, зачем админ, и т.д.\n" +
+                                "Без этого потом будет легко запутаться в списке администраторов.")));
+                return result;
+            }
+
+            result.add(new Message("админа добавление но пока ничего не написано " + username));
+            return result;
+        }
+
+        @Override
+        public ArrayList<CommandDesc> getHelp() {
+            ArrayList<CommandDesc> result = super.getHelp();
+            result.add(new CommandDesc("Админ добавить @username Зачем он нужен", "Добавить пользователя в список администраторов. Аргументы: username пользователя, основание для добавления."));
             return result;
         }
     }

@@ -1428,7 +1428,7 @@ public class AnswerDatabase  extends CommandModule {
                     }
                     //ПОПРОБУЕМ ВОССТАНОВИТЬ БЕКАП.
                     try {
-                        log("Перемещение содержимого бекапа "+placeToBackupAnswerDatabaseFolder+" обратно в папку AnswerDatabase ...");
+                        log("Перемещение содержимого бекапа "+placeToBackupAnswerDatabaseFolder.getName()+" обратно в папку AnswerDatabase ...");
                         Files.move(placeToBackupAnswerDatabaseFolder.toPath(), folderAnswerDatabase.toPath(), StandardCopyOption.REPLACE_EXISTING);
                         result.add(new Message("Ответ на команду <b>\""+message.getText()+"\"</b>\n\n"+
                                 log("В процессе восстановления резервной копии возникла ошибка, " +
@@ -1447,56 +1447,7 @@ public class AnswerDatabase  extends CommandModule {
                         return result;
                     }
                 }
-
-
-                //Files.move(sourceFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
-
-//                //Выбрать имя для нового файла
-//                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
-//                File tmpZipFile = new File(applicationManager.getTempFolder(), sdf.format(new Date())+"_DatabaseDump.zip");
-//                //если файл сегодня уже создавался, ему придумается новое имя. И так до тех пор, пока имя не будет уникальным.
-//                for(int i=2; tmpZipFile.isFile(); i++) {
-//                    tmpZipFile = new File(applicationManager.getTempFolder(), sdf.format(new Date()) + "_DatabaseDump" + i + ".zip");
-//                }
-//                log("Создание архива "+tmpZipFile.getName()+"...");
-//                try {
-//                    ZipFile zipFile = new ZipFile(tmpZipFile);
-//                    ZipParameters parameters = new ZipParameters();
-//                    parameters.setCompressionMethod(CompressionMethod.DEFLATE);
-//                    parameters.setCompressionLevel(CompressionLevel.NORMAL);
-//                    zipFile.createSplitZipFileFromFolder(folderAnswerDatabase, parameters, true, 19111000);
-//                    log("Архив создан без ошибок.");
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                    result.add(new Message("" +
-//                            "Ошибка создания архива с базой данных: " + e.getLocalizedMessage()));
-//                    return result;
-//                }
-//
-//                log("Вот какие файлы теперь валяются во временной папке: ");
-//                File[] tmpFiles = applicationManager.getTempFolder().listFiles();
-//                if(tmpFiles != null) {
-//                    for (File file : tmpFiles) {
-//                        log("- " + file.getName() + " : " + file.length() + " байт.");
-//                    }
-//                }
-//
-//                String archiveName = tmpZipFile.getName().split("\\.")[0];
-//                log("Имя текущего архива: " + archiveName);
-//                if(tmpZipFile.isFile()) {
-//                    log("Файлы к отправке: ");
-//                    if(tmpFiles != null) {
-//                        for (File file : tmpFiles) {
-//                            if(file.getName().contains(archiveName)) {
-//                                Message answer = new Message("Дамп базы прикрепляю файлом.");
-//                                log("- " + file.getName() + " : " + file.length() + " байт.");
-//                                answer.addAttachment(new Attachment().setDoc().setFileToUpload(file));
-//                                result.add(answer);
-//                            }
-//                        }
-//                    }
-//                }
+                //здесь уже все ветви вернули результат, тут ничего не происходит.
             }
             return result;
         }
