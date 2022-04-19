@@ -120,7 +120,7 @@ public class TgAccount extends TgAccountCore {
         Date started = new Date();
         //ждать пока что-то появится либо пока не будет какая-то ошибка, либо таймаут 30 секунд
         while (files.isEmpty() && exceptions.isEmpty()){
-            if(Calendar.getInstance().getTime().getTime() - started.getTime() > 30000) {
+            if(Calendar.getInstance().getTime().getTime() - started.getTime() > 60000) {
                 throw new TimeoutException("Таймаут, файл фото не получилось скачать.");
             }
         }

@@ -1,5 +1,7 @@
 package com.fsoft.ihabot.answer;
 
+import static com.fsoft.ihabot.Utils.F.deleteDir;
+
 import android.content.res.Resources;
 
 import com.fsoft.ihabot.R;
@@ -24,9 +26,12 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -768,7 +773,7 @@ public class AnswerDatabase  extends CommandModule {
             result += 0.1;
 
         //учесть количество слов. Чем сильнее оно отличается, тем меньше строки похожи.
-        result -= Math.abs(compareMessagesLastS2Words.size()-compareMessagesLastS1Words.size()) * 0.1;
+        result -= ((double) Math.abs(compareMessagesLastS2Words.size()-compareMessagesLastS1Words.size())) * 0.1d;
 
         return result;
     }
@@ -1309,12 +1314,17 @@ public class AnswerDatabase  extends CommandModule {
         public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
             ArrayList<Message> result = super.processCommand(message, tgAccount);
             if(message.getText().toLowerCase(Locale.ROOT).trim().startsWith("восстановить базу")) {
-                String fileName = message.getText().toLowerCase(Locale.ROOT).replace("восстановить базу", "").trim();
+                if(message.getText().length() < 22){
+                    result.add(new Message("Ответ на команду <b>\""+message.getText()+"\"</b>\n\n"+
+                            "Не могу восстановить базу данных, поскольку было получено некорректное имя файла."));
+                    return result;
+                }
+                String fileName = message.getText().substring(18).trim();
                 log("Выполнение команды восстановления дампа базы. Файл который будем восстанавливать: " + fileName);
                 File backupFile =  new File(applicationManager.getTempFolder(), fileName);
                 if(!backupFile.isFile()){
                     result.add(new Message("Ответ на команду <b>\""+message.getText()+"\"</b>\n\n"+
-                            "\"Не могу восстановить базу данных, поскольку файла с именем \""+fileName+"\" не существует."));
+                            "Не могу восстановить базу данных, поскольку файла с именем \""+fileName+"\" не существует."));
                     return result;
                 }
                 if(!fileName.toLowerCase(Locale.ROOT).endsWith(".zip")){
@@ -1323,9 +1333,123 @@ public class AnswerDatabase  extends CommandModule {
                     return result;
                 }
 
+                File folderToUnzip = new File(applicationManager.getTempFolder(), "unzip_"+ Calendar.getInstance().getTime().getTime());
+                File unzippedAnswerDatabaseFolder = new File(folderToUnzip, "AnswerDatabase");
+                try {
+                    log("Распаковка архива в папку: " + folderToUnzip);
+                    ZipFile zipFile = new ZipFile(backupFile);
+                    zipFile.extractAll(folderToUnzip.getPath());
+//                    log("+ Содержимое папки Temp:");
+//                    F.logDirFiles(applicationManager.getTempFolder(), 1);
+                }
+                catch (Exception e){
+                    e.printStackTrace();
+                    result.add(new Message("Ответ на команду <b>\""+message.getText()+"\"</b>\n\n"+
+                            "Ошибка распаковки архива: " + e.getLocalizedMessage()));
+                    return result;
+                }
+
+                if(!unzippedAnswerDatabaseFolder.isDirectory()){
+                    result.add(new Message("Ответ на команду <b>\""+message.getText()+"\"</b>\n\n"+
+                            log("Проблема при восстановлении базы ответов. " +
+                            "В архиве отсутствует папка AnswerDatabase, которая должна там быть. " +
+                            "Вероятно, этот архив не является резервной копией базы.")));
+                    return result;
+                }
+                log("Проверка: папка AnswerDatabase на месте.");
+
+                File unzippedAnswerDatabaseFile = new File(unzippedAnswerDatabaseFolder, "answer_database.txt");
+                if(!unzippedAnswerDatabaseFile.isFile()){
+                    result.add(new Message("Ответ на команду <b>\""+message.getText()+"\"</b>\n\n"+
+                            log("Проблема при восстановлении базы ответов. " +
+                            "В архиве отсутствует файл answer_database.txt, который должен там быть. " +
+                            "Вероятно, этот архив не является резервной копией базы.")));
+                    return result;
+                }
+                log("Проверка: файл answer_database.txt на месте.");
+
+                File unzippedSynonymousFile = new File(unzippedAnswerDatabaseFolder, "synonyme.txt");
+                if(!unzippedSynonymousFile.isFile()){
+                    result.add(new Message("Ответ на команду <b>\""+message.getText()+"\"</b>\n\n"+
+                            log("Проблема при восстановлении базы ответов. " +
+                            "В архиве отсутствует файл synonyme.txt, который должен там быть. " +
+                            "Вероятно, этот архив не является резервной копией базы.")));
+                    return result;
+                }
+                log("Проверка: файл synonyme.txt на месте.");
 
 
+                File placeToBackupAnswerDatabaseFolder = new File(applicationManager.getTempFolder(), "answerDatabaseBackup"+Calendar.getInstance().getTime().getTime());
+                try {
+                    log("Резервирование содержимого папки AnswerDatabase в папку: " + placeToBackupAnswerDatabaseFolder);
+                    Files.move(folderAnswerDatabase.toPath(), placeToBackupAnswerDatabaseFolder.toPath(), StandardCopyOption.REPLACE_EXISTING);
+//                    log("+ Содержимое папки Temp:");
+//                    F.logDirFiles(applicationManager.getTempFolder(), 1);
+                }
+                catch (Exception e){
+                    e.printStackTrace();
+                    result.add(new Message("Ответ на команду <b>\""+message.getText()+"\"</b>\n\n"+
+                            "Ошибка создания резервной копии старой базы: " + e.getLocalizedMessage()));
+                    return result;
+                }
 
+
+                File placeToMoveAnswerDatabaseFolder = folderAnswerDatabase;
+                try {
+                    log("Перемещение содержимого распакованной папки AnswerDatabase в папку: " + placeToMoveAnswerDatabaseFolder);
+                    Files.move(unzippedAnswerDatabaseFolder.toPath(), placeToMoveAnswerDatabaseFolder.toPath(), StandardCopyOption.REPLACE_EXISTING);
+//                    log("+ Содержимое папки Temp:");
+//                    F.logDirFiles(applicationManager.getTempFolder(), 1);
+//                    log("+ Содержимое папки AnswerDatabase:");
+//                    F.logDirFiles(folderAnswerDatabase, 1);
+                    result.add(new Message("Ответ на команду <b>\""+message.getText()+"\"</b>\n\n"+
+                            log("Все этапы восстановления архива " + backupFile.getName() + " как архива с базой данных прошли успешно.")));
+                    return result;
+                }
+                catch (Exception e){
+                    e.printStackTrace();
+                    log("Ошибка перемещения распакованных файлов на место старой базы: " + e.getLocalizedMessage());
+                }
+
+                {//ЕСЛИ МЫ ОКАЗАЛИСЬ ЗДЕСЬ, ЗНАЧИТ ВОССТАНОВЛЕНИЕ БАЗЫ НЕ ПРОШЛО УСПЕШНО.
+                    //УДАЛЯЕМ БИТЫЕ ФАЙЛЫ
+                    log("Возникла ошибка при восстановлении базы данных!");
+                    log("Попытка восстановить резервную копию.");
+                    File[] wasteFiles = folderAnswerDatabase.listFiles();
+                    if (wasteFiles != null && wasteFiles.length != 0) {
+                        log("В папке с ответами есть файлы оставшиеся после неудачного восстановления " +
+                                "базы из архива. Удаление файлов из папки перед восстановлением резервной копии.");
+                        for (File file : wasteFiles) {
+                            if (file.isFile())
+                                log("- Удаление файла " + file.getName() + ": " + file.delete());
+                            if (file.isDirectory())
+                                log("- Удаление папки " + file.getName() + ": " + deleteDir(file));
+                        }
+                    }
+                    //ПОПРОБУЕМ ВОССТАНОВИТЬ БЕКАП.
+                    try {
+                        log("Перемещение содержимого бекапа "+placeToBackupAnswerDatabaseFolder+" обратно в папку AnswerDatabase ...");
+                        Files.move(placeToBackupAnswerDatabaseFolder.toPath(), folderAnswerDatabase.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        result.add(new Message("Ответ на команду <b>\""+message.getText()+"\"</b>\n\n"+
+                                log("В процессе восстановления резервной копии возникла ошибка, " +
+                                        "которая могла повредить базу данных. " +
+                                        "Была восстановлена резервная копия папки. " +
+                                        "База из архива не была восстановлена.")));
+                        return result;
+                    }
+                    catch (Exception e){
+                        e.printStackTrace();
+                        result.add(new Message("Ответ на команду <b>\""+message.getText()+"\"</b>\n\n"+
+                                log("Сначала возникла ошибка записи новой базы данных, " +
+                                        "затем была предпринята попытка восстановить резервную копию, чтобы спасти базу. " +
+                                        "Но в процессе спасения базы возникла ошибка: " + e.getLocalizedMessage() + "\n" +
+                                        "Скорее всего, база данных утеряна." )));
+                        return result;
+                    }
+                }
+
+
+                //Files.move(sourceFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
 
 //                //Выбрать имя для нового файла
@@ -1438,6 +1562,7 @@ public class AnswerDatabase  extends CommandModule {
             return result;
         }
     }
+
     /**
      * Команда "Запомни"
      */
@@ -1547,6 +1672,7 @@ public class AnswerDatabase  extends CommandModule {
             }
         }
     }
+
     /**
      * Команда "Ответы 15032"
      */
@@ -1588,6 +1714,7 @@ public class AnswerDatabase  extends CommandModule {
             return result;
         }
     }
+
     /**
      * Команда "Ответы на Иди нахуй!"
      */
@@ -1636,6 +1763,7 @@ public class AnswerDatabase  extends CommandModule {
             return result;
         }
     }
+
     /**
      * Команда "Ответ 15032"
      */
@@ -1685,6 +1813,7 @@ public class AnswerDatabase  extends CommandModule {
             return result;
         }
     }
+
     /**
      * Команда "Забудь 15032"
      */
