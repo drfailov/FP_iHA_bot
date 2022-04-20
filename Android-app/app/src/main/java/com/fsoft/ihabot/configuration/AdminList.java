@@ -128,6 +128,7 @@ public class AdminList  extends CommandModule {
         private User user;
         private User responsible;
         private String comment;
+        private Date addedDate;
 
         private boolean allowDatabaseDump = false; //выгрузка базы целиком
         private boolean allowDatabaseRead = false; //просмотр ответов по ID, по вопросу и т.п.
@@ -140,6 +141,7 @@ public class AdminList  extends CommandModule {
             this.user = user;
             this.responsible = responsible;
             this.comment = comment;
+            addedDate = new Date();
             this.allowDatabaseDump = allowDatabaseDump;
             this.allowDatabaseRead = allowDatabaseRead;
             this.allowDatabaseEdit = allowDatabaseEdit;
@@ -152,6 +154,7 @@ public class AdminList  extends CommandModule {
             this.user = user;
             this.responsible = responsible;
             this.comment = comment;
+            addedDate = new Date();
         }
 
         public AdminListItem(JSONObject jsonObject) throws Exception{
@@ -166,6 +169,8 @@ public class AdminList  extends CommandModule {
                 jsonObject.put("responsible", responsible.toJson());
             if(comment != null)
                 jsonObject.put("comment", comment);
+            if(addedDate != null)
+                jsonObject.put("addedDate", new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(addedDate));
             jsonObject.put("allowDatabaseDump", allowDatabaseDump);
             jsonObject.put("allowDatabaseRead", allowDatabaseRead);
             jsonObject.put("allowDatabaseEdit", allowDatabaseEdit);
@@ -181,6 +186,8 @@ public class AdminList  extends CommandModule {
                 responsible = new User(jsonObject.getJSONObject("responsible"));
             if(jsonObject.has("comment"))
                 comment = jsonObject.getString("comment");
+            if(jsonObject.has("addedDate"))
+                addedDate = new SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(jsonObject.getString("addedDate"));
             if(jsonObject.has("allowDatabaseDump"))
                 allowDatabaseDump = jsonObject.getBoolean("allowDatabaseDump");
             if(jsonObject.has("allowDatabaseRead"))
@@ -217,6 +224,14 @@ public class AdminList  extends CommandModule {
 
         public void setComment(String comment) {
             this.comment = comment;
+        }
+
+        public Date getAddedDate() {
+            return addedDate;
+        }
+
+        public void setAddedDate(Date addedDate) {
+            this.addedDate = addedDate;
         }
 
         /**
@@ -314,11 +329,21 @@ public class AdminList  extends CommandModule {
 
 
     private class AddAdminCommand extends CommandModule{
-        //1) Прислать команду на добавление админа и причину (в этот момент сессия создается)
-        //2) Переслать от юзера любое сообщение, чтобы из него можно было добраться до пользователя
-        // Если пересланное сообщение было после 5 минут, команда присылает ответ что сессия закрыта.
-        // "Команда "Админ добавить" отменена".
-        // в этот момент сессия удаляется
+        //1) Прислать команду на добавление админа "админ добавить usern".
+        // В ответ бот присылает список своих диалогов с пользователями,
+        // у которых в именах, никнеймах или ID содержится фрагмент "usern".
+        // В списке будет содержаться имя пользователя и ID пользователя.
+        // Чтобы на этом этапе отменить команду, надо прислать "отмена".
+        // На ответ пользователю даётся 5 минут.
+        // В этот момент создаётся сессия AddAdminCommandSession,
+        // в ней сохраняется список пользователей, которые были отправлены в списке.
+        //2) Прислать боту ID пользователя из списка и причину добавления:
+        // "248067313 Друг бота, будет обучать его ответам."
+        // На этом месте у нас уже есть данные о пользователе, причина добавления, дата, ответственный.
+        // Пользователь добавляется в список админов.
+        // Сессия AddAdminCommandSession удаляется.
+
+
         HashMap<Long, Date> sessions = new HashMap<>(); //userID of command sender, Time when session started (to expire sessions)
         @Override
         public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
