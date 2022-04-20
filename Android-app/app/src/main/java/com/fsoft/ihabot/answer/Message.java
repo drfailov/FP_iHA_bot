@@ -40,6 +40,7 @@ public class Message {
     private Message replyToMessage = null; /*Если это ответ на другое сообщение.*/
     private String text = "";               //что в этой хуйне написано
     private User author = null;               //кто эту хуйню написал
+    private User forwardedFrom = null;        //от кого эту хуйню переслали
     private Date date = null;               //когда мы эту хуйню получили
     private final ArrayList<Attachment> attachments = new ArrayList<>();//что он к этой хуйне приложил
 
@@ -63,6 +64,8 @@ public class Message {
             jsonObject.put("text", text);
         if(author != null)
             jsonObject.put("author", author.toJson());
+        if(forwardedFrom != null)
+            jsonObject.put("forwardedFrom", forwardedFrom.toJson());
         if(replyToMessage != null)
             jsonObject.put("reply_to_message", replyToMessage.toJson());
         if(date != null)
@@ -85,6 +88,8 @@ public class Message {
             text = jsonObject.getString("text");
         if(jsonObject.has("author"))
             author = new User(jsonObject.getJSONObject("author"));
+        if(jsonObject.has("forwardedFrom"))
+            forwardedFrom = new User(jsonObject.getJSONObject("forwardedFrom"));
         if(jsonObject.has("reply_to_message"))
             replyToMessage = new Message(jsonObject.getJSONObject("reply_to_message"));
         if(jsonObject.has("date"))
@@ -127,6 +132,14 @@ public class Message {
 
     public void setAuthor(User author) {
         this.author = author;
+    }
+
+    public User getForwardedFrom() {
+        return forwardedFrom;
+    }
+
+    public void setForwardedFrom(User forwardedFrom) {
+        this.forwardedFrom = forwardedFrom;
     }
 
     public void setDate(Date date) {

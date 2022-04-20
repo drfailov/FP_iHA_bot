@@ -21,6 +21,8 @@ import java.io.PrintWriter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
 
 public class AdminList  extends CommandModule {
@@ -312,6 +314,56 @@ public class AdminList  extends CommandModule {
 
 
     private class AddAdminCommand extends CommandModule{
+        //1) Прислать команду на добавление админа и причину (в этот момент сессия создается)
+        //2) Переслать от юзера любое сообщение, чтобы из него можно было добраться до пользователя
+        // Если пересланное сообщение было после 5 минут, команда присылает ответ что сессия закрыта.
+        // "Команда "Админ добавить" отменена".
+        // в этот момент сессия удаляется
+        HashMap<Long, Date> sessions = new HashMap<>(); //userID of command sender, Time when session started (to expire sessions)
+        @Override
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount);
+            if(sessions.containsKey(message.getAuthor())){
+
+            }
+            CommandParser commandParser = new CommandParser(message.getText());
+            if(!commandParser.getWord().toLowerCase(Locale.ROOT).equals("админ"))
+                return result;
+            if(!commandParser.getWord().toLowerCase(Locale.ROOT).equals("добавить"))
+                return result;
+            String username = commandParser.getWord();
+            if(username.isEmpty()){
+                result.add(new Message(log(
+                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+                                "Чтобы воспользоваться командой добавления администратора, " +
+                                "нужно указать username пользователя Telegram.\n" +
+                                "Если у пользователя нет username, пусть создаст в настройках своего аккаунта.")));
+                return result;
+            }
+            String reason = commandParser.getText();
+            if(reason.isEmpty()){
+                result.add(new Message(log(
+                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+                                "Чтобы воспользоваться командой добавления администратора, " +
+                                "необходимо указать причину и описание. Кто это, зачем админ, и т.д.\n" +
+                                "Без этого потом будет легко запутаться в списке администраторов.")));
+                return result;
+            }
+
+            result.add(new Message("админа добавление но пока ничего не написано " + username));
+            return result;
+        }
+
+        @Override
+        public ArrayList<CommandDesc> getHelp() {
+            ArrayList<CommandDesc> result = super.getHelp();
+            result.add(new CommandDesc("Админ добавить Причина добавления", "" +
+                    "Добавить пользователя из следующего пересланного сообщения в список администраторов с указанной причиной добавления. " +
+                    "После отправки этой команды, перешли любое сообщение от пользователя, которого надо добавить в администраторы."));
+            return result;
+        }
+    }
+    private class RemAdminCommand extends CommandModule{
         @Override
         public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
             ArrayList<Message> result = super.processCommand(message, tgAccount);

@@ -120,7 +120,7 @@ public class AnswerDatabase  extends CommandModule {
             double rating = messageRating.getTopRating(i);
             AnswerElement answerElement = messageRating.getTopMessage(i);
             if(answerElement != null) {
-                log(String.format(Locale.US, "%d %.2f: %s", i, rating, answerElement));
+                log(String.format(Locale.US, "%.2f %d: %s", rating, answerElement.getId(), answerElement));
             }
         }
         log("-----------------------------------------------------------");

@@ -49,7 +49,7 @@ public class MessageProcessor extends CommandModule {
     public int getMessagesReceivedCounter() {
         return messagesReceivedCounter;
     }
-    public void inctementMessagesReceivedCounter(){
+    public void incrementMessagesReceivedCounter(){
         messagesReceivedCounter++;
     }
     public int getMessagesSentCounter() {
@@ -125,7 +125,7 @@ public class MessageProcessor extends CommandModule {
         }, lastUpdateId+1, 20);
     }
 
-    public void processUpdates(ArrayList<Update> updates){
+    public void processUpdates(ArrayList<Update> updates) throws Exception{
         for (Update update:updates){
             if(update.getUpdate_id() > lastUpdateId)
                 lastUpdateId = update.getUpdate_id();
@@ -137,13 +137,16 @@ public class MessageProcessor extends CommandModule {
             }
         }
     }
-    public void processMessage(final Message message){
+    public void processMessage(final Message message) throws Exception{
         new Thread(new Runnable() {
             @Override
             public void run() {
                 processMessageAsync(message);
             }
         }).start();
+        //Эта задержка поможет обработать сообщения в правильной последовательности в случае,
+        // если было переслано сразу несколько сообщений
+        Thread.sleep(500);
     }
 
     public void processMessageAsync(final Message message){
@@ -191,7 +194,7 @@ public class MessageProcessor extends CommandModule {
 
         // Вывести логи, обновить счётчики
         log(". ПОЛУЧЕНО СООБЩЕНИЕ: " + message);
-        inctementMessagesReceivedCounter();
+        incrementMessagesReceivedCounter();
         log("\n.");
         log("\nТы: " + message.getFrom());
         log("\nТы написал: " + message.getText());
@@ -211,14 +214,8 @@ public class MessageProcessor extends CommandModule {
         if(question.isEmpty())
             question.setText(message.getCaption());
         question.setAuthor(message.getFrom());
-        /*
-        //Вариант с использованием автора сообщения  из пересланного - ГОВНО.
-        // Может быть использован как средство получения неавторизованного доступа к командам,
-        // а также делает невозможным испольщование в обучении пересланных сообщений.
-        // Не надо использовать этот метод.
-        // Автор сообщения тот, кто прислал. Всё.
         if(message.getForward_from() != null)
-            question.setAuthor(message.getForward_from());*/
+            question.setForwardedFrom(message.getForward_from());
         question.setSourceDialog();
         question.setDate(message.getDate());
         { //в сообщениие добавить фото
