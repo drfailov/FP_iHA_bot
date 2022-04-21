@@ -2,6 +2,7 @@ package com.fsoft.ihabot.configuration;
 
 import android.util.JsonReader;
 import android.util.Log;
+import android.widget.ArrayAdapter;
 
 import com.fsoft.ihabot.Utils.ApplicationManager;
 import com.fsoft.ihabot.Utils.F;
@@ -10,6 +11,7 @@ import com.fsoft.ihabot.communucation.tg.Chat;
 import com.fsoft.ihabot.communucation.tg.MessageEntity;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
 import com.fsoft.ihabot.communucation.tg.TgAccountCore;
+import com.fsoft.ihabot.communucation.tg.User;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -22,6 +24,7 @@ import java.io.PrintWriter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Objects;
@@ -43,7 +46,9 @@ public class MessageHistory {
         Log.d(F.TAG, "Восстановление истории чатов из : " + messageHistoryFile.getName());
         if(messageHistoryFile.isFile()) {
             try {
-                JSONArray jsonArray = new JSONArray(F.readFromFile(messageHistoryFile));
+                String data = F.readFromFile(messageHistoryFile);
+                Log.d(F.TAG, "Восстановление " + data.length() + " символов.");
+                JSONArray jsonArray = new JSONArray(data);
                 for (int i = 0; i < jsonArray.length(); i++)
                     messageHistoryTgAccounts.add(new MessageHistoryTgAccount(jsonArray.getJSONObject(i)));
                 Log.d(F.TAG, "Восстановлена история аккаунтов: " + messageHistoryTgAccounts.size());
@@ -97,6 +102,38 @@ public class MessageHistory {
         messageHistoryWriteToFile();
     }
 
+    /**
+     * Получить список последних чатов на аккаунте.
+     * Возвращает массив "Внутренних" обьектов класса
+     * @param tgAccount Аккаунт для которого загружаем чаты
+     * @return Возвращает обьекты чатов в истории в порядке от самых новых к старым
+     */
+    private ArrayList<MessageHistoryChat> getLastChatsListForAccount(TgAccount tgAccount) {
+        for (MessageHistoryTgAccount messageHistoryTgAccount:messageHistoryTgAccounts) {
+            if (messageHistoryTgAccount.tgAccountId == tgAccount.getId()) {
+                return messageHistoryTgAccount.getLastChatsList();
+            }
+        }
+        Log.d(F.TAG, "Был запрошен список чатов для аккаунта, которого нет в истории: " + tgAccount.getScreenName() + " ("+tgAccount.getId()+")");
+        return new ArrayList<>();
+    }
+
+    /**
+     * Получить список последних чатов на аккаунте.
+     * Возвращает массив User
+     * @param tgAccount Аккаунт для которого загружаем юзеров
+     * @return Возвращает обьекты пользователей в истории чатов в порядке от самых новых к старым
+     */
+    public ArrayList<User> getLastUsersListForAccount(TgAccount tgAccount) {
+        ArrayList<User> users = new ArrayList<>();
+        for (MessageHistoryChat chat:getLastChatsListForAccount(tgAccount))
+            if(chat.chatUser != null)
+                users.add(chat.chatUser);
+        return users;
+    }
+
+
+
     private void messageHistoryWriteToFile(){
         Log.d(F.TAG, "Сохранение истории чатов в файл " + messageHistoryFile.getName() + " ...");
         try{
@@ -121,6 +158,8 @@ public class MessageHistory {
     public void setMessageHistoryTgAccounts(ArrayList<MessageHistoryTgAccount> messageHistoryTgAccounts) {
         this.messageHistoryTgAccounts = messageHistoryTgAccounts;
     }
+
+
 
     /**
      * Представляет в истории все данные о конкретном аккаунте телеграма.
@@ -160,7 +199,10 @@ public class MessageHistory {
             //если нет, создать и добавить
             String chatmame = (chat.getFirst_name() + " " + chat.getLast_name() + " " + chat.getUsername() + " " + chat.getTitle()).trim();
             Log.d(F.TAG, "Регистрация чата в истории: " + chatmame);
-            MessageHistoryChat messageHistoryChat = new MessageHistoryChat(chat.getId(), chatmame, chat.getType());
+            User chatUser = null;
+            if(chat.getType().equals("private") && message.getAuthor() != null)
+                chatUser = message.getAuthor();
+            MessageHistoryChat messageHistoryChat = new MessageHistoryChat(chat.getId(), chatmame, chat.getType(), chatUser);
             messageHistoryChat.registerTelegramMessage(message);
             chats.add(messageHistoryChat);
         }
@@ -197,6 +239,27 @@ public class MessageHistory {
                     }
                 }
             }
+        }
+
+        public ArrayList<MessageHistoryChat> getLastChatsList() {
+            ArrayList<MessageHistoryChat> resultLast24h = new ArrayList<>();
+            {//fill array with only last 24h chats
+                long now = new Date().getTime();
+                long time24h = 24 * 60 * 60 * 1000;
+                for (MessageHistoryChat chat : chats) {
+                    if(now - chat.getLastMessageDate().getTime() < time24h)
+                        resultLast24h.add(chat);
+                }
+            }
+            {//sort
+                resultLast24h.sort(new Comparator<MessageHistoryChat>() {
+                    @Override
+                    public int compare(MessageHistoryChat messageHistoryChat, MessageHistoryChat t1) {
+                        return Long.compare(t1.getLastMessageDate().getTime(), messageHistoryChat.getLastMessageDate().getTime());
+                    }
+                });
+            }
+            return resultLast24h;
         }
 
         public ArrayList<MessageHistoryChat> getChats() {
@@ -256,6 +319,7 @@ public class MessageHistory {
         private long chatId = 0;
         private String chatName = "";
         private String chatType = "";
+        private User chatUser = null;
         private int totalMessageCounter = 0;
         private Date firstRegistered = null;
         private ArrayList<Message> messageHistory = new ArrayList<>();
@@ -264,10 +328,17 @@ public class MessageHistory {
             firstRegistered = new Date();
         }
 
-        public MessageHistoryChat(long chatId, String chatName, String chatType) {
+        /**
+         * @param chatId ID чата. для юзеров он совпадает с ID юзера
+         * @param chatName Имя чата которое будет отображатся в отчётах
+         * @param chatType тип чата который присылает телега
+         * @param chatUser обьет телеговского юзера в случае если это чат приват
+         */
+        public MessageHistoryChat(long chatId, String chatName, String chatType, User chatUser) {
             this.chatId = chatId;
             this.chatName = chatName;
             this.chatType = chatType;
+            this.chatUser = chatUser;
             firstRegistered = new Date();
         }
 
@@ -283,6 +354,16 @@ public class MessageHistory {
                 messageHistory.remove(MESSAGES_LIMIT);
         }
 
+        public Date getLastMessageDate(){
+            Date result = new Date(0);
+            for (Message message:messageHistory){
+                if(message.getDate() != null)
+                    if(message.getDate().after(result))
+                        result = message.getDate();
+            }
+            return result;
+        }
+
         public JSONObject toJson() throws JSONException {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("chatId", chatId);
@@ -293,6 +374,8 @@ public class MessageHistory {
             jsonObject.put("totalMessageCounter", totalMessageCounter);
             if(firstRegistered != null)
                 jsonObject.put("firstRegistered", new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(firstRegistered));
+            if(chatUser != null)
+                jsonObject.put("chatUser", chatUser.toJson());
             if(!messageHistory.isEmpty()) {
                 JSONArray jsonArray = new JSONArray();
                 for (int i = 0; i < messageHistory.size(); i++)
@@ -313,6 +396,8 @@ public class MessageHistory {
                 totalMessageCounter = jsonObject.getInt("totalMessageCounter");
             if(jsonObject.has("firstRegistered"))
                 firstRegistered = new SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(jsonObject.getString("firstRegistered"));
+            if(jsonObject.has("chatUser"))
+                chatUser = new User(jsonObject.getJSONObject("chatUser"));
             messageHistory.clear();
             if(jsonObject.has("messageHistory")){
                 JSONArray jsonArray = jsonObject.getJSONArray("messageHistory");

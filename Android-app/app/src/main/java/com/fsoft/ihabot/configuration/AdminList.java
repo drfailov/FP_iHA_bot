@@ -26,10 +26,12 @@ import java.util.HashMap;
 import java.util.Locale;
 
 public class AdminList  extends CommandModule {
+    ApplicationManager applicationManager;
     private final ArrayList<AdminListItem> userList = new ArrayList<>();
     private final File userListFile;
 
     public AdminList(ApplicationManager applicationManager)  throws Exception{
+        this.applicationManager = applicationManager;
         userListFile = new File(applicationManager.getHomeFolder(), "adminList.txt");
         log("Загрузка списка администраторов из файла "+userListFile.getName()+"...");
         if(!userListFile.isFile())
@@ -344,38 +346,45 @@ public class AdminList  extends CommandModule {
         // Сессия AddAdminCommandSession удаляется.
 
 
-        HashMap<Long, Date> sessions = new HashMap<>(); //userID of command sender, Time when session started (to expire sessions)
+
         @Override
         public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
             ArrayList<Message> result = super.processCommand(message, tgAccount);
-            if(sessions.containsKey(message.getAuthor())){
 
-            }
             CommandParser commandParser = new CommandParser(message.getText());
             if(!commandParser.getWord().toLowerCase(Locale.ROOT).equals("админ"))
                 return result;
             if(!commandParser.getWord().toLowerCase(Locale.ROOT).equals("добавить"))
                 return result;
-            String username = commandParser.getWord();
-            if(username.isEmpty()){
-                result.add(new Message(log(
-                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
-                                "Чтобы воспользоваться командой добавления администратора, " +
-                                "нужно указать username пользователя Telegram.\n" +
-                                "Если у пользователя нет username, пусть создаст в настройках своего аккаунта.")));
-                return result;
-            }
-            String reason = commandParser.getText();
-            if(reason.isEmpty()){
-                result.add(new Message(log(
-                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
-                                "Чтобы воспользоваться командой добавления администратора, " +
-                                "необходимо указать причину и описание. Кто это, зачем админ, и т.д.\n" +
-                                "Без этого потом будет легко запутаться в списке администраторов.")));
-                return result;
-            }
 
-            result.add(new Message("админа добавление но пока ничего не написано " + username));
+
+            StringBuilder sb = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
+            sb.append("Команда имеет два варианта вызова.\n");
+            sb.append("Формат команды с username пользователя: \n<i>админ добавить @username причина</i>.\n");
+            sb.append("Формат команды с ID пользователя: \n<i>админ добавить 123456789 причина</i>.\n\n");
+            sb.append("Чтобы можно было добавить админа, он должен быть в списке ниже.\n");
+            sb.append("Отображаю список последних написавших пользователей в этот аккаунт:\n\n");
+
+            ArrayList<User> chats =  applicationManager.getMessageHistory().getLastUsersListForAccount(tgAccount);
+            for (int i=0; i<chats.size() && i < 10; i++){
+                User user = chats.get(i);
+                sb.append("<b>ID:</b> <code>").append(user.getId()).append("</code>\n")
+                        .append("Username: @").append(user.getUsername()).append("\n")
+                        .append("Имя: ").append(user.getFirst_name()).append(" ").append(user.getLast_name()).append("\n\n");
+            }
+//            String reason = commandParser.getText();
+//            if(reason.isEmpty()){
+//                result.add(new Message(log(
+//                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+//                                "Чтобы воспользоваться командой добавления администратора, " +
+//                                "необходимо указать причину и описание. Кто это, зачем админ, и т.д.\n" +
+//                                "Без этого потом будет легко запутаться в списке администраторов.")));
+//                return result;
+//            }
+
+
+
+            result.add(new Message(sb.toString()));
             return result;
         }
 
