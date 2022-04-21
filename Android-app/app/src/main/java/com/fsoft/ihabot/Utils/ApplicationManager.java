@@ -1,6 +1,7 @@
 package com.fsoft.ihabot.Utils;
 
 import static com.fsoft.ihabot.Utils.F.deleteDir;
+import static com.fsoft.ihabot.Utils.F.trimArray;
 
 import android.content.Context;
 
@@ -11,6 +12,7 @@ import com.fsoft.ihabot.answer.Message;
 import com.fsoft.ihabot.communucation.Communicator;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
 import com.fsoft.ihabot.configuration.AdminList;
+import com.fsoft.ihabot.configuration.MessageHistory;
 
 import net.lingala.zip4j.util.FileUtils;
 
@@ -64,6 +66,7 @@ public class ApplicationManager extends CommandModule {
     private final Communicator communicator;
     private final AnswerDatabase answerDatabase;
     private final AdminList adminList; //кто админ, кто не админ, кому что можна
+    private final MessageHistory messageHistory;
 
 
     public ApplicationManager(BotService service) throws Exception {
@@ -87,6 +90,7 @@ public class ApplicationManager extends CommandModule {
 
         //инициализация основных модулей
         adminList = new AdminList(this);
+        messageHistory = new MessageHistory(this);
         answerDatabase = new AnswerDatabase(this);
         communicator = new Communicator(this);
 
@@ -133,8 +137,9 @@ public class ApplicationManager extends CommandModule {
     public AdminList getAdminList() {
         return adminList;
     }
-
-
+    public MessageHistory getMessageHistory() {
+        return messageHistory;
+    }
 
     private class HelpCommand extends CommandModule{
         @Override

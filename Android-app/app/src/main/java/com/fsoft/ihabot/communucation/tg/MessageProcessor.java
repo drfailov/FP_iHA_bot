@@ -8,6 +8,7 @@ import com.fsoft.ihabot.answer.AnswerElement;
 import com.fsoft.ihabot.answer.Attachment;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Locale;
 
 /**
  * Этот класс принимает все сообщения в телеге и тут в целом решается судьба каждого сообщения
@@ -204,10 +205,18 @@ public class MessageProcessor extends CommandModule {
         log("\nВыполнено запросов к API: " + tgAccount.getApiCounter());
         log("\nОшибок при доступе к API: " + tgAccount.getErrorCounter());
 
+        if (message.getChat().getId() != message.getFrom().getId()){
+            log("Получено сообщение с чата " + message.getChat().getTitle() + ", " +
+                    "однако мы с чатами пока не работаем. " +
+                    "Игнорируем.");
+            return;
+        }
+
         //Отправить пользователю что бот уже начал готовить ответ для него
         tgAccount.sendChatTyping(message.getChat().getId());
 
         //сформировать обьект вопроса
+        //Этот код потенциально можно засунуть как один из конструкторов Message
         com.fsoft.ihabot.answer.Message question = new com.fsoft.ihabot.answer.Message();
         question.setMessage_id(message.getMessage_id());
         question.setText(message.getText());
@@ -250,6 +259,9 @@ public class MessageProcessor extends CommandModule {
                 }
             }
         }
+
+        //учесть сообщение в статистике
+        applicationManager.getMessageHistory().registerTelegramMessage(message.getChat(), question, tgAccount);
 
         //Проверить не является ли пользователь админинистратором. Если является, обработать как команду
         if(applicationManager.getAdminList().has(question.getAuthor())){

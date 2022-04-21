@@ -2,6 +2,7 @@ package com.fsoft.ihabot.answer;
 
 import androidx.annotation.NonNull;
 
+import com.fsoft.ihabot.communucation.tg.Chat;
 import com.fsoft.ihabot.communucation.tg.User;
 
 import org.json.JSONArray;
