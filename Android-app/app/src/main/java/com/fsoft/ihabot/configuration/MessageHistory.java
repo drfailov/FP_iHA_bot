@@ -4,6 +4,8 @@ import android.util.JsonReader;
 import android.util.Log;
 import android.widget.ArrayAdapter;
 
+import androidx.annotation.Nullable;
+
 import com.fsoft.ihabot.Utils.ApplicationManager;
 import com.fsoft.ihabot.Utils.F;
 import com.fsoft.ihabot.answer.Message;
@@ -60,6 +62,40 @@ public class MessageHistory {
     }
 
     /**
+     * Выполняет поиск по всей истории сообщений с целью найти данные о пользователе по его ID в истории сообщений
+     * @param userId какой телеграмовский userId ищем.
+     * @return Если в истории такой персонаж есть, то его аккаунт. Если не найдено, то null
+     */
+    @Nullable
+    public User getUserById(long userId){
+        for (MessageHistoryTgAccount account:messageHistoryTgAccounts){
+            User user = account.getUserById(userId);
+            if(user != null)
+                return user;
+        }
+        return null;
+    }
+
+
+    /**
+     * Выполняет поиск по всей истории сообщений с целью найти данные о пользователе по его ID в текстовом виде или юзернейму
+     * Нечувствительно к регистру.
+     * @param userIdOrUsername текст его ID, либо username. Можно с собакой можно без.
+     * @return Если в истории такой персонаж есть, то его аккаунт. Если не найдено, то null
+     */
+    @Nullable
+    public User getUserByUsernameOrId(String userIdOrUsername){
+        for (MessageHistoryTgAccount account:messageHistoryTgAccounts){
+            User user = account.getUserByUsernameOrId(userIdOrUsername);
+            if(user != null)
+                return user;
+        }
+        return null;
+    }
+
+    //количество зарегистрированных сообщений с момента перезагрузки
+    private int registeredMessages = 0;
+    /**
      * Регистрирует сообщение в чате.
      * @param message сообщение которое было в чате. Входящее.
      * @param tgAccount аккаунт с которого это сообщение было принято
@@ -90,7 +126,10 @@ public class MessageHistory {
         for (MessageHistoryTgAccount messageHistoryTgAccount:messageHistoryTgAccounts){
             if(messageHistoryTgAccount.tgAccountId == tgAccount.getId()){
                 messageHistoryTgAccount.registerTelegramMessage(chat, message);
-                messageHistoryWriteToFile();
+                Log.d(F.TAG, "Сообщений с момента перезагрузки: " + registeredMessages);
+                if(registeredMessages % 10 == 0)
+                    messageHistoryWriteToFile();
+                registeredMessages ++;
                 return;
             }
         }
@@ -99,7 +138,10 @@ public class MessageHistory {
         MessageHistoryTgAccount messageHistoryTgAccount = new MessageHistoryTgAccount(tgAccount.getId(), tgAccount.getScreenName());
         messageHistoryTgAccounts.add(messageHistoryTgAccount);
         messageHistoryTgAccount.registerTelegramMessage(chat, message);
-        messageHistoryWriteToFile();
+        Log.d(F.TAG, "Сообщений с момента перезагрузки: " + registeredMessages);
+        if(registeredMessages % 10 == 0)
+            messageHistoryWriteToFile();
+        registeredMessages ++;
     }
 
     /**
@@ -143,7 +185,7 @@ public class MessageHistory {
                     jsonArray.put(account.toJson());
                 fileTmpWriter.println(jsonArray);
             }
-            Log.d(F.TAG, "Сохранена история аккаунтов: " + messageHistoryTgAccounts.size());
+            Log.d(F.TAG, "Сохранена история сообщений: " + messageHistoryFile.length() + " байт");
         }
         catch (Exception e){
             Log.d(F.TAG, "Ошибка сохранения истории чатов в файл: " + e.getLocalizedMessage());
@@ -176,6 +218,26 @@ public class MessageHistory {
 
         public MessageHistoryTgAccount(JSONObject jsonObject) throws JSONException, ParseException{
             fromJson(jsonObject);
+        }
+
+        @Nullable
+        public User getUserById(long userId){
+            for (MessageHistoryChat chat:chats){
+                User user = chat.getUserById(userId);
+                if(user != null)
+                    return user;
+            }
+            return null;
+        }
+
+        @Nullable
+        public User getUserByUsernameOrId(String userIdOrUsername){
+            for (MessageHistoryChat chat:chats){
+                User user = chat.getUserByUsernameOrId(userIdOrUsername);
+                if(user != null)
+                    return user;
+            }
+            return null;
         }
 
         public void registerTelegramMessage(Chat chat, Message message){
@@ -344,6 +406,37 @@ public class MessageHistory {
 
         public MessageHistoryChat(JSONObject jsonObject) throws JSONException, ParseException{
             fromJson(jsonObject);
+        }
+
+        @Nullable
+        public User getUserByUsernameOrId(String usernameOrId){
+            if(chatUser != null) {
+                if (F.isDigitsOnly(usernameOrId)){
+                    try {
+                        long result = Long.parseLong(usernameOrId);
+                        User found = getUserById(result);
+                        if(found != null)
+                            return found;
+                    }
+                    catch (Exception e){
+                        //похуй
+                    }
+                }
+                usernameOrId = usernameOrId.replace("@", "").toLowerCase(Locale.ROOT).trim();
+                if(chatUser.getUsername() != null)
+                    if (chatUser.getUsername().replace("@", "").toLowerCase(Locale.ROOT).trim().equals(usernameOrId))
+                        return chatUser;
+            }
+            return null;
+        }
+
+        @Nullable
+        public User getUserById(long userId){
+            if(chatUser != null) {
+                if (chatUser.getId() == userId)
+                    return chatUser;
+            }
+            return null;
         }
 
         public void registerTelegramMessage(Message message){

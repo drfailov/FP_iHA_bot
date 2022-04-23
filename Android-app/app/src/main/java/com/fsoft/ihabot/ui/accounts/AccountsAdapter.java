@@ -6,6 +6,7 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.BaseAdapter;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -21,7 +22,10 @@ import com.fsoft.ihabot.communucation.tg.TgAccount;
 import com.fsoft.ihabot.communucation.tg.TgAccountCore;
 import com.squareup.picasso.Picasso;
 
+import java.sql.Time;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Handler;
 
 import jp.wasabeef.picasso.transformations.CropCircleTransformation;
@@ -30,17 +34,60 @@ public class AccountsAdapter extends BaseAdapter {
     Activity activity = null;
     ApplicationManager applicationManager = null;
     Communicator communicator = null;
+    /**
+     * Дело в том, что когда создаётся этот адаптер, данных в сервисе ещё не существует.
+     * Поэтому нужно попробовать повторно их достать когда сервис уже работает.
+     * Задача этого таймера состоит в том чтобы обновлять данные о ApplicationManager до тех пор, пока он не будет создан.
+     * ПОсле того как успешно получен Communictor (с которого и надо показывать данные), это таймер ликвидируется.
+     */
+    Timer timerToUpdateView = null;
 
     public AccountsAdapter(Activity activity) {
         this.activity = activity;
         applicationManager = ApplicationManager.getInstance();
         if(applicationManager != null)
             communicator = applicationManager.getCommunicator();
+        timerToUpdateView = new Timer();
+        timerToUpdateView.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        notifyDataSetChanged();
+                    }
+                });
+            }
+        }, 1000, 1000);
+    }
+
+    @Override
+    public void notifyDataSetChanged() {
+        if(applicationManager == null)
+            applicationManager = ApplicationManager.getInstance();
+        if(applicationManager != null && communicator == null)
+            communicator = applicationManager.getCommunicator();
+        if(communicator != null)
+            timerToUpdateView.cancel();
+        super.notifyDataSetChanged();
+    }
+
+    @Override
+    public void notifyDataSetInvalidated() {
+        if(applicationManager == null)
+            applicationManager = ApplicationManager.getInstance();
+        if(applicationManager != null && communicator == null)
+            communicator = applicationManager.getCommunicator();
+        if(communicator != null)
+            timerToUpdateView.cancel();
+        super.notifyDataSetInvalidated();
     }
 
     @Override
     public int getCount() {
-        if(communicator == null) return 0;
+        if(communicator == null) {
+            return 0;
+        }
         return communicator.getTgAccounts().size();
     }
 
