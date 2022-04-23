@@ -361,6 +361,7 @@ public class AdminList  extends CommandModule {
             StringBuilder sb = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
             sb.append("Команда имеет два варианта вызова.\n");
             sb.append("Формат команды с username пользователя: \n<i>админ добавить @username причина</i>.\n");
+            sb.append("/adduser@test test\n");
             sb.append("Формат команды с ID пользователя: \n<i>админ добавить 123456789 причина</i>.\n\n");
             sb.append("Чтобы можно было добавить админа, он должен быть в списке ниже.\n");
             sb.append("Отображаю список последних написавших пользователей в этот аккаунт:\n\n");

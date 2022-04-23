@@ -145,7 +145,8 @@ public class ApplicationManager extends CommandModule {
         @Override
         public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
             ArrayList<Message> result = super.processCommand(message, tgAccount);
-            if(message.getText().toLowerCase(Locale.ROOT).trim().equals("помощь")) {
+            if(message.getText().toLowerCase(Locale.ROOT).trim().equals("помощь")
+            || message.getText().toLowerCase(Locale.ROOT).trim().equals("/help")) {
                 ArrayList<CommandDesc> commands = ApplicationManager.this.getHelp();
                 StringBuilder stringBuilder = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
                         "Эти команды доступны только администраторам <i>(если ты получил этот ответ, значит ты один из них)</i>. " +
