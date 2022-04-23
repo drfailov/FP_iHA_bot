@@ -1,27 +1,21 @@
 package com.fsoft.ihabot.configuration;
 
-import android.util.JsonReader;
 import android.util.Log;
-import android.widget.ArrayAdapter;
 
 import androidx.annotation.Nullable;
 
-import com.fsoft.ihabot.Utils.ApplicationManager;
+import com.fsoft.ihabot.ApplicationManager;
 import com.fsoft.ihabot.Utils.F;
 import com.fsoft.ihabot.answer.Message;
 import com.fsoft.ihabot.communucation.tg.Chat;
-import com.fsoft.ihabot.communucation.tg.MessageEntity;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
-import com.fsoft.ihabot.communucation.tg.TgAccountCore;
 import com.fsoft.ihabot.communucation.tg.User;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.PrintWriter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

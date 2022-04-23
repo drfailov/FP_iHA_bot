@@ -1,20 +1,17 @@
-package com.fsoft.ihabot.Utils;
+package com.fsoft.ihabot;
 
 import static com.fsoft.ihabot.Utils.F.deleteDir;
-import static com.fsoft.ihabot.Utils.F.trimArray;
 
 import android.content.Context;
 
-import com.fsoft.ihabot.BotService;
+import com.fsoft.ihabot.Utils.CommandDesc;
+import com.fsoft.ihabot.Utils.CommandModule;
 import com.fsoft.ihabot.answer.AnswerDatabase;
-import com.fsoft.ihabot.answer.Attachment;
 import com.fsoft.ihabot.answer.Message;
 import com.fsoft.ihabot.communucation.Communicator;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
 import com.fsoft.ihabot.configuration.AdminList;
 import com.fsoft.ihabot.configuration.MessageHistory;
-
-import net.lingala.zip4j.util.FileUtils;
 
 import java.io.File;
 import java.util.ArrayList;

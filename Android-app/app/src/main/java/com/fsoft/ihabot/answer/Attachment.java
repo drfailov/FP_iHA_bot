@@ -1,6 +1,6 @@
 package com.fsoft.ihabot.answer;
 
-import com.fsoft.ihabot.Utils.ApplicationManager;
+import com.fsoft.ihabot.ApplicationManager;
 
 import org.json.JSONArray;
 import org.json.JSONException;

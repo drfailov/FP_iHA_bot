@@ -3,6 +3,8 @@ package com.fsoft.ihabot.Utils;
 
 import android.util.Log;
 
+import com.fsoft.ihabot.ApplicationManager;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 

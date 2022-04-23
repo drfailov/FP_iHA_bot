@@ -19,7 +19,7 @@ import androidx.fragment.app.Fragment;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.fsoft.ihabot.R;
-import com.fsoft.ihabot.Utils.ApplicationManager;
+import com.fsoft.ihabot.ApplicationManager;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
 import com.google.android.material.snackbar.Snackbar;
 

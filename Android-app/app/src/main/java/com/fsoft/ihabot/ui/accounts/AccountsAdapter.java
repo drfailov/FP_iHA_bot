@@ -1,32 +1,24 @@
 package com.fsoft.ihabot.ui.accounts;
 
 import android.app.Activity;
-import android.icu.util.LocaleData;
 import android.util.Log;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.BaseAdapter;
-import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.PopupMenu;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.fsoft.ihabot.R;
-import com.fsoft.ihabot.Utils.ApplicationManager;
+import com.fsoft.ihabot.ApplicationManager;
 import com.fsoft.ihabot.Utils.F;
 import com.fsoft.ihabot.communucation.Communicator;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
 import com.fsoft.ihabot.communucation.tg.TgAccountCore;
 import com.squareup.picasso.Picasso;
 
-import java.sql.Time;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.logging.Handler;
 
 import jp.wasabeef.picasso.transformations.CropCircleTransformation;
 

@@ -8,7 +8,6 @@ import android.view.View;
 import android.view.Menu;
 import android.view.WindowManager;
 
-import com.fsoft.ihabot.Utils.ApplicationManager;
 import com.fsoft.ihabot.Utils.F;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
 import com.fsoft.ihabot.ui.TgLoginWindow;

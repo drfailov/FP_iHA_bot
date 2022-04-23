@@ -3,21 +3,18 @@ package com.fsoft.ihabot.communucation.tg;
 import com.android.volley.AuthFailureError;
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.NetworkResponse;
-import com.android.volley.NoConnectionError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
-import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.fsoft.ihabot.Utils.ApplicationManager;
+import com.fsoft.ihabot.ApplicationManager;
 import com.fsoft.ihabot.communucation.Account;
 import com.fsoft.ihabot.communucation.VolleyMultipartRequest;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.net.URLEncoder;

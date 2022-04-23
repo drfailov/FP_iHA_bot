@@ -1,14 +1,13 @@
 package com.fsoft.ihabot.communucation.tg;
 //todo определять чаты и игнорить их, заполнять поля message
 
-import com.fsoft.ihabot.Utils.ApplicationManager;
+import com.fsoft.ihabot.ApplicationManager;
 import com.fsoft.ihabot.Utils.CommandModule;
 import com.fsoft.ihabot.Utils.F;
 import com.fsoft.ihabot.answer.AnswerElement;
 import com.fsoft.ihabot.answer.Attachment;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Locale;
 
 /**
  * Этот класс принимает все сообщения в телеге и тут в целом решается судьба каждого сообщения

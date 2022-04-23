@@ -2,6 +2,8 @@ package com.fsoft.ihabot.Utils;
 
 import android.util.Log;
 
+import com.fsoft.ihabot.ApplicationManager;
+
 /**
  * Мегаохуительный класс для разбора команд без регистрации и СМС.
  * Created by Dr. Failov on 01.01.2015.

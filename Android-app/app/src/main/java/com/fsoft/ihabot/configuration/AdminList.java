@@ -2,11 +2,10 @@ package com.fsoft.ihabot.configuration;
 
 import androidx.annotation.NonNull;
 
-import com.fsoft.ihabot.Utils.ApplicationManager;
+import com.fsoft.ihabot.ApplicationManager;
 import com.fsoft.ihabot.Utils.CommandDesc;
 import com.fsoft.ihabot.Utils.CommandModule;
 import com.fsoft.ihabot.Utils.CommandParser;
-import com.fsoft.ihabot.answer.AnswerElement;
 import com.fsoft.ihabot.answer.Message;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
 import com.fsoft.ihabot.communucation.tg.User;
@@ -22,7 +21,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
 
 public class AdminList  extends CommandModule {

@@ -1,15 +1,11 @@
 package com.fsoft.ihabot.answer;
 
-import static java.util.Arrays.asList;
-
 import android.content.res.Resources;
 
 import com.fsoft.ihabot.R;
-import com.fsoft.ihabot.Utils.ApplicationManager;
+import com.fsoft.ihabot.ApplicationManager;
 import com.fsoft.ihabot.Utils.CommandModule;
 import com.fsoft.ihabot.Utils.F;
-
-import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;

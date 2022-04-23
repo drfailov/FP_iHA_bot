@@ -1,13 +1,11 @@
 package com.fsoft.ihabot.communucation;
 
-import com.fsoft.ihabot.Utils.ApplicationManager;
+import com.fsoft.ihabot.ApplicationManager;
 import com.fsoft.ihabot.Utils.CommandModule;
 import com.fsoft.ihabot.Utils.FileStorage;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
 
 import java.util.ArrayList;
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * class for communication with VK

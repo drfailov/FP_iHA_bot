@@ -5,7 +5,7 @@ import static com.fsoft.ihabot.Utils.F.deleteDir;
 import android.content.res.Resources;
 
 import com.fsoft.ihabot.R;
-import com.fsoft.ihabot.Utils.ApplicationManager;
+import com.fsoft.ihabot.ApplicationManager;
 import com.fsoft.ihabot.Utils.CommandDesc;
 import com.fsoft.ihabot.Utils.CommandModule;
 import com.fsoft.ihabot.Utils.F;

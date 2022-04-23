@@ -1,6 +1,6 @@
 package com.fsoft.ihabot.communucation.tg;
 
-import com.fsoft.ihabot.Utils.ApplicationManager;
+import com.fsoft.ihabot.ApplicationManager;
 import com.fsoft.ihabot.Utils.F;
 
 import java.io.DataInputStream;
@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
-import java.util.Timer;
 import java.util.concurrent.TimeoutException;
 
 public class TgAccount extends TgAccountCore {
