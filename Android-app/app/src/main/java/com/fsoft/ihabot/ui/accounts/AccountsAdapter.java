@@ -22,6 +22,7 @@ import com.fsoft.ihabot.communucation.tg.TgAccountCore;
 import com.squareup.picasso.Picasso;
 
 import java.util.Locale;
+import java.util.logging.Handler;
 
 import jp.wasabeef.picasso.transformations.CropCircleTransformation;
 
@@ -69,7 +70,9 @@ public class AccountsAdapter extends BaseAdapter {
         tgAccount.setOnStateChangedListener(new Runnable() { //auto-updating
             @Override
             public void run() {
-                notifyDataSetInvalidated();
+                if(activity != null) {
+                    activity.runOnUiThread(() -> notifyDataSetInvalidated());
+                }
             }
         });
         { //NAME
@@ -136,7 +139,7 @@ public class AccountsAdapter extends BaseAdapter {
                 tgAccount.getMyPhotoUrl(new TgAccountCore.GetUserPhotoListener() {
                     @Override
                     public void gotPhoto(String url) {
-                        imageView.getHandler().post(new Runnable() {
+                        imageView.post(new Runnable() {
                             @Override
                             public void run() {
                                 Picasso.get()
@@ -146,7 +149,6 @@ public class AccountsAdapter extends BaseAdapter {
                                         .into(imageView);
                             }
                         });
-
                     }
 
                     @Override
