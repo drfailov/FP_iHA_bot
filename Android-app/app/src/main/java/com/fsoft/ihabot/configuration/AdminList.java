@@ -1,11 +1,15 @@
 package com.fsoft.ihabot.configuration;
 
+import android.service.dreams.DreamService;
+
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.fsoft.ihabot.ApplicationManager;
 import com.fsoft.ihabot.Utils.CommandDesc;
 import com.fsoft.ihabot.Utils.CommandModule;
 import com.fsoft.ihabot.Utils.CommandParser;
+import com.fsoft.ihabot.Utils.F;
 import com.fsoft.ihabot.answer.Message;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
 import com.fsoft.ihabot.communucation.tg.User;
@@ -55,18 +59,19 @@ public class AdminList  extends CommandModule {
             log("Поскольку список администраторов пустой, добавляю тестовую запись.");
             {
                 User userTg = new User(248067313, "DrFailov", "Dr.", "Failov");
-                add(userTg, userTg, "Разработчик бота.", true,
+                add(userTg, userTg, "Разработчик бота", true,
                         true, true, true,
                         true, true);
             }
             {
                 User userTg = new User(914020479, "Polyasha00", "", "");
-                add(userTg, userTg, "Подруга разработчика. Так надо.", true,
+                add(userTg, userTg, "Подруга разработчика. Так надо", true,
                         true, true, true,
                         true, true);
             }
         }
 
+        childCommands.add(new ShowAdminCommand());
         childCommands.add(new AddAdminCommand());
 
     }
@@ -110,6 +115,20 @@ public class AdminList  extends CommandModule {
             if(adminListItem.getUser() != null)
                 if(adminListItem.getUser().equals(userTg))
                     return adminListItem;
+        }
+        return null;
+    }
+
+    /**
+     * Возвращает обьект админа, исходя из описания в видео текстового айдишника либо юзернейма
+     * Эта функция очень полезна для команд, где юзер ввёл какую-то херню и нам с этим что-то делать
+     * @param usernameOrId текст его ID, либо username. Можно с собакой можно без.
+     * @return Если в админах такой персонаж есть, то его админ-аккаунт. Если не найдено, то null
+     */
+    public AdminListItem getByUsernameOrId(String usernameOrId){
+        for (AdminListItem adminListItem:userList){
+            if(adminListItem.getUserByUsernameOrId(usernameOrId) != null)
+                return adminListItem;
         }
         return null;
     }
@@ -162,6 +181,42 @@ public class AdminList  extends CommandModule {
             fromJson(jsonObject);
         }
 
+        @Nullable
+        public User getUserById(long userId){
+            if(user != null) {
+                if (user.getId() == userId)
+                    return user;
+            }
+            return null;
+        }
+
+        /**
+         * Вернет обьект юзера если подходит
+         * @param usernameOrId текст его ID, либо username. Можно с собакой можно без.
+         * @return Если тут такой персонаж есть, то его аккаунт. Если нет, то null
+         */
+        @Nullable
+        public User getUserByUsernameOrId(String usernameOrId){
+            if(user != null) {
+                if (F.isDigitsOnly(usernameOrId)){
+                    try {
+                        long result = Long.parseLong(usernameOrId);
+                        User found = getUserById(result);
+                        if(found != null)
+                            return found;
+                    }
+                    catch (Exception e){
+                        //похуй
+                    }
+                }
+                usernameOrId = usernameOrId.replace("@", "").toLowerCase(Locale.ROOT).trim();
+                if(user.getUsername() != null)
+                    if (user.getUsername().replace("@", "").toLowerCase(Locale.ROOT).trim().equals(usernameOrId))
+                        return user;
+            }
+            return null;
+        }
+
         public JSONObject toJson() throws JSONException {
             JSONObject jsonObject = new JSONObject();
             if(user != null)
@@ -180,6 +235,7 @@ public class AdminList  extends CommandModule {
             jsonObject.put("allowAdminsAdd", allowAdminsAdd);
             return jsonObject;
         }
+
         private void fromJson(JSONObject jsonObject)throws JSONException, ParseException {
             if(jsonObject.has("user"))
                 user = new User(jsonObject.getJSONObject("user"));
@@ -312,41 +368,51 @@ public class AdminList  extends CommandModule {
         @NonNull
         @Override
         public String toString() {
-            String result = "";
-            if(user != null){
-                result += "Польльзователь: " + user;
-            }
-            if(responsible != null){
-                if(!result.isEmpty())
-                    result += ", ";
-                result += "Ответственный: " + responsible;
-            }
-            if(comment != null){
-                if(!result.isEmpty())
-                    result += ", ";
-                result += "Основание: " + comment;
-            }
-            return result;
+            StringBuilder sb = new StringBuilder();
+            sb.append("\uD83D\uDC64 ").append(user).append("\n");
+            sb.append("[");
+            sb.append(isAllowLearning()?"✅":"⛔");
+            sb.append("--");
+            sb.append(isAllowDatabaseRead()?"✅":"⛔");
+            sb.append(isAllowDatabaseEdit()?"✅":"⛔");
+            sb.append(isAllowDatabaseDump()?"✅":"⛔");
+            sb.append("--");
+            sb.append(isAllowAdminsRead()?"✅":"⛔");
+            sb.append(isAllowAdminsAdd()?"✅":"⛔");
+            sb.append("]");
+            return sb.toString();
+        }
+
+        @NonNull
+        public String toStringFull() {
+            StringBuilder sb = new StringBuilder();
+            AdminListItem adminListItem = this;
+
+            sb.append("\uD83D\uDC64 <b>Админ:</b> ").append(adminListItem.getUser()).append(";\n");
+            sb.append("\uD83C\uDFC5 <b>Добавил:</b> ").append(adminListItem.getResponsible()).append(";\n");
+            if(adminListItem.getAddedDate() != null)
+                sb.append("\uD83D\uDCC6 <b>Дата добавления:</b> ")
+                        .append(new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(adminListItem.getAddedDate()))
+                        .append(";\n");
+            sb.append("\uD83D\uDCA1 <b>Комментарий:</b> ").append(adminListItem.getComment()).append(";\n\n");
+            sb.append("Разрешения: \n");
+            sb.append(adminListItem.isAllowLearning()?"✅":"⛔").append(" - Обучать бота;\n");
+            sb.append("- \n");
+            sb.append(adminListItem.isAllowDatabaseRead()?"✅":"⛔").append(" - Смотреть базу ответов;\n");
+            sb.append(adminListItem.isAllowDatabaseEdit()?"✅":"⛔").append("- Изменять базу ответов;\n");
+            sb.append(adminListItem.isAllowDatabaseDump()?"✅":"⛔").append("- Выгружать базу ответов;\n");
+            sb.append("- \n");
+            sb.append(adminListItem.isAllowAdminsRead()?"✅":"⛔").append("- Смотреть список админов;\n");
+            sb.append(adminListItem.isAllowAdminsAdd()?"✅":"⛔").append("- Назначать админов;\n");
+
+            return sb.toString();
         }
     }
 
-
+    /**
+     * Команда "Админ добавить @username Причина добавления"
+     */
     private class AddAdminCommand extends CommandModule{
-        //1) Прислать команду на добавление админа "админ добавить usern".
-        // В ответ бот присылает список своих диалогов с пользователями,
-        // у которых в именах, никнеймах или ID содержится фрагмент "usern".
-        // В списке будет содержаться имя пользователя и ID пользователя.
-        // Чтобы на этом этапе отменить команду, надо прислать "отмена".
-        // На ответ пользователю даётся 5 минут.
-        // В этот момент создаётся сессия AddAdminCommandSession,
-        // в ней сохраняется список пользователей, которые были отправлены в списке.
-        //2) Прислать боту ID пользователя из списка и причину добавления:
-        // "248067313 Друг бота, будет обучать его ответам."
-        // На этом месте у нас уже есть данные о пользователе, причина добавления, дата, ответственный.
-        // Пользователь добавляется в список админов.
-        // Сессия AddAdminCommandSession удаляется.
-
-
 
         @Override
         public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
@@ -376,7 +442,6 @@ public class AdminList  extends CommandModule {
                                 "Если пользователя, которого ты хочешь добавить администратором, " +
                                 "нет в этом списке - пусть он напишет мне. Тогда он здесь появится.\n" +
                                 "\n" +
-
                                 getLastDialogList(tgAccount))));
                 return result;
             }
@@ -439,20 +504,8 @@ public class AdminList  extends CommandModule {
                     sb.append("Текущий список администраторов:\n\n");
                 }
                 for (AdminListItem adminListItem:userList){
-                    sb.append("\uD83D\uDC6E<b>Админ:</b> ").append(adminListItem.getUser()).append(";\n");
-                    sb.append("\uD83D\uDD75️\u200D♂️<b>Добавил:</b> ").append(adminListItem.getResponsible()).append(";\n");
-                    if(adminListItem.getAddedDate() != null)
-                        sb.append("\uD83D\uDCC6<b>Дата добавления:</b> ")
-                                .append(new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(adminListItem.getAddedDate()))
-                                .append(";\n");
-                    sb.append("\uD83D\uDCA1<b>Комментарий:</b> ").append(adminListItem.getComment()).append(";\n");
-                    sb.append("Разрешения: \n");
-                    sb.append("Смотреть базу ответов: ").append(adminListItem.isAllowDatabaseRead()?"✅":"⛔").append("\n");
-                    sb.append("Изменять базу ответов: ").append(adminListItem.isAllowDatabaseEdit()?"✅":"⛔").append("\n");
-                    sb.append("Выгружать базу ответов: ").append(adminListItem.isAllowDatabaseDump()?"✅":"⛔").append("\n");
-                    sb.append("Назначать админов: ").append(adminListItem.isAllowAdminsAdd()?"✅":"⛔").append("\n");
-                    sb.append("Смотреть список админов: ").append(adminListItem.isAllowAdminsRead()?"✅":"⛔").append("\n");
-                    sb.append("\n");
+                    sb.append(adminListItem.toString());
+                    sb.append("\n\n");
                 }
                 result.add(new Message(sb.toString()));
                 return result;
@@ -483,9 +536,53 @@ public class AdminList  extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp() {
             ArrayList<CommandDesc> result = super.getHelp();
-            result.add(new CommandDesc("Админ добавить Причина добавления", "" +
-                    "Добавить пользователя из следующего пересланного сообщения в список администраторов с указанной причиной добавления. " +
-                    "После отправки этой команды, перешли любое сообщение от пользователя, которого надо добавить в администраторы."));
+            result.add(new CommandDesc("Админ добавить @username Причина добавления", "Добавить пользователя в список администраторов. Чтобы получить больше справки, напиши \"Админ добавить\" без аргументов."));
+            return result;
+        }
+    }
+
+    /**
+     * Команда "Админ"
+     * Команда "Админ @username "
+     */
+    private class ShowAdminCommand extends CommandModule{
+
+        @Override
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount);
+
+            CommandParser commandParser = new CommandParser(message.getText());
+            if (!commandParser.getWord().toLowerCase(Locale.ROOT).equals("админ"))
+                return result;
+
+            StringBuilder sb = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
+            String username = commandParser.getWord();
+            if(username.isEmpty()) {
+                sb.append("Текущий список администраторов:\n\n");
+                for (AdminListItem adminListItem : userList) {
+                    sb.append(adminListItem.toString());
+                    sb.append("\n\n");
+                }
+                result.add(new Message(sb.toString()));
+                return result;
+            }
+            AdminListItem adminListItem = getByUsernameOrId(username);
+            if(adminListItem == null){
+                result.add(new Message(log(
+                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+                                "Пользователь " + username + " не найден в списке администраторов.")));
+                return result;
+            }
+            sb.append("Информация об администраторе ").append(username).append(":\n\n");
+            sb.append(adminListItem.toStringFull());
+            result.add(new Message(sb.toString()));
+            return result;
+        }
+
+        @Override
+        public ArrayList<CommandDesc> getHelp() {
+            ArrayList<CommandDesc> result = super.getHelp();
+            result.add(new CommandDesc("Админ @username", "Вывести список админов, или информацию о конкретном админе"));
             return result;
         }
     }
