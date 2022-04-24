@@ -140,8 +140,8 @@ public class ApplicationManager extends CommandModule {
 
     private class HelpCommand extends CommandModule{
         @Override
-        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
-            ArrayList<Message> result = super.processCommand(message, tgAccount);
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminList.AdminListItem admin) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
             if(message.getText().toLowerCase(Locale.ROOT).trim().equals("помощь")
             || message.getText().toLowerCase(Locale.ROOT).trim().equals("/help")) {
                 String sb = "Ответ на команду \"<b>" + message.getText() + "</b>\"\n\n" +
@@ -149,8 +149,8 @@ public class ApplicationManager extends CommandModule {
                         "Но для некоторых команд могут потребоваться дополнительные права доступа.\n" +
                         "Поскольку команд много, справка разделена на несколько разделов:" + "\n\n" +
 
-                        "<b>/helpanswers</b>\nСписок команд работы с базой ответов." + "\n\n" +
-                        "<b>/helpadmin</b>\nСписок команд работы со списком администраторов." + "\n\n";
+                        "⚡️ <b>/helpanswers</b>\nСписок команд работы с базой ответов." + "\n\n" +
+                        "⚡️ <b>/helpadmin</b>\nСписок команд работы со списком администраторов." + "\n\n";
                 Message answer = new Message(sb);
                 result.add(answer);
             }
@@ -160,7 +160,7 @@ public class ApplicationManager extends CommandModule {
                         "Список команд для работы с базой ответов:\n\n");
                 ArrayList<CommandDesc> commands = ApplicationManager.this.getAnswerDatabase().getHelp();
                 for (CommandDesc commandDesc:commands)
-                    sb.append("<b>").append(commandDesc.getExample()).append("</b>\n").append(commandDesc.getHelpText()).append("\n\n");
+                    sb.append("⚡️ <b>").append(commandDesc.getExample()).append("</b>\n").append(commandDesc.getHelpText()).append("\n\n");
                 Message answer = new Message(sb.toString());
                 result.add(answer);
             }
@@ -170,7 +170,7 @@ public class ApplicationManager extends CommandModule {
                         "Список команд для работы со списком администраторов:\n\n");
                 ArrayList<CommandDesc> commands = ApplicationManager.this.getAdminList().getHelp();
                 for (CommandDesc commandDesc:commands)
-                    sb.append("<b>").append(commandDesc.getExample()).append("</b>\n").append(commandDesc.getHelpText()).append("\n\n");
+                    sb.append("⚡️ <b>").append(commandDesc.getExample()).append("</b>\n").append(commandDesc.getHelpText()).append("\n\n");
                 Message answer = new Message(sb.toString());
                 result.add(answer);
             }

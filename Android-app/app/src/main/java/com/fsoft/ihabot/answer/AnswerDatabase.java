@@ -11,6 +11,7 @@ import com.fsoft.ihabot.Utils.CommandModule;
 import com.fsoft.ihabot.Utils.F;
 import com.fsoft.ihabot.Utils.Triplet;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
+import com.fsoft.ihabot.configuration.AdminList;
 
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.ZipParameters;
@@ -154,7 +155,7 @@ public class AnswerDatabase  extends CommandModule {
         log("Вношу в очередь на прикрепление в базу к файлу " + filename + " айдишник " + fileId + " ...");
         for(Triplet<String, String, Long> pair:updateAnswerPhotoIdQueue)
             if(pair.getFirst().equals(filename) && pair.getThird() == botId)
-                throw new Exception(log("Попытка внести в очередь несколько ID для файла " + filename));
+                return;//throw new Exception(log("Попытка внести в очередь несколько ID для файла " + filename));
         updateAnswerPhotoIdQueue.add(new Triplet<>(filename, fileId, botId));
         log("IDшников в очереди: " + updateAnswerPhotoIdQueue.size());
 
@@ -1246,8 +1247,8 @@ public class AnswerDatabase  extends CommandModule {
      */
     private class DumpCommand extends CommandModule{
         @Override
-        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
-            ArrayList<Message> result = super.processCommand(message, tgAccount);
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminList.AdminListItem admin) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
             if(message.getText().toLowerCase(Locale.ROOT).trim().equals("выгрузить базу")) {
                 log("Выполнение команды выгрузки дампа базы. Выбор имени для архива...");
                 //Выбрать имя для нового файла
@@ -1311,8 +1312,8 @@ public class AnswerDatabase  extends CommandModule {
      */
     private class RestoreCommand extends CommandModule{
         @Override
-        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
-            ArrayList<Message> result = super.processCommand(message, tgAccount);
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminList.AdminListItem admin) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
             if(message.getText().toLowerCase(Locale.ROOT).trim().startsWith("восстановить базу")) {
                 if(message.getText().length() < 22){
                     result.add(new Message("Ответ на команду <b>\""+message.getText()+"\"</b>\n\n"+
@@ -1465,8 +1466,8 @@ public class AnswerDatabase  extends CommandModule {
      */
     private class DownloadCommand extends CommandModule{
         @Override
-        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception{
-            ArrayList<Message> result = super.processCommand(message, tgAccount);
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminList.AdminListItem admin) throws Exception{
+            ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
             if(message.hasAttachments()) {
                 for (Attachment attachment:message.getAttachments()){
                     if(!attachment.isDoc())//ignore if not document
@@ -1521,10 +1522,10 @@ public class AnswerDatabase  extends CommandModule {
         private final HashMap<Long, RememberCommandSession> sessions = new HashMap<>();
 
         @Override
-        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminList.AdminListItem admin) throws Exception {
             //через сколько минут после получения команды сбрасываться до IDLE
             long commandTimeoutMs = 5 * 60 * 1000; //5 мин
-            ArrayList<Message> result = super.processCommand(message, tgAccount);
+            ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
             Long userId = message.getAuthor().getId();
 
             synchronized (sessions) {
@@ -1630,8 +1631,8 @@ public class AnswerDatabase  extends CommandModule {
     private class GetAnswersByIdCommand extends CommandModule{
         final int numberOfAnswers = 20;
         @Override
-        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
-            ArrayList<Message> result = super.processCommand(message, tgAccount);
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminList.AdminListItem admin) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
             String[] words = message.getText().toLowerCase(Locale.ROOT).trim().split(" ");
             if (words.length == 2 && words[0].equals("ответы") && isNumber(words[1])) {
                 long neededIndex = Long.parseLong(words[1]);
@@ -1672,8 +1673,8 @@ public class AnswerDatabase  extends CommandModule {
     private class GetAnswersByQuestionCommand extends CommandModule{
         final int numberOfAnswers = 10;
         @Override
-        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
-            ArrayList<Message> result = super.processCommand(message, tgAccount);
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminList.AdminListItem admin) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
             if (message.getText().toLowerCase(Locale.ROOT).trim().startsWith("ответы на")) {
                 String questionText = message.getText().toLowerCase(Locale.ROOT).trim().replace("ответы на", "");
                 Message question = new Message(questionText);
@@ -1720,8 +1721,8 @@ public class AnswerDatabase  extends CommandModule {
      */
     private class GetAnswerByIdCommand extends CommandModule{
         @Override
-        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
-            ArrayList<Message> result = super.processCommand(message, tgAccount);
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminList.AdminListItem admin) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
             String[] words = message.getText().toLowerCase(Locale.ROOT).trim().split(" ");
             if (words.length == 2 && words[0].equals("ответ") && isNumber(words[1])) {
                 long neededIndex = Long.parseLong(words[1]);
@@ -1770,8 +1771,8 @@ public class AnswerDatabase  extends CommandModule {
      */
     private class RemoveAnswerByIdCommand extends CommandModule{
         @Override
-        public synchronized ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
-            ArrayList<Message> result = super.processCommand(message, tgAccount);
+        public synchronized ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminList.AdminListItem admin) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
             String[] words = message.getText().toLowerCase(Locale.ROOT).trim().split(" ");
             if (words.length == 2 && words[0].equals("забудь") && isNumber(words[1])) {
                 long neededIndex = Long.parseLong(words[1]);

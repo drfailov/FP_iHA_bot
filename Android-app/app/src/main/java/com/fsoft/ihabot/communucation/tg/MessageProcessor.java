@@ -6,6 +6,8 @@ import com.fsoft.ihabot.Utils.CommandModule;
 import com.fsoft.ihabot.Utils.F;
 import com.fsoft.ihabot.answer.AnswerElement;
 import com.fsoft.ihabot.answer.Attachment;
+import com.fsoft.ihabot.configuration.AdminList;
+
 import java.io.File;
 import java.util.ArrayList;
 
@@ -263,9 +265,10 @@ public class MessageProcessor extends CommandModule {
         applicationManager.getMessageHistory().registerTelegramMessage(message.getChat(), question, tgAccount);
 
         //Проверить не является ли пользователь админинистратором. Если является, обработать как команду
-        if(applicationManager.getAdminList().has(question.getAuthor())){
+        AdminList.AdminListItem admin = applicationManager.getAdminList().get(question.getAuthor());
+        if(admin != null){
             try {
-                ArrayList<com.fsoft.ihabot.answer.Message> results = applicationManager.processCommand(question, tgAccount);
+                ArrayList<com.fsoft.ihabot.answer.Message> results = applicationManager.processCommand(question, tgAccount, admin);
                 /*
                 Модули команд получают ВСЕ сообщения если пользователь администратор, и если хотят,
                 присылают от себя ответы.

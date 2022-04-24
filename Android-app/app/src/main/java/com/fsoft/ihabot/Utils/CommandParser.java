@@ -22,12 +22,15 @@ public class CommandParser {
         command = deleteCrap(command);
         this.command = command;
         words = command.split("\\ ");
+        if(words.length == 1)
+            words = command.split("_");
     }
     private void log(String text){
         Log.d(F.TAG, text);
     }
     private String deleteCrap(String in){
         String out = in.replace("botcmd", "");
+        out = out.replace("/", " ");
         out = out.replaceAll(" +", " ");
         out = out.trim();
         return out;

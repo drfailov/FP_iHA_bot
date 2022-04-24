@@ -4,6 +4,7 @@ import android.util.Log;
 
 import com.fsoft.ihabot.answer.Message;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
+import com.fsoft.ihabot.configuration.AdminList;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -25,10 +26,10 @@ public class CommandModule implements Command {
     }
 
     @Override
-    public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
+    public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminList.AdminListItem admin) throws Exception {
         ArrayList<Message> results = new ArrayList<>();
         for (CommandModule child : childCommands) {
-            results.addAll(child.processCommand(message, tgAccount));
+            results.addAll(child.processCommand(message, tgAccount, admin));
         }
         return results;
     }

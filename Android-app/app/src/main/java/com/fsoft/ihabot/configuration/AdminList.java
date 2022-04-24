@@ -73,6 +73,7 @@ public class AdminList  extends CommandModule {
 
         childCommands.add(new ShowAdminCommand());
         childCommands.add(new AddAdminCommand());
+        childCommands.add(new RemAdminCommand());
 
     }
 
@@ -94,6 +95,17 @@ public class AdminList  extends CommandModule {
         log(adminListItem + " добавлен в список администраторов. Количество администраторов сейчас: " + userList.size());
         saveArrayToFile();
         return adminListItem;
+    }
+    public boolean rem(AdminListItem adminListItem) throws Exception {
+        if(adminListItem == null)
+            throw new Exception("Не могу удалить пользователя из списка админов: Не получен пользователь чтобы его удалить.");
+        boolean result =  userList.remove(adminListItem);
+        if(result)
+            log(adminListItem + " удален из списка администраторов. Количество администраторов сейчас: " + userList.size());
+        else
+            log(adminListItem + " НЕ БЫЛ удален из списка администраторов. Причину не знаем.");
+        saveArrayToFile();
+        return result;
     }
 
     /**
@@ -369,7 +381,7 @@ public class AdminList  extends CommandModule {
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
-            sb.append("\uD83D\uDC64 ").append(user).append("\n");
+            sb.append("\uD83D\uDC64 <b>").append(user).append("</b>\n");
             sb.append("[");
             sb.append(isAllowLearning()?"✅":"⛔");
             sb.append("--");
@@ -379,7 +391,8 @@ public class AdminList  extends CommandModule {
             sb.append("--");
             sb.append(isAllowAdminsRead()?"✅":"⛔");
             sb.append(isAllowAdminsAdd()?"✅":"⛔");
-            sb.append("]");
+            sb.append("]\n");
+            sb.append("⚡️ /AdminInfo_").append(user.getId()).append(" - подробнее.");
             return sb.toString();
         }
 
@@ -388,23 +401,62 @@ public class AdminList  extends CommandModule {
             StringBuilder sb = new StringBuilder();
             AdminListItem adminListItem = this;
 
-            sb.append("\uD83D\uDC64 <b>Админ:</b> ").append(adminListItem.getUser()).append(";\n");
-            sb.append("\uD83C\uDFC5 <b>Добавил:</b> ").append(adminListItem.getResponsible()).append(";\n");
+            sb.append("\uD83D\uDC64 <b>Админ:</b> ").append(adminListItem.getUser()).append("\n");
+            sb.append("\uD83C\uDFC5 <b>Добавил:</b> ").append(adminListItem.getResponsible()).append("\n");
             if(adminListItem.getAddedDate() != null)
                 sb.append("\uD83D\uDCC6 <b>Дата добавления:</b> ")
                         .append(new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(adminListItem.getAddedDate()))
-                        .append(";\n");
-            sb.append("\uD83D\uDCA1 <b>Комментарий:</b> ").append(adminListItem.getComment()).append(";\n\n");
-            sb.append("Разрешения: \n");
-            sb.append(adminListItem.isAllowLearning()?"✅":"⛔").append(" - Обучать бота;\n");
-            sb.append("- \n");
-            sb.append(adminListItem.isAllowDatabaseRead()?"✅":"⛔").append(" - Смотреть базу ответов;\n");
-            sb.append(adminListItem.isAllowDatabaseEdit()?"✅":"⛔").append("- Изменять базу ответов;\n");
-            sb.append(adminListItem.isAllowDatabaseDump()?"✅":"⛔").append("- Выгружать базу ответов;\n");
-            sb.append("- \n");
-            sb.append(adminListItem.isAllowAdminsRead()?"✅":"⛔").append("- Смотреть список админов;\n");
-            sb.append(adminListItem.isAllowAdminsAdd()?"✅":"⛔").append("- Назначать админов;\n");
+                        .append("\n");
+            sb.append("\uD83D\uDCA1 <b>Комментарий:</b> ").append(adminListItem.getComment()).append("\n\n");
 
+            sb.append("<b>Разрешения:</b> \n");
+            sb.append(adminListItem.isAllowLearning()?"✅":"⛔").append(" - Обучать бота\n");
+            sb.append("- \n");
+            sb.append(adminListItem.isAllowDatabaseRead()?"✅":"⛔").append(" - Смотреть базу ответов\n");
+            sb.append(adminListItem.isAllowDatabaseEdit()?"✅":"⛔").append(" - Изменять базу ответов\n");
+            sb.append(adminListItem.isAllowDatabaseDump()?"✅":"⛔").append(" - Выгружать базу ответов\n");
+            sb.append("- \n");
+            sb.append(adminListItem.isAllowAdminsRead()?"✅":"⛔").append(" - Смотреть список админов\n");
+            sb.append(adminListItem.isAllowAdminsAdd()?"✅":"⛔").append(" - Назначать админов\n");
+            sb.append("\n");
+
+            sb.append("<b>Действия:</b> \n");
+
+            sb.append("⚡️ /AdminInfo\n"+"<b>Просмотреть</b> список администраторов \n\n");
+
+            sb.append("⚡️ /HelpAdmin\n"+"<b>Просмотреть</b> справку по командам админки \n\n");
+
+            if(isAllowLearning())
+                sb.append("⚡️ /AdminDeny_").append(adminListItem.user.getId()).append("_Learning\n" + "<b>Запретить</b> использовать обучение \n\n");
+            else
+                sb.append("⚡️ /AdminAllow_").append(adminListItem.user.getId()).append("_Learning\n"+"<b>Разрешить</b> использовать обучение \n\n");
+
+            if(isAllowDatabaseRead())
+                sb.append("⚡️ /AdminDeny_").append(adminListItem.user.getId()).append("_DatabaseRead\n"+"<b>Запретить</b> просматривать базу ответов \n\n");
+            else
+                sb.append("⚡️ /AdminAllow_").append(adminListItem.user.getId()).append("_DatabaseRead\n"+"<b>Разрешить</b> просматривать базу ответов \n\n");
+
+            if(isAllowDatabaseEdit())
+                sb.append("⚡️ /AdminDeny_").append(adminListItem.user.getId()).append("_DatabaseEdit\n"+"<b>Запретить</b> изменять базу ответов \n\n");
+            else
+                sb.append("⚡️ /AdminAllow_").append(adminListItem.user.getId()).append("_DatabaseEdit\n"+"<b>Разрешить</b> изменять базу ответов \n\n");
+
+            if(isAllowDatabaseDump())
+                sb.append("⚡️ /AdminDeny_").append(adminListItem.user.getId()).append("_DatabaseDump\n"+"<b>Запретить</b> выгружать и восстанавливать базу ответов \n\n");
+            else
+                sb.append("⚡️ /AdminAllow_").append(adminListItem.user.getId()).append("_DatabaseDump\n"+"<b>Разрешить</b> выгружать и восстанавливать базу ответов \n\n");
+
+            if(isAllowAdminsRead())
+                sb.append("⚡️ /AdminDeny_").append(adminListItem.user.getId()).append("_AdminsRead\n"+"<b>Запретить</b> изменять и просматривать список администраторов\n\n");
+            else
+                sb.append("⚡️ /AdminAllow_").append(adminListItem.user.getId()).append("_AdminsRead\n"+"<b>Разрешить</b> просматривать список администраторов\n\n");
+
+            if(isAllowAdminsAdd())
+                sb.append("⚡️ /AdminDeny_").append(adminListItem.user.getId()).append("_AdminsAdd\n"+"<b>Запретить</b> изменять список и права администраторов\n\n");
+            else
+                sb.append("⚡️ /AdminAllow_").append(adminListItem.user.getId()).append("_AdminsAdd\n"+"<b>Разрешить</b> просматривать и изменять список и права администраторов\n\n");
+
+            sb.append("⚡️ /AdminDelete_").append(adminListItem.user.getId()).append("\n"+"<b>Удалить</b> администратора \n\n");
             return sb.toString();
         }
     }
@@ -415,8 +467,8 @@ public class AdminList  extends CommandModule {
     private class AddAdminCommand extends CommandModule{
 
         @Override
-        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
-            ArrayList<Message> result = super.processCommand(message, tgAccount);
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminListItem admin) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
 
             CommandParser commandParser = new CommandParser(message.getText());
             if(!commandParser.getWord().toLowerCase(Locale.ROOT).equals("админ"))
@@ -544,21 +596,23 @@ public class AdminList  extends CommandModule {
     /**
      * Команда "Админ"
      * Команда "Админ @username "
+     * /AdminInfo_989898
      */
     private class ShowAdminCommand extends CommandModule{
 
         @Override
-        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
-            ArrayList<Message> result = super.processCommand(message, tgAccount);
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminListItem admin) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
 
             CommandParser commandParser = new CommandParser(message.getText());
-            if (!commandParser.getWord().toLowerCase(Locale.ROOT).equals("админ"))
+            String word1 = commandParser.getWord().toLowerCase(Locale.ROOT);
+            if (!word1.equals("админ") && !word1.equals("admininfo") )
                 return result;
 
             StringBuilder sb = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
             String username = commandParser.getWord();
             if(username.isEmpty()) {
-                sb.append("Текущий список администраторов:\n\n");
+                sb.append("<b>Список администраторов сейчас:</b>\n\n");
                 for (AdminListItem adminListItem : userList) {
                     sb.append(adminListItem.toString());
                     sb.append("\n\n");
@@ -582,46 +636,59 @@ public class AdminList  extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp() {
             ArrayList<CommandDesc> result = super.getHelp();
-            result.add(new CommandDesc("Админ @username", "Вывести список админов, или информацию о конкретном админе"));
+            result.add(new CommandDesc("Админ или /AdminInfo", "Вывести список администраторов"));
             return result;
         }
     }
+
+    /**
+     * Команда "/AdminDelete_472147993"
+     */
     private class RemAdminCommand extends CommandModule{
         @Override
-        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount) throws Exception {
-            ArrayList<Message> result = super.processCommand(message, tgAccount);
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminListItem admin) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
             CommandParser commandParser = new CommandParser(message.getText());
-            if(!commandParser.getWord().toLowerCase(Locale.ROOT).equals("админ"))
-                return result;
-            if(!commandParser.getWord().toLowerCase(Locale.ROOT).equals("добавить"))
+            if(!commandParser.getWord().toLowerCase(Locale.ROOT).equals("admindelete"))
                 return result;
             String username = commandParser.getWord();
             if(username.isEmpty()){
                 result.add(new Message(log(
                         "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
-                                "Чтобы воспользоваться командой добавления администратора, " +
-                                "нужно указать username пользователя Telegram.\n" +
-                                "Если у пользователя нет username, пусть создаст в настройках своего аккаунта.")));
+                                "Имя пользователя для удаления из администраторов не было получено.\n" +
+                                "Пример правильной команды:\n" +
+                                "/AdminDelete_"+admin.user.getId())));
                 return result;
             }
-            String reason = commandParser.getText();
-            if(reason.isEmpty()){
+            AdminListItem adminToDelete = getByUsernameOrId(username);
+            if(adminToDelete == null){
                 result.add(new Message(log(
                         "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
-                                "Чтобы воспользоваться командой добавления администратора, " +
-                                "необходимо указать причину и описание. Кто это, зачем админ, и т.д.\n" +
-                                "Без этого потом будет легко запутаться в списке администраторов.")));
+                                "Пользователь " + username + " не найден в списке администраторов.")));
                 return result;
             }
 
-            result.add(new Message("админа добавление но пока ничего не написано " + username));
+            if(rem(adminToDelete)){
+                StringBuilder sb = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
+                sb.append("Пользователь ").append(username).append(" удалён из списка администраторов.\n");
+                sb.append("<b>Список администраторов сейчас:</b>\n\n");
+                for (AdminListItem adminListItem:userList){
+                    sb.append(adminListItem.toString()).append("\n\n");
+                }
+                result.add(new Message(sb.toString()));
+            }
+            else {
+                result.add(new Message(log(
+                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+                                "Пользователь " + username + " по какой-то причине не был удалён из списка администраторов.")));
+            }
             return result;
         }
 
         @Override
         public ArrayList<CommandDesc> getHelp() {
             ArrayList<CommandDesc> result = super.getHelp();
-            result.add(new CommandDesc("Админ добавить @username Причина добавления", "Добавить пользователя в список администраторов. Чтобы получить больше справки, напиши \"Админ добавить\" без аргументов."));
+            result.add(new CommandDesc("AdminDelete_472147993", "Удаление администратора. Удобрее всего вызывать из информации об администраторе."));
             return result;
         }
     }
