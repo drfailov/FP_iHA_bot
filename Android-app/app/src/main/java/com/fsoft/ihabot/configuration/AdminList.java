@@ -606,7 +606,7 @@ public class AdminList  extends CommandModule {
 
             CommandParser commandParser = new CommandParser(message.getText());
             String word1 = commandParser.getWord().toLowerCase(Locale.ROOT);
-            if (!word1.equals("админ") && !word1.equals("admininfo") )
+            if (!word1.equals("админы") && !word1.equals("admininfo") )
                 return result;
 
             StringBuilder sb = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
@@ -636,7 +636,7 @@ public class AdminList  extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp() {
             ArrayList<CommandDesc> result = super.getHelp();
-            result.add(new CommandDesc("Админ или /AdminInfo", "Вывести список администраторов"));
+            result.add(new CommandDesc("Админы или /AdminInfo", "Вывести список администраторов"));
             return result;
         }
     }
