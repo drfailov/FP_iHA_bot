@@ -144,13 +144,34 @@ public class ApplicationManager extends CommandModule {
             ArrayList<Message> result = super.processCommand(message, tgAccount);
             if(message.getText().toLowerCase(Locale.ROOT).trim().equals("помощь")
             || message.getText().toLowerCase(Locale.ROOT).trim().equals("/help")) {
-                ArrayList<CommandDesc> commands = ApplicationManager.this.getHelp();
-                StringBuilder stringBuilder = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+                String sb = "Ответ на команду \"<b>" + message.getText() + "</b>\"\n\n" +
                         "Эти команды доступны только администраторам <i>(если ты получил этот ответ, значит ты один из них)</i>. " +
-                        "Но для некоторых команд могут потребоваться дополнительные права доступа.\n\n");
+                        "Но для некоторых команд могут потребоваться дополнительные права доступа.\n" +
+                        "Поскольку команд много, справка разделена на несколько разделов:" + "\n\n" +
+
+                        "<b>/helpanswers</b>\nСписок команд работы с базой ответов." + "\n\n" +
+                        "<b>/helpadmin</b>\nСписок команд работы со списком администраторов." + "\n\n";
+                Message answer = new Message(sb);
+                result.add(answer);
+            }
+
+            if(message.getText().toLowerCase(Locale.ROOT).trim().equals("/helpanswers")) {
+                StringBuilder sb = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+                        "Список команд для работы с базой ответов:\n\n");
+                ArrayList<CommandDesc> commands = ApplicationManager.this.getAnswerDatabase().getHelp();
                 for (CommandDesc commandDesc:commands)
-                    stringBuilder.append("<b>").append(commandDesc.getExample()).append("</b> - ").append(commandDesc.getHelpText()).append("\n\n");
-                Message answer = new Message(stringBuilder.toString());
+                    sb.append("<b>").append(commandDesc.getExample()).append("</b>\n").append(commandDesc.getHelpText()).append("\n\n");
+                Message answer = new Message(sb.toString());
+                result.add(answer);
+            }
+
+            if(message.getText().toLowerCase(Locale.ROOT).trim().equals("/helpadmin")) {
+                StringBuilder sb = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+                        "Список команд для работы со списком администраторов:\n\n");
+                ArrayList<CommandDesc> commands = ApplicationManager.this.getAdminList().getHelp();
+                for (CommandDesc commandDesc:commands)
+                    sb.append("<b>").append(commandDesc.getExample()).append("</b>\n").append(commandDesc.getHelpText()).append("\n\n");
+                Message answer = new Message(sb.toString());
                 result.add(answer);
             }
             return result;
@@ -160,6 +181,8 @@ public class ApplicationManager extends CommandModule {
         public ArrayList<CommandDesc> getHelp() {
             ArrayList<CommandDesc> result = super.getHelp();
             result.add(new CommandDesc("Помощь", "Выводит полный список доступных команд (эта команда)."));
+            result.add(new CommandDesc("/helpanswers", "Список команд работы с базой ответов."));
+            result.add(new CommandDesc("/helpadmin", "Список команд работы со списком администраторов."));
             return result;
         }
     }

@@ -155,10 +155,20 @@ public class User {
     @NonNull
     @Override
     public String toString() {
-        if(!last_name.isEmpty() && !first_name.isEmpty())
-            return  first_name + " " + last_name;
+        StringBuilder sb = new StringBuilder();
+        if(!first_name.isEmpty())
+            sb.append(first_name);
+        sb.append(" ");
+        if(!last_name.isEmpty())
+            sb.append(last_name);
+        if(!first_name.isEmpty() || !last_name.isEmpty())
+            sb.append(" (");
         if(username != null)
-            return "@"+username;
-        return "ID"+id;
+            sb.append("@").append(username);
+        else
+            sb.append("ID <code>").append(id).append("</code>");
+        if(!first_name.isEmpty() || !last_name.isEmpty())
+            sb.append(")");
+        return sb.toString().trim();
     }
 }

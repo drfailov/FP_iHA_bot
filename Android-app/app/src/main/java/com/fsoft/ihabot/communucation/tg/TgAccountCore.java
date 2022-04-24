@@ -271,6 +271,8 @@ public class TgAccountCore extends Account {
         queue.add(stringRequest);
     }
     public void sendMessage(final SendMessageListener listener, final long chat_id, com.fsoft.ihabot.answer.Message message){
+        if(message.getText().length() > 3990)
+            message.setText(message.getText().substring(0, 3990));
         JSONObject jsonObject = new JSONObject();
         try {
             //text = URLEncoder.encode(text, "UTF-8");
@@ -597,7 +599,10 @@ public class TgAccountCore extends Account {
                     Map<String, String> params = new HashMap<>();
                     params.put("chat_id", String.valueOf(chat_id));
                     params.put("parse_mode", "HTML");
-                    params.put("caption", text);
+                    if(text.length() > 1020)
+                        params.put("caption", text.substring(0, 1020));
+                    else
+                        params.put("caption", text);
                     if(reply_to_message_id != 0){
                         params.put("reply_to_message_id", String.valueOf(reply_to_message_id));
                     }
@@ -679,7 +684,10 @@ public class TgAccountCore extends Account {
                     Map<String, String> params = new HashMap<>();
                     params.put("chat_id", String.valueOf(chat_id));
                     params.put("parse_mode", "HTML");
-                    params.put("caption", text);
+                    if(text.length() > 1020)
+                        params.put("caption", text.substring(0, 1020));
+                    else
+                        params.put("caption", text);
                     if(reply_to_message_id != 0){
                         params.put("reply_to_message_id", String.valueOf(reply_to_message_id));
                     }

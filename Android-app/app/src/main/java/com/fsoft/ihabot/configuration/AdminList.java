@@ -71,7 +71,7 @@ public class AdminList  extends CommandModule {
 
     }
 
-    public void add(User userToAdd, User responsible, String comment, boolean allowDatabaseDump,
+    public AdminListItem add(User userToAdd, User responsible, String comment, boolean allowDatabaseDump,
                     boolean allowDatabaseRead, boolean allowDatabaseEdit, boolean allowLearning,
                     boolean allowAdminsRead, boolean allowAdminsAdd) throws Exception {
         if(userToAdd == null)
@@ -88,6 +88,7 @@ public class AdminList  extends CommandModule {
         userList.add(adminListItem);
         log(adminListItem + " добавлен в список администраторов. Количество администраторов сейчас: " + userList.size());
         saveArrayToFile();
+        return adminListItem;
     }
 
     /**
@@ -188,6 +189,8 @@ public class AdminList  extends CommandModule {
                 comment = jsonObject.getString("comment");
             if(jsonObject.has("addedDate"))
                 addedDate = new SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(jsonObject.getString("addedDate"));
+            else
+                addedDate = new Date();
             if(jsonObject.has("allowDatabaseDump"))
                 allowDatabaseDump = jsonObject.getBoolean("allowDatabaseDump");
             if(jsonObject.has("allowDatabaseRead"))
@@ -355,15 +358,118 @@ public class AdminList  extends CommandModule {
             if(!commandParser.getWord().toLowerCase(Locale.ROOT).equals("добавить"))
                 return result;
 
+            String username = commandParser.getWord();
+            if(username.isEmpty()){
+                result.add(new Message(log(
+                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n" +
+                                "\n" +
+                                "Чтобы воспользоваться командой добавления администратора, " +
+                                "нужно указать username или ID пользователя Telegram.\n" +
+                                "\n" +
+                                "Пример 1: \n" +
+                                "<i>Админ добавить @username Учитель бота</i>\n" +
+                                "Пример 2: \n" +
+                                "<i>Админ добавить 123456789 Учитель бота</i>\n" +
+                                "\n" +
+                                "Если ты не знаешь этих данных, прикрепляю тебе список последних " +
+                                "диалогов на этом аккаунте, можешь взять его ID из списка.\n" +
+                                "Если пользователя, которого ты хочешь добавить администратором, " +
+                                "нет в этом списке - пусть он напишет мне. Тогда он здесь появится.\n" +
+                                "\n" +
+
+                                getLastDialogList(tgAccount))));
+                return result;
+            }
+
+            String reason = commandParser.getText();
+            if(reason.isEmpty()){
+                result.add(new Message(log(
+                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n" +
+                                "\n" +
+                                "Чтобы воспользоваться командой добавления администратора, " +
+                                "необходимо указать причину добавления администратора. Кто это, зачем админ, и т.д.\n" +
+                                "\n" +
+                                "Пример 1: \n" +
+                                "<i>Админ добавить @username Учитель бота</i>\n" +
+                                "Пример 2: \n" +
+                                "<i>Админ добавить 123456789 Учитель бота</i>\n" +
+                                "\n" +
+                                "Без причины потом будет легко запутаться в списке администраторов, " +
+                                "когда их будет много.")));
+                return result;
+            }
+
+            User userToAdd = applicationManager.getMessageHistory().getUserByUsernameOrId(username);
+            if(userToAdd == null){
+                result.add(new Message(log(
+                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n" +
+                                "\n" +
+                                "Пользователя, которого ты указал в команде я не могу найти в своей базе.\n" +
+                                "Я могу добавлять администратором только тех, кто есть в моей базе.\n" +
+                                "Попроси пользователя написать мне, и после этого отправь мне эту команду снова.\n" +
+                                "Либо можешь проверить правильно ли ты написал его ID или Username.\n" +
+                                "Отправляю тебе список тех, кто мне недавно писал:\n" +
+                                "\n" +
+                                getLastDialogList(tgAccount))));
+
+                return result;
+            }
+
+            if(AdminList.this.has(userToAdd)){
+                result.add(new Message(log(
+                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n" +
+                                "\n" +
+                                "Ты пытаешься добавить администратором пользователя, который уже есть в списке администраторов.")));
+                return result;
+            }
+
 
             StringBuilder sb = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
-            sb.append("Команда имеет два варианта вызова.\n");
-            sb.append("Формат команды с username пользователя: \n<i>админ добавить @username причина</i>.\n");
-            sb.append("/adduser@test test\n");
-            sb.append("Формат команды с ID пользователя: \n<i>админ добавить 123456789 причина</i>.\n\n");
-            sb.append("Чтобы можно было добавить админа, он должен быть в списке ниже.\n");
-            sb.append("Отображаю список последних написавших пользователей в этот аккаунт:\n\n");
+            try {
+                {
+                    AdminListItem adminListItem = add(userToAdd, message.getAuthor(), reason,
+                            false, false, false,
+                            false, false, false);
+                    sb.append("<b>Добавлен админ:</b> ").append(adminListItem.getUser()).append(";\n");
+                    sb.append("<b>Ответственный:</b> ").append(adminListItem.getResponsible()).append(";\n");
+                    sb.append("<b>Причина:</b> ").append(adminListItem.getComment()).append(";\n");
+                    sb.append("Теперь задай этому администратору права с помощью команд:\n");
+                    sb.append("<i>админ разрешить ...</i>\n");
+                    sb.append("<i>админ запретить ...</i>\n");
+                    sb.append("Текущий список администраторов:\n\n");
+                }
+                for (AdminListItem adminListItem:userList){
+                    sb.append("\uD83D\uDC6E<b>Админ:</b> ").append(adminListItem.getUser()).append(";\n");
+                    sb.append("\uD83D\uDD75️\u200D♂️<b>Добавил:</b> ").append(adminListItem.getResponsible()).append(";\n");
+                    if(adminListItem.getAddedDate() != null)
+                        sb.append("\uD83D\uDCC6<b>Дата добавления:</b> ")
+                                .append(new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(adminListItem.getAddedDate()))
+                                .append(";\n");
+                    sb.append("\uD83D\uDCA1<b>Комментарий:</b> ").append(adminListItem.getComment()).append(";\n");
+                    sb.append("Разрешения: \n");
+                    sb.append("Смотреть базу ответов: ").append(adminListItem.isAllowDatabaseRead()?"✅":"⛔").append("\n");
+                    sb.append("Изменять базу ответов: ").append(adminListItem.isAllowDatabaseEdit()?"✅":"⛔").append("\n");
+                    sb.append("Выгружать базу ответов: ").append(adminListItem.isAllowDatabaseDump()?"✅":"⛔").append("\n");
+                    sb.append("Назначать админов: ").append(adminListItem.isAllowAdminsAdd()?"✅":"⛔").append("\n");
+                    sb.append("Смотреть список админов: ").append(adminListItem.isAllowAdminsRead()?"✅":"⛔").append("\n");
+                    sb.append("\n");
+                }
+                result.add(new Message(sb.toString()));
+                return result;
+            }
+            catch (Exception e){
+                e.printStackTrace();
+                result.add(new Message(log(
+                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n" +
+                                "\n" +
+                                e.getLocalizedMessage())));
+                return result;
+            }
+            //never get here
+        }
 
+        private String getLastDialogList(TgAccount tgAccount){
+            StringBuilder sb = new StringBuilder();
             ArrayList<User> chats =  applicationManager.getMessageHistory().getLastUsersListForAccount(tgAccount);
             for (int i=0; i<chats.size() && i < 10; i++){
                 User user = chats.get(i);
@@ -371,20 +477,7 @@ public class AdminList  extends CommandModule {
                         .append("Username: @").append(user.getUsername()).append("\n")
                         .append("Имя: ").append(user.getFirst_name()).append(" ").append(user.getLast_name()).append("\n\n");
             }
-//            String reason = commandParser.getText();
-//            if(reason.isEmpty()){
-//                result.add(new Message(log(
-//                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
-//                                "Чтобы воспользоваться командой добавления администратора, " +
-//                                "необходимо указать причину и описание. Кто это, зачем админ, и т.д.\n" +
-//                                "Без этого потом будет легко запутаться в списке администраторов.")));
-//                return result;
-//            }
-
-
-
-            result.add(new Message(sb.toString()));
-            return result;
+            return sb.toString();
         }
 
         @Override
@@ -431,7 +524,7 @@ public class AdminList  extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp() {
             ArrayList<CommandDesc> result = super.getHelp();
-            result.add(new CommandDesc("Админ добавить @username Зачем он нужен", "Добавить пользователя в список администраторов. Аргументы: username пользователя, основание для добавления."));
+            result.add(new CommandDesc("Админ добавить @username Причина добавления", "Добавить пользователя в список администраторов. Чтобы получить больше справки, напиши \"Админ добавить\" без аргументов."));
             return result;
         }
     }
