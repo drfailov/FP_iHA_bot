@@ -25,7 +25,9 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Objects;
 
 public class AdminList  extends CommandModule {
     ApplicationManager applicationManager;
@@ -59,27 +61,22 @@ public class AdminList  extends CommandModule {
             log("Поскольку список администраторов пустой, добавляю тестовую запись.");
             {
                 User userTg = new User(248067313, "DrFailov", "Dr.", "Failov");
-                add(userTg, userTg, "Разработчик бота", true,
-                        true, true, true,
-                        true, true);
+                add(userTg, userTg, "Разработчик бота");
             }
             {
                 User userTg = new User(914020479, "Polyasha00", "", "");
-                add(userTg, userTg, "Подруга разработчика. Так надо", true,
-                        true, true, true,
-                        true, true);
+                add(userTg, userTg, "Подруга разработчика. Так надо");
             }
         }
 
         childCommands.add(new ShowAdminCommand());
         childCommands.add(new AddAdminCommand());
         childCommands.add(new RemAdminCommand());
+        childCommands.add(new EditAdminCommand());
 
     }
 
-    public AdminListItem add(User userToAdd, User responsible, String comment, boolean allowDatabaseDump,
-                    boolean allowDatabaseRead, boolean allowDatabaseEdit, boolean allowLearning,
-                    boolean allowAdminsRead, boolean allowAdminsAdd) throws Exception {
+    public AdminListItem add(User userToAdd, User responsible, String comment) throws Exception {
         if(userToAdd == null)
             throw new Exception("Не могу добавить пользователя в список: Не получен пользователь чтобы его добавить.");
         if(responsible == null)
@@ -88,9 +85,7 @@ public class AdminList  extends CommandModule {
             throw new Exception("Не могу добавить пользователя в список: Не получен комментарий по поводу этого пользователя.");
         if(has(userToAdd))
             throw new Exception("Не могу добавить пользователя в список: Пользователь уже содержится в списке.");
-        AdminListItem adminListItem = new AdminListItem(userToAdd, responsible, comment,
-                allowDatabaseDump, allowDatabaseRead, allowDatabaseEdit,
-                allowLearning, allowAdminsRead, allowAdminsAdd);
+        AdminListItem adminListItem = new AdminListItem(userToAdd, responsible, comment);
         userList.add(adminListItem);
         log(adminListItem + " добавлен в список администраторов. Количество администраторов сейчас: " + userList.size());
         saveArrayToFile();
@@ -157,30 +152,35 @@ public class AdminList  extends CommandModule {
 
 
     public static class AdminListItem{
+        //Можно ли этому администратору пользоваться инфраструктурой обучения
+        public static Right LEARNING = new Right("Learning", "Использовать функциональность обучения");
+        //Просмотр ответов по ID, по вопросу и т.п.
+        public static Right DATABASE_READ = new Right("DatabaseRead", "Просматривать ответы из базы, анализировать их");
+        //Добавление, удаление ответов, и т.п.
+        public static Right DATABASE_EDIT = new Right("DatabaseEdit", "Добавлять и удалять ответы из базы");
+        //выгрузка базы целиком
+        public static Right DATABASE_DUMP = new Right("DatabaseDump", "Выгружать и восстанавливать базу ответов");
+        //Разрешить или нет просмотр списка администраторов
+        public static Right ADMINS_READ = new Right("AdminsRead", "Просматривать список администраторов");
+        ////Разрешить или нет добавление администраторов
+        public static Right ADMINS_ADD = new Right("AdminsAdd", "Добавлять других администраторов и управлять правами");
+
+        /**
+         * Права списком используется для вывода юзеру списка прав в функциях где этот список формируется программно.
+         * Null в массиве используется в качестве разделителя в списках для наглядности.
+         * @return Массив обьектов Right. Права раздеены на блоки для наглядности. Разделитель - Null.
+         */
+        public static Right[] getGenericRightsList(){return new Right[]{
+                LEARNING, null, DATABASE_READ, DATABASE_EDIT, DATABASE_DUMP, null, ADMINS_READ,  ADMINS_ADD
+        };}
+
+
         private User user;
         private User responsible;
         private String comment;
         private Date addedDate;
+        private HashMap<String, Boolean> rights = new HashMap<>();
 
-        private boolean allowDatabaseDump = false; //выгрузка базы целиком
-        private boolean allowDatabaseRead = false; //просмотр ответов по ID, по вопросу и т.п.
-        private boolean allowDatabaseEdit = false; //Добавление, удаление ответов, и т.п.
-        private boolean allowLearning = false;     //Ещё пока не реализованная функциональность обучения
-        private boolean allowAdminsRead = false;    //Разрешить или нет просмотр списка администраторов
-        private boolean allowAdminsAdd = false;    //Разрешить или нет добавление администраторов
-
-        public AdminListItem(User user, User responsible, String comment, boolean allowDatabaseDump, boolean allowDatabaseRead, boolean allowDatabaseEdit, boolean allowLearning, boolean allowAdminsRead, boolean allowAdminsAdd) {
-            this.user = user;
-            this.responsible = responsible;
-            this.comment = comment;
-            addedDate = new Date();
-            this.allowDatabaseDump = allowDatabaseDump;
-            this.allowDatabaseRead = allowDatabaseRead;
-            this.allowDatabaseEdit = allowDatabaseEdit;
-            this.allowLearning = allowLearning;
-            this.allowAdminsRead = allowAdminsRead;
-            this.allowAdminsAdd = allowAdminsAdd;
-        }
 
         public AdminListItem(User user, User responsible, String comment) {
             this.user = user;
@@ -229,6 +229,39 @@ public class AdminList  extends CommandModule {
             return null;
         }
 
+        /**
+         * Выясняет разрешено ли этому админу некоторое действие.
+         * По умолчанию админам ничего нельзя.
+         * @param right Обьект права. Его можно получить из констант этого класса,
+         *              либо фунцией getGenericRightsList()
+         * @return булевое значение права. В любой непонятной ситуации будет false.
+         */
+        public boolean isAllowed(Right right){
+            if(right == null)
+                return false;
+            try {
+                Boolean b = rights.get(right.getCode());
+                if(b == null)
+                    return false;
+                return b;
+            }
+            catch (Exception e){
+                return false;
+            }
+        }
+
+        /**
+         * Задает значение какого либо права доступа. При этом в файл ничего не сохраняется, нужно
+         * после этой команды сохранять в файл. Эта команда только меняет данные в оперативке.
+         * @param right Обьект права. Его можно получить из констант этого класса,
+         *              либо фунцией getGenericRightsList()
+         * @param value Значение права. True если разрешено.
+         */
+        public void setAllowed(Right right, boolean value){
+            rights.put(right.getCode(), value);
+        }
+
+
         public JSONObject toJson() throws JSONException {
             JSONObject jsonObject = new JSONObject();
             if(user != null)
@@ -239,12 +272,12 @@ public class AdminList  extends CommandModule {
                 jsonObject.put("comment", comment);
             if(addedDate != null)
                 jsonObject.put("addedDate", new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(addedDate));
-            jsonObject.put("allowDatabaseDump", allowDatabaseDump);
-            jsonObject.put("allowDatabaseRead", allowDatabaseRead);
-            jsonObject.put("allowDatabaseEdit", allowDatabaseEdit);
-            jsonObject.put("allowLearning", allowLearning);
-            jsonObject.put("allowAdminsRead", allowAdminsRead);
-            jsonObject.put("allowAdminsAdd", allowAdminsAdd);
+            for (Right right:getGenericRightsList()) {
+                if(right != null) {
+                    if (rights.containsKey(right.getCode()))
+                        jsonObject.put("allow" + right.getCode(), isAllowed(right));
+                }
+            }
             return jsonObject;
         }
 
@@ -259,18 +292,14 @@ public class AdminList  extends CommandModule {
                 addedDate = new SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(jsonObject.getString("addedDate"));
             else
                 addedDate = new Date();
-            if(jsonObject.has("allowDatabaseDump"))
-                allowDatabaseDump = jsonObject.getBoolean("allowDatabaseDump");
-            if(jsonObject.has("allowDatabaseRead"))
-                allowDatabaseRead = jsonObject.getBoolean("allowDatabaseRead");
-            if(jsonObject.has("allowDatabaseEdit"))
-                allowDatabaseEdit = jsonObject.getBoolean("allowDatabaseEdit");
-            if(jsonObject.has("allowLearning"))
-                allowLearning = jsonObject.getBoolean("allowLearning");
-            if(jsonObject.has("allowAdminsRead"))
-                allowAdminsRead = jsonObject.getBoolean("allowAdminsRead");
-            if(jsonObject.has("allowAdminsAdd"))
-                allowAdminsAdd = jsonObject.getBoolean("allowAdminsAdd");
+            for (Right right:getGenericRightsList()){
+                if(right != null) {
+                    String key = "allow" + right.code;
+                    if (jsonObject.has(key)) {
+                        setAllowed(right, jsonObject.getBoolean(key));
+                    }
+                }
+            }
         }
 
         public User getUser() {
@@ -305,76 +334,6 @@ public class AdminList  extends CommandModule {
             this.addedDate = addedDate;
         }
 
-        /**
-         * @return Можно ли этому администратору выгружать базу целиком
-         */
-        public boolean isAllowDatabaseDump() {
-            return allowDatabaseDump;
-        }
-
-        public AdminListItem setAllowDatabaseDump(boolean allowDatabaseDump) {
-            this.allowDatabaseDump = allowDatabaseDump;
-            return this;
-        }
-
-        /**
-         * @return Можно ли этому администратору просматривать ответы из базы, анализировать их
-         */
-        public boolean isAllowDatabaseRead() {
-            return allowDatabaseRead;
-        }
-
-        public AdminListItem setAllowDatabaseRead(boolean allowDatabaseRead) {
-            this.allowDatabaseRead = allowDatabaseRead;
-            return this;
-        }
-
-        /**
-         * @return Можно ли этому администратору добавлять и удалять ответы из базы
-         */
-        public boolean isAllowDatabaseEdit() {
-            return allowDatabaseEdit;
-        }
-
-        public AdminListItem setAllowDatabaseEdit(boolean allowDatabaseEdit) {
-            this.allowDatabaseEdit = allowDatabaseEdit;
-            return this;
-        }
-
-        /**
-         * @return Можно ли этому администратору пользоваться инфраструктурой обучения
-         */
-        public boolean isAllowLearning() {
-            return allowLearning;
-        }
-
-        public AdminListItem setAllowLearning(boolean allowLearning) {
-            this.allowLearning = allowLearning;
-            return this;
-        }
-
-        /**
-         * @return Можно ли этому администратору просматривать список администраторов
-         */
-        public boolean isAllowAdminsRead() {
-            return allowAdminsRead;
-        }
-
-        public void setAllowAdminsRead(boolean allowAdminsRead) {
-            this.allowAdminsRead = allowAdminsRead;
-        }
-
-        /**
-         * @return Можно ли этому администратору добавлять других администраторов
-         */
-        public boolean isAllowAdminsAdd() {
-            return allowAdminsAdd;
-        }
-
-        public AdminListItem setAllowAdminsAdd(boolean allowAdminsAdd) {
-            this.allowAdminsAdd = allowAdminsAdd;
-            return this;
-        }
 
 
         @NonNull
@@ -383,14 +342,13 @@ public class AdminList  extends CommandModule {
             StringBuilder sb = new StringBuilder();
             sb.append("\uD83D\uDC64 <b>").append(user).append("</b>\n");
             sb.append("[");
-            sb.append(isAllowLearning()?"✅":"⛔");
-            sb.append("--");
-            sb.append(isAllowDatabaseRead()?"✅":"⛔");
-            sb.append(isAllowDatabaseEdit()?"✅":"⛔");
-            sb.append(isAllowDatabaseDump()?"✅":"⛔");
-            sb.append("--");
-            sb.append(isAllowAdminsRead()?"✅":"⛔");
-            sb.append(isAllowAdminsAdd()?"✅":"⛔");
+
+            for (Right right:getGenericRightsList()) {
+                if (right != null)
+                    sb.append(isAllowed(right)?"✅":"⛔");
+                if (right == null)
+                    sb.append("--");
+            }
             sb.append("]\n");
             sb.append("⚡️ /AdminInfo_").append(user.getId()).append(" - подробнее.");
             return sb.toString();
@@ -410,14 +368,12 @@ public class AdminList  extends CommandModule {
             sb.append("\uD83D\uDCA1 <b>Комментарий:</b> ").append(adminListItem.getComment()).append("\n\n");
 
             sb.append("<b>Разрешения:</b> \n");
-            sb.append(adminListItem.isAllowLearning()?"✅":"⛔").append(" - Обучать бота\n");
-            sb.append("- \n");
-            sb.append(adminListItem.isAllowDatabaseRead()?"✅":"⛔").append(" - Смотреть базу ответов\n");
-            sb.append(adminListItem.isAllowDatabaseEdit()?"✅":"⛔").append(" - Изменять базу ответов\n");
-            sb.append(adminListItem.isAllowDatabaseDump()?"✅":"⛔").append(" - Выгружать базу ответов\n");
-            sb.append("- \n");
-            sb.append(adminListItem.isAllowAdminsRead()?"✅":"⛔").append(" - Смотреть список админов\n");
-            sb.append(adminListItem.isAllowAdminsAdd()?"✅":"⛔").append(" - Назначать админов\n");
+            for (Right right:getGenericRightsList()) {
+                if (right != null)
+                    sb.append(isAllowed(right)?"✅":"⛔").append(" - ").append(right.getDescription()).append("\n");
+                if (right == null)
+                    sb.append("-\n");
+            }
             sb.append("\n");
 
             sb.append("<b>Действия:</b> \n");
@@ -426,38 +382,65 @@ public class AdminList  extends CommandModule {
 
             sb.append("⚡️ /HelpAdmin\n"+"<b>Просмотреть</b> справку по командам админки \n\n");
 
-            if(isAllowLearning())
-                sb.append("⚡️ /AdminDeny_").append(adminListItem.user.getId()).append("_Learning\n" + "<b>Запретить</b> использовать обучение \n\n");
-            else
-                sb.append("⚡️ /AdminAllow_").append(adminListItem.user.getId()).append("_Learning\n"+"<b>Разрешить</b> использовать обучение \n\n");
+            for (Right right:getGenericRightsList()) {
+                if (right != null) {
+                    if(isAllowed(right)){
+                        sb.append("⚡️ /AdminDeny_").append(adminListItem.user.getId()).append("_").append(right.getCode()).append("\n"+"<b>Запретить</b> ").append(right.getDescription()).append("\n\n");
+                    }
+                    else {
+                        sb.append("⚡️ /AdminAllow_").append(adminListItem.user.getId()).append("_").append(right.getCode()).append("\n"+"<b>Разрешить</b> ").append(right.getDescription()).append("\n\n");
+                    }
+                }
+            }
 
-            if(isAllowDatabaseRead())
-                sb.append("⚡️ /AdminDeny_").append(adminListItem.user.getId()).append("_DatabaseRead\n"+"<b>Запретить</b> просматривать базу ответов \n\n");
-            else
-                sb.append("⚡️ /AdminAllow_").append(adminListItem.user.getId()).append("_DatabaseRead\n"+"<b>Разрешить</b> просматривать базу ответов \n\n");
-
-            if(isAllowDatabaseEdit())
-                sb.append("⚡️ /AdminDeny_").append(adminListItem.user.getId()).append("_DatabaseEdit\n"+"<b>Запретить</b> изменять базу ответов \n\n");
-            else
-                sb.append("⚡️ /AdminAllow_").append(adminListItem.user.getId()).append("_DatabaseEdit\n"+"<b>Разрешить</b> изменять базу ответов \n\n");
-
-            if(isAllowDatabaseDump())
-                sb.append("⚡️ /AdminDeny_").append(adminListItem.user.getId()).append("_DatabaseDump\n"+"<b>Запретить</b> выгружать и восстанавливать базу ответов \n\n");
-            else
-                sb.append("⚡️ /AdminAllow_").append(adminListItem.user.getId()).append("_DatabaseDump\n"+"<b>Разрешить</b> выгружать и восстанавливать базу ответов \n\n");
-
-            if(isAllowAdminsRead())
-                sb.append("⚡️ /AdminDeny_").append(adminListItem.user.getId()).append("_AdminsRead\n"+"<b>Запретить</b> изменять и просматривать список администраторов\n\n");
-            else
-                sb.append("⚡️ /AdminAllow_").append(adminListItem.user.getId()).append("_AdminsRead\n"+"<b>Разрешить</b> просматривать список администраторов\n\n");
-
-            if(isAllowAdminsAdd())
-                sb.append("⚡️ /AdminDeny_").append(adminListItem.user.getId()).append("_AdminsAdd\n"+"<b>Запретить</b> изменять список и права администраторов\n\n");
-            else
-                sb.append("⚡️ /AdminAllow_").append(adminListItem.user.getId()).append("_AdminsAdd\n"+"<b>Разрешить</b> просматривать и изменять список и права администраторов\n\n");
 
             sb.append("⚡️ /AdminDelete_").append(adminListItem.user.getId()).append("\n"+"<b>Удалить</b> администратора \n\n");
             return sb.toString();
+        }
+
+        public static class Right{
+            private String code = "";
+            private String description = "";
+
+            public Right(String code, String description) {
+                this.code = code;
+                this.description = description;
+            }
+
+            public String getCode() {
+                return code;
+            }
+
+            public void setCode(String code) {
+                this.code = code;
+            }
+
+            public String getDescription() {
+                return description;
+            }
+
+            public void setDescription(String description) {
+                this.description = description;
+            }
+
+            @NonNull
+            @Override
+            public String toString() {
+                return code;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                Right right = (Right) o;
+                return code.equals(right.code);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(code);
+            }
         }
     }
 
@@ -544,9 +527,7 @@ public class AdminList  extends CommandModule {
             StringBuilder sb = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
             try {
                 {
-                    AdminListItem adminListItem = add(userToAdd, message.getAuthor(), reason,
-                            false, false, false,
-                            false, false, false);
+                    AdminListItem adminListItem = add(userToAdd, message.getAuthor(), reason);
                     sb.append("<b>Добавлен админ:</b> ").append(adminListItem.getUser()).append(";\n");
                     sb.append("<b>Ответственный:</b> ").append(adminListItem.getResponsible()).append(";\n");
                     sb.append("<b>Причина:</b> ").append(adminListItem.getComment()).append(";\n");
@@ -688,7 +669,72 @@ public class AdminList  extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp() {
             ArrayList<CommandDesc> result = super.getHelp();
-            result.add(new CommandDesc("AdminDelete_472147993", "Удаление администратора. Удобрее всего вызывать из информации об администраторе."));
+            result.add(new CommandDesc("AdminDelete @username", "Удаление администратора. Удобрее всего вызывать из информации об администраторе."));
+            return result;
+        }
+    }
+
+    /**
+     * Команда "/AdminAllow_248067313_Learning"
+     * Команда "/AdminDeny_248067313_DatabaseEdit"
+     */
+    private class EditAdminCommand extends CommandModule{
+        @Override
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminListItem admin) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
+            CommandParser commandParser = new CommandParser(message.getText());
+            String firstWord = commandParser.getWord().toLowerCase(Locale.ROOT);
+            if(!firstWord.equals("adminallow") && !firstWord.equals("admindeny"))
+                return result;
+            String username = commandParser.getWord();
+            if(username.isEmpty()){
+                result.add(new Message(log(
+                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+                                "Имя пользователя для изменения прав администратора не было получено.\n" +
+                                "Пример правильной команды:\n" +
+                                "/AdminDeny_"+admin.user.getId()+"_AdminsRead")));
+                return result;
+            }
+            AdminListItem adminToEdit = getByUsernameOrId(username);
+            if(adminToEdit == null){
+                result.add(new Message(log(
+                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+                                "Пользователь " + username + " не найден в списке администраторов.")));
+                return result;
+            }
+            String right = commandParser.getText();
+            if(right.isEmpty()){
+                result.add(new Message(log(
+                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+                                "Не было получено название пункта прав доступа, который нужно изменить.\n" +
+                                "Вот список возможных прав доступа:\n" +
+                                "Пример правильной команды:\n" +
+                                "/AdminDeny_"+admin.user.getId()+"_AdminsRead")));
+                return result;
+            }
+
+//            if(rem(adminToDelete)){
+//                StringBuilder sb = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
+//                sb.append("Пользователь ").append(username).append(" удалён из списка администраторов.\n");
+//                sb.append("<b>Список администраторов сейчас:</b>\n\n");
+//                for (AdminListItem adminListItem:userList){
+//                    sb.append(adminListItem.toString()).append("\n\n");
+//                }
+//                result.add(new Message(sb.toString()));
+//            }
+//            else {
+//                result.add(new Message(log(
+//                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+//                                "Пользователь " + username + " по какой-то причине не был удалён из списка администраторов.")));
+//            }
+            return result;
+        }
+
+        @Override
+        public ArrayList<CommandDesc> getHelp() {
+            ArrayList<CommandDesc> result = super.getHelp();
+            result.add(new CommandDesc("AdminAllow @username", "Управление правами администратора - разрешить что-либо. Удобрее всего вызывать из информации об администраторе."));
+            result.add(new CommandDesc("AdminDeny @username", "Управление правами администратора - запретить что-либо. Удобрее всего вызывать из информации об администраторе."));
             return result;
         }
     }
