@@ -179,7 +179,7 @@ public class AdminList  extends CommandModule {
         private User responsible;
         private String comment;
         private Date addedDate;
-        private HashMap<String, Boolean> rights = new HashMap<>();
+        private final HashMap<String, Boolean> rights = new HashMap<>();
 
 
         public AdminListItem(User user, User responsible, String comment) {
@@ -690,44 +690,78 @@ public class AdminList  extends CommandModule {
             if(username.isEmpty()){
                 result.add(new Message(log(
                         "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
-                                "Имя пользователя для изменения прав администратора не было получено.\n" +
-                                "Пример правильной команды:\n" +
-                                "/AdminDeny_"+admin.user.getId()+"_AdminsRead")));
+                                "Имя пользователя для изменения прав администратора и название права доступа не было получено.\n\n" +
+                                "<b>Вот список возможных прав доступа:</b>\n" +
+                                "<i>"+rightsAsString() + "</i>\n\n" +
+                                "<b>Пример правильной команды:</b>\n" +
+                                "/AdminDeny_"+admin.user.getId()+"_AdminsRead"
+                )));
                 return result;
             }
             AdminListItem adminToEdit = getByUsernameOrId(username);
             if(adminToEdit == null){
                 result.add(new Message(log(
                         "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
-                                "Пользователь " + username + " не найден в списке администраторов.")));
+                                "Пользователь " + username + " не найден в списке администраторов.\n\n"+
+                                "<b>Вот список возможных прав доступа:</b>\n" +
+                                "<i>"+rightsAsString() + "</i>\n\n" +
+                                "<b>Пример правильной команды:</b>\n" +
+                                "/AdminDeny_"+admin.user.getId()+"_AdminsRead"
+                )));
                 return result;
             }
             String right = commandParser.getText();
             if(right.isEmpty()){
                 result.add(new Message(log(
                         "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
-                                "Не было получено название пункта прав доступа, который нужно изменить.\n" +
-                                "Вот список возможных прав доступа:\n" +
-                                "Пример правильной команды:\n" +
-                                "/AdminDeny_"+admin.user.getId()+"_AdminsRead")));
+                                "Не было получено название пункта прав доступа, который нужно изменить.\n\n" +
+                                "<b>Вот список возможных прав доступа:</b>\n" +
+                                "<i>"+rightsAsString() + "</i>\n\n" +
+                                "<b>Пример правильной команды:</b>\n" +
+                                "/AdminDeny_"+admin.user.getId()+"_AdminsRead"
+                )));
                 return result;
             }
 
-//            if(rem(adminToDelete)){
-//                StringBuilder sb = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
-//                sb.append("Пользователь ").append(username).append(" удалён из списка администраторов.\n");
-//                sb.append("<b>Список администраторов сейчас:</b>\n\n");
-//                for (AdminListItem adminListItem:userList){
-//                    sb.append(adminListItem.toString()).append("\n\n");
-//                }
-//                result.add(new Message(sb.toString()));
-//            }
-//            else {
-//                result.add(new Message(log(
-//                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
-//                                "Пользователь " + username + " по какой-то причине не был удалён из списка администраторов.")));
-//            }
+            for(AdminListItem.Right genericRight:AdminListItem.getGenericRightsList()){
+                if(genericRight != null) {
+                    if (genericRight.getCode().equals(right)) {
+                        boolean newValue = firstWord.equals("adminallow");
+                        adminToEdit.setAllowed(genericRight, newValue);
+                        saveArrayToFile();
+                        result.add(new Message(log(
+                                "Ответ на команду \"<b>" + message.getText() + "</b>\"\n\n" +
+                                        "Админу " + adminToEdit.user + " теперь " + (newValue ? "разрешено" : "запрещено") + " " + genericRight.getDescription() + ".\n\n" +
+                                        "Вот полная информация об администраторе:\n" +
+                                        adminToEdit.toStringFull()
+                        )));
+                        return result;
+                    }
+                }
+            }
+
+            result.add(new Message(log(
+                    "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+                            "Я не могу найти в списке прав доступа \""+right+"\".\n\n" +
+                            "<b>Вот список возможных прав доступа:</b>\n" +
+                            "<i>"+rightsAsString() + "</i>\n\n" +
+                            "<b>Пример правильной команды:</b>\n" +
+                            "/AdminDeny_"+admin.user.getId()+"_AdminsRead"
+            )));
             return result;
+        }
+
+        private String rightsAsString(){
+            AdminListItem.Right[] rights = AdminListItem.getGenericRightsList();
+            StringBuilder result = new StringBuilder(" ");
+            for (int i = 0; i < rights.length; i++) {
+                if(rights [i] != null) {
+                    result.append(rights[i]);
+                    if (i < rights.length - 1)
+                        result.append(", ");
+                }
+            }
+            return result.toString().trim();
         }
 
         @Override
