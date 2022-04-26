@@ -34,10 +34,10 @@ public class CommandModule implements Command {
         return results;
     }
     @Override
-    public ArrayList<CommandDesc> getHelp() {
+    public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
         ArrayList<CommandDesc> result=new ArrayList<>();
         for (CommandModule child : childCommands)
-            result.addAll(child.getHelp());
+            result.addAll(child.getHelp(requester));
         return result;
     }
     public void stop() {

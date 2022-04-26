@@ -354,8 +354,13 @@ public class AdminList  extends CommandModule {
             return sb.toString();
         }
 
+        /**
+         * Вывести полнейшую информацию об админе
+         * @param admin Какой админ запрашивает. В зависимости от его прав информация и команды могут отличаться.
+         * @return Текст готовый к отправке пользователю в телеграм
+         */
         @NonNull
-        public String toStringFull() {
+        public String toStringFull(AdminListItem admin) {
             StringBuilder sb = new StringBuilder();
             AdminListItem adminListItem = this;
 
@@ -378,23 +383,25 @@ public class AdminList  extends CommandModule {
 
             sb.append("<b>Действия:</b> \n");
 
-            sb.append("⚡️ /AdminInfo\n"+"<b>Просмотреть</b> список администраторов \n\n");
+            if(admin.isAllowed(ADMINS_READ))
+                sb.append("⚡️ /AdminInfo\n"+"<b>Просмотреть</b> список администраторов \n\n");
 
             sb.append("⚡️ /HelpAdmin\n"+"<b>Просмотреть</b> справку по командам админки \n\n");
 
-            for (Right right:getGenericRightsList()) {
-                if (right != null) {
-                    if(isAllowed(right)){
-                        sb.append("⚡️ /AdminDeny_").append(adminListItem.user.getId()).append("_").append(right.getCode()).append("\n"+"<b>Запретить</b> ").append(right.getDescription()).append("\n\n");
-                    }
-                    else {
-                        sb.append("⚡️ /AdminAllow_").append(adminListItem.user.getId()).append("_").append(right.getCode()).append("\n"+"<b>Разрешить</b> ").append(right.getDescription()).append("\n\n");
+            if(admin.isAllowed(ADMINS_ADD)) {
+                for (Right right : getGenericRightsList()) {
+                    if (right != null) {
+                        if (isAllowed(right)) {
+                            sb.append("⚡️ /AdminDeny_").append(adminListItem.user.getId()).append("_").append(right.getCode()).append("\n" + "<b>Запретить</b> ").append(right.getDescription()).append("\n\n");
+                        } else {
+                            sb.append("⚡️ /AdminAllow_").append(adminListItem.user.getId()).append("_").append(right.getCode()).append("\n" + "<b>Разрешить</b> ").append(right.getDescription()).append("\n\n");
+                        }
                     }
                 }
             }
 
-
-            sb.append("⚡️ /AdminDelete_").append(adminListItem.user.getId()).append("\n"+"<b>Удалить</b> администратора \n\n");
+            if(admin.isAllowed(ADMINS_ADD))
+                sb.append("⚡️ /AdminDelete_").append(adminListItem.user.getId()).append("\n"+"<b>Удалить</b> администратора \n\n");
             return sb.toString();
         }
 
@@ -458,6 +465,11 @@ public class AdminList  extends CommandModule {
                 return result;
             if(!commandParser.getWord().toLowerCase(Locale.ROOT).equals("добавить"))
                 return result;
+
+            if(!admin.isAllowed(AdminListItem.ADMINS_ADD)){
+                result.add(new Message("Нет доступа к команде."));
+                return result;
+            }
 
             String username = commandParser.getWord();
             if(username.isEmpty()){
@@ -567,9 +579,10 @@ public class AdminList  extends CommandModule {
         }
 
         @Override
-        public ArrayList<CommandDesc> getHelp() {
-            ArrayList<CommandDesc> result = super.getHelp();
-            result.add(new CommandDesc("Админ добавить @username Причина добавления", "Добавить пользователя в список администраторов. Чтобы получить больше справки, напиши \"Админ добавить\" без аргументов."));
+        public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
+            ArrayList<CommandDesc> result = super.getHelp(requester);
+            if(requester.isAllowed(AdminListItem.ADMINS_ADD))
+                result.add(new CommandDesc("Админ добавить @username Причина добавления", "Добавить пользователя в список администраторов. Чтобы получить больше справки, напиши \"Админ добавить\" без аргументов."));
             return result;
         }
     }
@@ -590,6 +603,11 @@ public class AdminList  extends CommandModule {
             if (!word1.equals("админы") && !word1.equals("admininfo") )
                 return result;
 
+            if(!admin.isAllowed(AdminListItem.ADMINS_READ)){
+                result.add(new Message("Нет доступа к команде."));
+                return result;
+            }
+
             StringBuilder sb = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
             String username = commandParser.getWord();
             if(username.isEmpty()) {
@@ -609,15 +627,16 @@ public class AdminList  extends CommandModule {
                 return result;
             }
             sb.append("Информация об администраторе ").append(username).append(":\n\n");
-            sb.append(adminListItem.toStringFull());
+            sb.append(adminListItem.toStringFull(admin));
             result.add(new Message(sb.toString()));
             return result;
         }
 
         @Override
-        public ArrayList<CommandDesc> getHelp() {
-            ArrayList<CommandDesc> result = super.getHelp();
-            result.add(new CommandDesc("Админы или /AdminInfo", "Вывести список администраторов"));
+        public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
+            ArrayList<CommandDesc> result = super.getHelp(requester);
+            if(requester.isAllowed(AdminListItem.ADMINS_READ))
+                result.add(new CommandDesc("Админы или /AdminInfo", "Вывести список администраторов"));
             return result;
         }
     }
@@ -632,6 +651,10 @@ public class AdminList  extends CommandModule {
             CommandParser commandParser = new CommandParser(message.getText());
             if(!commandParser.getWord().toLowerCase(Locale.ROOT).equals("admindelete"))
                 return result;
+            if(!admin.isAllowed(AdminListItem.ADMINS_ADD)){
+                result.add(new Message("Нет доступа к команде."));
+                return result;
+            }
             String username = commandParser.getWord();
             if(username.isEmpty()){
                 result.add(new Message(log(
@@ -667,9 +690,10 @@ public class AdminList  extends CommandModule {
         }
 
         @Override
-        public ArrayList<CommandDesc> getHelp() {
-            ArrayList<CommandDesc> result = super.getHelp();
-            result.add(new CommandDesc("AdminDelete @username", "Удаление администратора. Удобрее всего вызывать из информации об администраторе."));
+        public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
+            ArrayList<CommandDesc> result = super.getHelp(requester);
+            if(requester.isAllowed(AdminListItem.ADMINS_ADD))
+                result.add(new CommandDesc("AdminDelete @username", "Удаление администратора. Удобрее всего вызывать из информации об администраторе."));
             return result;
         }
     }
@@ -686,6 +710,10 @@ public class AdminList  extends CommandModule {
             String firstWord = commandParser.getWord().toLowerCase(Locale.ROOT);
             if(!firstWord.equals("adminallow") && !firstWord.equals("admindeny"))
                 return result;
+            if(!admin.isAllowed(AdminListItem.ADMINS_ADD)){
+                result.add(new Message("Нет доступа к команде."));
+                return result;
+            }
             String username = commandParser.getWord();
             if(username.isEmpty()){
                 result.add(new Message(log(
@@ -733,7 +761,7 @@ public class AdminList  extends CommandModule {
                                 "Ответ на команду \"<b>" + message.getText() + "</b>\"\n\n" +
                                         "Админу " + adminToEdit.user + " теперь " + (newValue ? "разрешено" : "запрещено") + " " + genericRight.getDescription() + ".\n\n" +
                                         "Вот полная информация об администраторе:\n" +
-                                        adminToEdit.toStringFull()
+                                        adminToEdit.toStringFull(admin)
                         )));
                         return result;
                     }
@@ -765,10 +793,12 @@ public class AdminList  extends CommandModule {
         }
 
         @Override
-        public ArrayList<CommandDesc> getHelp() {
-            ArrayList<CommandDesc> result = super.getHelp();
-            result.add(new CommandDesc("AdminAllow @username", "Управление правами администратора - разрешить что-либо. Удобрее всего вызывать из информации об администраторе."));
-            result.add(new CommandDesc("AdminDeny @username", "Управление правами администратора - запретить что-либо. Удобрее всего вызывать из информации об администраторе."));
+        public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
+            ArrayList<CommandDesc> result = super.getHelp(requester);
+            if(requester.isAllowed(AdminListItem.ADMINS_ADD)) {
+                result.add(new CommandDesc("AdminAllow @username", "Управление правами администратора - разрешить что-либо. Удобрее всего вызывать из информации об администраторе."));
+                result.add(new CommandDesc("AdminDeny @username", "Управление правами администратора - запретить что-либо. Удобрее всего вызывать из информации об администраторе."));
+            }
             return result;
         }
     }

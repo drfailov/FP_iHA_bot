@@ -1300,8 +1300,8 @@ public class AnswerDatabase  extends CommandModule {
         }
 
         @Override
-        public ArrayList<CommandDesc> getHelp() {
-            ArrayList<CommandDesc> result = super.getHelp();
+        public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
+            ArrayList<CommandDesc> result = super.getHelp(requester);
             result.add(new CommandDesc("Выгрузить базу", "Отправить во вложении архив с текущей базой и вложениями."));
             return result;
         }
@@ -1454,8 +1454,8 @@ public class AnswerDatabase  extends CommandModule {
         }
 
         @Override
-        public ArrayList<CommandDesc> getHelp() {
-            ArrayList<CommandDesc> result = super.getHelp();
+        public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
+            ArrayList<CommandDesc> result = super.getHelp(requester);
             result.add(new CommandDesc("Восстановить базу file.zip", "Восстановить базу ответов их архива, который ранее был загружен во временную папку"));
             return result;
         }
@@ -1506,8 +1506,8 @@ public class AnswerDatabase  extends CommandModule {
         }
 
         @Override
-        public ArrayList<CommandDesc> getHelp() {
-            ArrayList<CommandDesc> result = super.getHelp();
+        public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
+            ArrayList<CommandDesc> result = super.getHelp(requester);
             result.add(new CommandDesc("\uD83D\uDCC4", "Пришли боту документ, чтобы закачать во временную папку файл из вложения. " +
                     "Такой файл может быть использовал в других командах позднее. " +
                     "Временная папка очищается при перезапуске бота."));
@@ -1608,8 +1608,8 @@ public class AnswerDatabase  extends CommandModule {
         }
 
         @Override
-        public ArrayList<CommandDesc> getHelp() {
-            ArrayList<CommandDesc> result = super.getHelp();
+        public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
+            ArrayList<CommandDesc> result = super.getHelp(requester);
             result.add(new CommandDesc("Запомни", "После этого сообщения пришли 2 сообщения: вопрос и ответ. Сохранит в базу такую пару вопрос-ответ."));
             return result;
         }
@@ -1660,8 +1660,8 @@ public class AnswerDatabase  extends CommandModule {
         }
 
         @Override
-        public ArrayList<CommandDesc> getHelp() {
-            ArrayList<CommandDesc> result = super.getHelp();
+        public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
+            ArrayList<CommandDesc> result = super.getHelp(requester);
             result.add(new CommandDesc("Ответы 15032", "Выведет список из "+numberOfAnswers/2+" сообщений до указанного ответа и "+numberOfAnswers/2+" сообщений после указанного ответа."));
             return result;
         }
@@ -1709,8 +1709,8 @@ public class AnswerDatabase  extends CommandModule {
         }
 
         @Override
-        public ArrayList<CommandDesc> getHelp() {
-            ArrayList<CommandDesc> result = super.getHelp();
+        public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
+            ArrayList<CommandDesc> result = super.getHelp(requester);
             result.add(new CommandDesc("Ответы на Привет!", "Выведет список из "+numberOfAnswers+" ответов на заданный вопрос с указанием их рейтинга."));
             return result;
         }
@@ -1759,8 +1759,8 @@ public class AnswerDatabase  extends CommandModule {
         }
 
         @Override
-        public ArrayList<CommandDesc> getHelp() {
-            ArrayList<CommandDesc> result = super.getHelp();
+        public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
+            ArrayList<CommandDesc> result = super.getHelp(requester);
             result.add(new CommandDesc("Ответ 15032", "Отправит ответ с заданным ID"));
             return result;
         }
@@ -1790,8 +1790,8 @@ public class AnswerDatabase  extends CommandModule {
         }
 
         @Override
-        public ArrayList<CommandDesc> getHelp() {
-            ArrayList<CommandDesc> result = super.getHelp();
+        public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
+            ArrayList<CommandDesc> result = super.getHelp(requester);
             result.add(new CommandDesc("Забудь 15032", "Удалит ответ с заданным ID из базы и почистит вложения"));
             return result;
         }
