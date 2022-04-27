@@ -452,6 +452,7 @@ public class AdminList  extends CommandModule {
     }
 
     /**
+     * ADMINS_ADD
      * Команда "Админ добавить @username Причина добавления"
      */
     private class AddAdminCommand extends CommandModule{
@@ -588,6 +589,7 @@ public class AdminList  extends CommandModule {
     }
 
     /**
+     * ADMINS_READ
      * Команда "Админ"
      * Команда "Админ @username "
      * /AdminInfo_989898
@@ -642,6 +644,7 @@ public class AdminList  extends CommandModule {
     }
 
     /**
+     * ADMINS_ADD
      * Команда "/AdminDelete_472147993"
      */
     private class RemAdminCommand extends CommandModule{
@@ -699,6 +702,7 @@ public class AdminList  extends CommandModule {
     }
 
     /**
+     * ADMINS_ADD
      * Команда "/AdminAllow_248067313_Learning"
      * Команда "/AdminDeny_248067313_DatabaseEdit"
      */

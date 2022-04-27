@@ -1243,6 +1243,7 @@ public class AnswerDatabase  extends CommandModule {
     }
 
     /**
+     * DATABASE_DUMP
      * Команда "выгрузить базу"
      */
     private class DumpCommand extends CommandModule{
@@ -1250,6 +1251,10 @@ public class AnswerDatabase  extends CommandModule {
         public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminList.AdminListItem admin) throws Exception {
             ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
             if(message.getText().toLowerCase(Locale.ROOT).trim().equals("выгрузить базу")) {
+                if (!admin.isAllowed(AdminList.AdminListItem.DATABASE_DUMP)){
+                    result.add(new Message("Нет доступа к команде."));
+                    return result;
+                }
                 log("Выполнение команды выгрузки дампа базы. Выбор имени для архива...");
                 //Выбрать имя для нового файла
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
@@ -1302,12 +1307,14 @@ public class AnswerDatabase  extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
             ArrayList<CommandDesc> result = super.getHelp(requester);
-            result.add(new CommandDesc("Выгрузить базу", "Отправить во вложении архив с текущей базой и вложениями."));
+            if (requester.isAllowed(AdminList.AdminListItem.DATABASE_DUMP))
+                result.add(new CommandDesc("Выгрузить базу", "Отправить во вложении архив с текущей базой и вложениями."));
             return result;
         }
     }
 
     /**
+     * DATABASE_DUMP
      * Команда "восстановить базу 2022-04-17_DatabaseDump.zip"
      */
     private class RestoreCommand extends CommandModule{
@@ -1315,6 +1322,10 @@ public class AnswerDatabase  extends CommandModule {
         public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminList.AdminListItem admin) throws Exception {
             ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
             if(message.getText().toLowerCase(Locale.ROOT).trim().startsWith("восстановить базу")) {
+                if (!admin.isAllowed(AdminList.AdminListItem.DATABASE_DUMP)){
+                    result.add(new Message("Нет доступа к команде."));
+                    return result;
+                }
                 if(message.getText().length() < 22){
                     result.add(new Message("Ответ на команду <b>\""+message.getText()+"\"</b>\n\n"+
                             "Не могу восстановить базу данных, поскольку было получено некорректное имя файла."));
@@ -1456,19 +1467,21 @@ public class AnswerDatabase  extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
             ArrayList<CommandDesc> result = super.getHelp(requester);
-            result.add(new CommandDesc("Восстановить базу file.zip", "Восстановить базу ответов их архива, который ранее был загружен во временную папку"));
+            if (requester.isAllowed(AdminList.AdminListItem.DATABASE_DUMP))
+                result.add(new CommandDesc("Восстановить базу file.zip", "Восстановить базу ответов их архива, который ранее был загружен во временную папку"));
             return result;
         }
     }
 
     /**
+     * DATABASE_DUMP
      * Команда загрузки файла "📄"
      */
     private class DownloadCommand extends CommandModule{
         @Override
         public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminList.AdminListItem admin) throws Exception{
             ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
-            if(message.hasAttachments()) {
+            if(message.hasAttachments() && admin.isAllowed(AdminList.AdminListItem.DATABASE_DUMP)) {
                 for (Attachment attachment:message.getAttachments()){
                     if(!attachment.isDoc())//ignore if not document
                         return result;
@@ -1508,14 +1521,16 @@ public class AnswerDatabase  extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
             ArrayList<CommandDesc> result = super.getHelp(requester);
-            result.add(new CommandDesc("\uD83D\uDCC4", "Пришли боту документ, чтобы закачать во временную папку файл из вложения. " +
-                    "Такой файл может быть использовал в других командах позднее. " +
-                    "Временная папка очищается при перезапуске бота."));
+            if (requester.isAllowed(AdminList.AdminListItem.DATABASE_DUMP))
+                result.add(new CommandDesc("\uD83D\uDCC4", "Пришли боту документ, чтобы закачать во временную папку файл из вложения. " +
+                        "Такой файл может быть использовал в других командах позднее. " +
+                        "Временная папка очищается при перезапуске бота."));
             return result;
         }
     }
 
     /**
+     * DATABASE_EDIT
      * Команда "Запомни"
      */
     private class RememberCommand extends CommandModule{
@@ -1533,6 +1548,10 @@ public class AnswerDatabase  extends CommandModule {
 
                 if (session == null) { //начать новую сессию
                     if (message.getText().toLowerCase(Locale.ROOT).trim().equals("запомни")) {
+                        if (!admin.isAllowed(AdminList.AdminListItem.DATABASE_EDIT)){
+                            result.add(new Message("Нет доступа к команде."));
+                            return result;
+                        }
                         log("Команда \"запомни\" получена. Ожидаю поступления сообщений.");
                         sessions.put(userId, new RememberCommandSession());
                         result.add(new Message("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n"+
@@ -1542,6 +1561,10 @@ public class AnswerDatabase  extends CommandModule {
                     }
                 }
                 else { //сессия уже есть и активна
+                    if (!admin.isAllowed(AdminList.AdminListItem.DATABASE_EDIT)){
+                        result.add(new Message("Нет доступа к команде."));
+                        return result;
+                    }
 
                     {//Проверить не слишком ли дофига времени собеседник тупил и актуальна ли ещё вообще его команда
                         long difference = new Date().getTime() - session.sessionStarted.getTime();
@@ -1610,7 +1633,8 @@ public class AnswerDatabase  extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
             ArrayList<CommandDesc> result = super.getHelp(requester);
-            result.add(new CommandDesc("Запомни", "После этого сообщения пришли 2 сообщения: вопрос и ответ. Сохранит в базу такую пару вопрос-ответ."));
+            if (requester.isAllowed(AdminList.AdminListItem.DATABASE_EDIT))
+                result.add(new CommandDesc("Запомни", "После этого сообщения пришли 2 сообщения: вопрос и ответ. Сохранит в базу такую пару вопрос-ответ."));
             return result;
         }
 
@@ -1626,6 +1650,7 @@ public class AnswerDatabase  extends CommandModule {
     }
 
     /**
+     * DATABASE_READ
      * Команда "Ответы 15032"
      */
     private class GetAnswersByIdCommand extends CommandModule{
@@ -1635,6 +1660,10 @@ public class AnswerDatabase  extends CommandModule {
             ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
             String[] words = message.getText().toLowerCase(Locale.ROOT).trim().split(" ");
             if (words.length == 2 && words[0].equals("ответы") && isNumber(words[1])) {
+                if (!admin.isAllowed(AdminList.AdminListItem.DATABASE_READ)){
+                    result.add(new Message("Нет доступа к команде."));
+                    return result;
+                }
                 long neededIndex = Long.parseLong(words[1]);
                 long startedIndex = neededIndex - (numberOfAnswers / 2);
                 ArrayList<AnswerElement> answerElements = getAnswers(startedIndex, numberOfAnswers);
@@ -1662,12 +1691,14 @@ public class AnswerDatabase  extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
             ArrayList<CommandDesc> result = super.getHelp(requester);
-            result.add(new CommandDesc("Ответы 15032", "Выведет список из "+numberOfAnswers/2+" сообщений до указанного ответа и "+numberOfAnswers/2+" сообщений после указанного ответа."));
+            if (requester.isAllowed(AdminList.AdminListItem.DATABASE_READ))
+                result.add(new CommandDesc("Ответы 15032", "Выведет список из "+numberOfAnswers/2+" сообщений до указанного ответа и "+numberOfAnswers/2+" сообщений после указанного ответа."));
             return result;
         }
     }
 
     /**
+     * DATABASE_READ
      * Команда "Ответы на Иди нахуй!"
      */
     private class GetAnswersByQuestionCommand extends CommandModule{
@@ -1676,6 +1707,10 @@ public class AnswerDatabase  extends CommandModule {
         public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminList.AdminListItem admin) throws Exception {
             ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
             if (message.getText().toLowerCase(Locale.ROOT).trim().startsWith("ответы на")) {
+                if (!admin.isAllowed(AdminList.AdminListItem.DATABASE_READ)){
+                    result.add(new Message("Нет доступа к команде."));
+                    return result;
+                }
                 String questionText = message.getText().toLowerCase(Locale.ROOT).trim().replace("ответы на", "");
                 Message question = new Message(questionText);
                 question.setAuthor(message.getAuthor());
@@ -1711,12 +1746,14 @@ public class AnswerDatabase  extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
             ArrayList<CommandDesc> result = super.getHelp(requester);
-            result.add(new CommandDesc("Ответы на Привет!", "Выведет список из "+numberOfAnswers+" ответов на заданный вопрос с указанием их рейтинга."));
+            if (requester.isAllowed(AdminList.AdminListItem.DATABASE_READ))
+                result.add(new CommandDesc("Ответы на Привет!", "Выведет список из "+numberOfAnswers+" ответов на заданный вопрос с указанием их рейтинга."));
             return result;
         }
     }
 
     /**
+     * DATABASE_READ
      * Команда "Ответ 15032"
      */
     private class GetAnswerByIdCommand extends CommandModule{
@@ -1725,6 +1762,10 @@ public class AnswerDatabase  extends CommandModule {
             ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
             String[] words = message.getText().toLowerCase(Locale.ROOT).trim().split(" ");
             if (words.length == 2 && words[0].equals("ответ") && isNumber(words[1])) {
+                if (!admin.isAllowed(AdminList.AdminListItem.DATABASE_READ)){
+                    result.add(new Message("Нет доступа к команде."));
+                    return result;
+                }
                 long neededIndex = Long.parseLong(words[1]);
                 long startedIndex = neededIndex - 2;
                 ArrayList<AnswerElement> answerElements = getAnswers(startedIndex, 5);
@@ -1761,12 +1802,14 @@ public class AnswerDatabase  extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
             ArrayList<CommandDesc> result = super.getHelp(requester);
-            result.add(new CommandDesc("Ответ 15032", "Отправит ответ с заданным ID"));
+            if (requester.isAllowed(AdminList.AdminListItem.DATABASE_READ))
+                result.add(new CommandDesc("Ответ 15032", "Отправит ответ с заданным ID"));
             return result;
         }
     }
 
     /**
+     * DATABASE_READ
      * Команда "Забудь 15032"
      */
     private class RemoveAnswerByIdCommand extends CommandModule{
@@ -1775,6 +1818,10 @@ public class AnswerDatabase  extends CommandModule {
             ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
             String[] words = message.getText().toLowerCase(Locale.ROOT).trim().split(" ");
             if (words.length == 2 && words[0].equals("забудь") && isNumber(words[1])) {
+                if (!admin.isAllowed(AdminList.AdminListItem.DATABASE_EDIT)){
+                    result.add(new Message("Нет доступа к команде."));
+                    return result;
+                }
                 long neededIndex = Long.parseLong(words[1]);
                 ArrayList<Long> toDelete = new ArrayList<>();
                 toDelete.add(neededIndex);
@@ -1792,7 +1839,8 @@ public class AnswerDatabase  extends CommandModule {
         @Override
         public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
             ArrayList<CommandDesc> result = super.getHelp(requester);
-            result.add(new CommandDesc("Забудь 15032", "Удалит ответ с заданным ID из базы и почистит вложения"));
+            if (requester.isAllowed(AdminList.AdminListItem.DATABASE_EDIT))
+                result.add(new CommandDesc("Забудь 15032", "Удалит ответ с заданным ID из базы и почистит вложения"));
             return result;
         }
     }
