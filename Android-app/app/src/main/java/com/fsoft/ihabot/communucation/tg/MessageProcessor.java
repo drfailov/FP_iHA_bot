@@ -213,9 +213,6 @@ public class MessageProcessor extends CommandModule {
             return;
         }
 
-        //Отправить пользователю что бот уже начал готовить ответ для него
-        tgAccount.sendChatTyping(message.getChat().getId());
-
         //сформировать обьект вопроса
         //Этот код потенциально можно засунуть как один из конструкторов Message
         com.fsoft.ihabot.answer.Message question = new com.fsoft.ihabot.answer.Message();
@@ -263,6 +260,20 @@ public class MessageProcessor extends CommandModule {
 
         //учесть сообщение в статистике
         applicationManager.getMessageHistory().registerTelegramMessage(message.getChat(), question, tgAccount);
+
+        //посчитать как много юзер пишет и если что, его игнорить
+        int messagesLastMinute = applicationManager.getMessageHistory().countMessagesLastMinute(question.getAuthor());
+        log("За послежнюю минуту этот пользователь писал: " + messagesLastMinute + " раз. \n");
+        if(messagesLastMinute > 15){
+            log("Такое количество сообщений расценено как спам. Игнорируем. \n");
+            return;
+        }
+
+
+        //Отправить пользователю что бот уже начал готовить ответ для него
+        tgAccount.sendChatTyping(message.getChat().getId());
+
+
 
         //Проверить не является ли пользователь админинистратором. Если является, обработать как команду
         AdminList.AdminListItem admin = applicationManager.getAdminList().get(question.getAuthor());

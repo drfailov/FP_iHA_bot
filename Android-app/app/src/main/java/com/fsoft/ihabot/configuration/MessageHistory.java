@@ -20,6 +20,7 @@ import java.io.PrintWriter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Locale;
@@ -166,6 +167,30 @@ public class MessageHistory {
             if(chat.chatUser != null)
                 users.add(chat.chatUser);
         return users;
+    }
+
+    public int countMessagesLastMinute(User user){
+        if(user == null)
+            return 0;
+        int result = 0;
+        long minuteMs = 60 * 1000;
+        long timeThreshold = Calendar.getInstance().getTime().getTime() - minuteMs;
+        for(MessageHistoryTgAccount account:messageHistoryTgAccounts){
+            for(MessageHistoryChat chat:account.chats){
+                if(chat.chatUser != null) {
+                    if (chat.chatUser.equals(user)) {
+                        for (Message message : chat.messageHistory) {
+                            if (message.getDate() != null) {
+                                if (message.getDate().getTime() > timeThreshold) {
+                                    result++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return result;
     }
 
 
