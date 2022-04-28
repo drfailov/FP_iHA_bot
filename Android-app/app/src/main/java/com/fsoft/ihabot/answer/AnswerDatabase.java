@@ -244,8 +244,8 @@ public class AnswerDatabase  extends CommandModule {
 
 
 
-    ArrayList<Long> updateAnswerUsedTimesQueue = new ArrayList<>();
-
+    final ArrayList<Long> updateAnswerUsedTimesQueue = new ArrayList<>();
+    Thread updateAnswerUsedTimesThread = null;
     /**
      * Вносит в базу информацию о том, что какой-то ответ был использован при подборе ответа.
      * Для статистики.
@@ -258,61 +258,75 @@ public class AnswerDatabase  extends CommandModule {
     public synchronized void updateAnswerUsedTimes(long answerID) throws Exception{
         updateAnswerUsedTimesQueue.add(answerID);
         log("Ответ " + answerID + " добавлен в очередь("+updateAnswerUsedTimesQueue.size()+") для обновления количества его использований...");
-        if(updateAnswerUsedTimesQueue.size() == 10){
-            //записать в файл инфу
-            log("Внесение в файл базы ответов информации о количестве использований ответов " + F.text(updateAnswerUsedTimesQueue) + "...");
-            File fileTmp = new File(applicationManager.getTempFolder(), "Answer_database.tmp");
-            PrintWriter fileTmpWriter = new PrintWriter(fileTmp);
-            BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers));
-            String line;
-            int lineNumber = 0;
-            int errors = 0;
-            int changed = 0;
-            synchronized (fileAnswers) {
-                try {
-                    while ((line = bufferedReader.readLine()) != null) {
-                        lineNumber++;
-                        if (lineNumber % 1884 == 0)
-                            log("Внесение "+F.text(updateAnswerUsedTimesQueue)+" использований ответов в базу (" + lineNumber + " уже пройдено)");
-                        try {
-                            JSONObject jsonObject = new JSONObject(line);
-                            AnswerElement answerElement = new AnswerElement(jsonObject);
-                            boolean isChanged = false;
-                            for(Iterator<Long> i = updateAnswerUsedTimesQueue.iterator(); i.hasNext();) {
-                                Long current = i.next();
-                                if(current.equals(answerElement.getId())) {
-                                    isChanged = true;
-                                    answerElement.incrementTimesUsed();
-                                    i.remove();
+        if(updateAnswerUsedTimesQueue.size() == 10 && updateAnswerUsedTimesThread == null){
+            updateAnswerUsedTimesThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        //записать в файл инфу
+                        log("Внесение в файл базы ответов информации о количестве использований ответов " + F.text(updateAnswerUsedTimesQueue) + "...");
+                        File fileTmp = new File(applicationManager.getTempFolder(), "Answer_database.tmp");
+                        PrintWriter fileTmpWriter = new PrintWriter(fileTmp);
+                        BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers));
+                        String line;
+                        int lineNumber = 0;
+                        int errors = 0;
+                        int changed = 0;
+                        synchronized (fileAnswers) {
+                            try {
+                                while ((line = bufferedReader.readLine()) != null) {
+                                    lineNumber++;
+                                    if (lineNumber % 1884 == 0)
+                                        log("Внесение " + F.text(updateAnswerUsedTimesQueue) + " использований ответов в базу (" + lineNumber + " уже пройдено)");
+                                    try {
+                                        JSONObject jsonObject = new JSONObject(line);
+                                        AnswerElement answerElement = new AnswerElement(jsonObject);
+                                        boolean isChanged = false;
+                                        for (Iterator<Long> i = updateAnswerUsedTimesQueue.iterator(); i.hasNext(); ) {
+                                            Long current = i.next();
+                                            if (current.equals(answerElement.getId())) {
+                                                isChanged = true;
+                                                answerElement.incrementTimesUsed();
+                                                i.remove();
+                                            }
+                                        }
+                                        if (isChanged)
+                                            changed++;
+                                        fileTmpWriter.println(answerElement.toJson().toString());
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                        errors++;
+                                        log("Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                                    }
                                 }
+                            } finally {
+                                bufferedReader.close();
+                                fileTmpWriter.close();
                             }
-                            if(isChanged)
-                                changed ++;
-                            fileTmpWriter.println(answerElement.toJson().toString());
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            errors++;
-                            log("Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                            if (errors != 0)
+                                log("При внесении в базу информации о количестве использований ответов возникло ошибок: " + errors + ".");
+                            log("В файл базы ответов внесено " + changed + " изменений.");
+                            File databaseTmpStorage = new File(applicationManager.getTempFolder(), "Answer_database_" + new Date().getTime() + ".tmp");
+                            log("Убираем старую базу: " + fileAnswers.renameTo(databaseTmpStorage));
+                            boolean databaseReplaced = fileTmp.renameTo(fileAnswers);
+                            log("Замена старой базы новой: " + databaseReplaced);
+                            if (!databaseReplaced) {
+                                log("!!! Возникла проблема с заменой базы данных! Восстановление резервной копии: " + databaseTmpStorage.getName());
+                                log("Замена базы из файла резервной кории: " + databaseTmpStorage.renameTo(fileAnswers));
+                            }
                         }
+                        updateAnswerUsedTimesQueue.clear();
+                    }
+                    catch (Exception e){
+                        log("Ошибка внесения информации об использований ответов в базу: " + e.getLocalizedMessage());
+                        e.printStackTrace();
+                    }
+                    finally {
+                        updateAnswerUsedTimesThread = null;
                     }
                 }
-                finally {
-                    bufferedReader.close();
-                    fileTmpWriter.close();
-                }
-                if (errors != 0)
-                    log("При внесении в базу информации о количестве использований ответов возникло ошибок: " + errors + ".");
-                log("В файл базы ответов внесено " + changed + " изменений.");
-                File databaseTmpStorage = new File(applicationManager.getTempFolder(), "Answer_database_"+new Date().getTime()+".tmp");
-                log("Убираем старую базу: " + fileAnswers.renameTo(databaseTmpStorage));
-                boolean databaseReplaced = fileTmp.renameTo(fileAnswers);
-                log("Замена старой базы новой: " + databaseReplaced);
-                if(!databaseReplaced){
-                    log("!!! Возникла проблема с заменой базы данных! Восстановление резервной копии: " + databaseTmpStorage.getName());
-                    log("Замена базы из файла резервной кории: " + databaseTmpStorage.renameTo(fileAnswers));
-                }
-            }
-            updateAnswerUsedTimesQueue.clear();
+            });
+            updateAnswerUsedTimesThread.start();
         }
     }
 
