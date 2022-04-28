@@ -4,10 +4,13 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.fsoft.ihabot.Utils.F;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.text.ParseException;
+import java.util.Locale;
 import java.util.Objects;
 
 /*Telegram user according to telegram API*/
@@ -87,6 +90,33 @@ public class User {
             return username;
         else
             return first_name + " " + last_name;
+    }
+
+    /**
+     * вовзарает является ли текстовое описание пользователя его однознозначным представлением базируясь на Username или ID
+     * @param usernameOrId текст его ID, либо username. Можно с собакой можно без.
+     * @return да, если описание полностью соотвествует текущему юзеру
+     */
+    public boolean isIt(String usernameOrId){
+        if(usernameOrId == null)
+            return false;
+        if(usernameOrId.trim().isEmpty())
+            return false;
+        if (F.isDigitsOnly(usernameOrId) && id != 0){
+            try {
+                long result = Long.parseLong(usernameOrId);
+                if(result == 0)
+                    return false;
+                return id == result;
+            }
+            catch (Exception e){
+                //похуй
+            }
+        }
+        usernameOrId = usernameOrId.replace("@", "").toLowerCase(Locale.ROOT).trim();
+        if(getUsername() != null)
+            return getUsername().replace("@", "").toLowerCase(Locale.ROOT).trim().equals(usernameOrId);
+        return false;
     }
 
     public long getId() {

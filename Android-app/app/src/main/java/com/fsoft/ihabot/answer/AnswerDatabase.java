@@ -8,6 +8,7 @@ import com.fsoft.ihabot.R;
 import com.fsoft.ihabot.ApplicationManager;
 import com.fsoft.ihabot.Utils.CommandDesc;
 import com.fsoft.ihabot.Utils.CommandModule;
+import com.fsoft.ihabot.Utils.CommandParser;
 import com.fsoft.ihabot.Utils.F;
 import com.fsoft.ihabot.Utils.Triplet;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
@@ -100,6 +101,7 @@ public class AnswerDatabase  extends CommandModule {
         childCommands.add(new GetAnswerByIdCommand());
         childCommands.add(new RemoveAnswerByIdCommand());
         childCommands.add(new GetAnswersByQuestionCommand());
+        childCommands.add(new GetAnswersByAuthorCommand());
     }
 
 
@@ -376,7 +378,54 @@ public class AnswerDatabase  extends CommandModule {
         System.gc();
 
         return messageRating;
+    }
 
+
+    /**
+     * выдаёт список последних 100 ответов которые были добавлены администратором. Эта функция просматривает файл полностью в поисках ответа.
+     * @param usernameOrId данные о пользователе в формате username или userId
+     * @return MessageRating со списком
+     * @author Dr. Failov
+     * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
+     */
+    private MessageRating getLastAnswersByAuthor(String usernameOrId) throws Exception{
+        MessageRating messageRating = new MessageRating(200);
+
+        String line;
+        int lineNumber = 0;
+        int errors = 0;
+        synchronized (fileAnswers) {
+            try(BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers))) {
+                while ((line = bufferedReader.readLine()) != null) {
+                    if (lineNumber % 1289 == 0)
+                        log(". Поиск ответов по автору в базе (" + lineNumber + " уже проверено) ...");
+                    try {
+                        JSONObject jsonObject = new JSONObject(line);
+                        AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
+                        if(currentAnswerElement.getAnswerMessage() != null){
+                            if(currentAnswerElement.getAnswerMessage().getAuthor() != null){
+                                if(currentAnswerElement.getAnswerMessage().getAuthor().isIt(usernameOrId)){
+                                    if(currentAnswerElement.getAnswerMessage().getDate() != null) {
+                                        messageRating.addAnswer(currentAnswerElement, currentAnswerElement.getAnswerMessage().getDate().getTime());
+                                    }
+                                }
+                            }
+                        }
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        errors++;
+                        log("! Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                    }
+                    lineNumber++;
+                }
+            }
+        }
+        if (errors != 0)
+            log("! При загрузке базы ответов возникло ошибок: " + errors + ".");
+        System.gc();
+
+        return messageRating;
     }
 
     /**
@@ -1257,8 +1306,8 @@ public class AnswerDatabase  extends CommandModule {
     }
 
     /**
-     * DATABASE_DUMP
      * Команда "выгрузить базу"
+     * DATABASE_DUMP
      */
     private class DumpCommand extends CommandModule{
         @Override
@@ -1328,8 +1377,8 @@ public class AnswerDatabase  extends CommandModule {
     }
 
     /**
-     * DATABASE_DUMP
      * Команда "восстановить базу 2022-04-17_DatabaseDump.zip"
+     * DATABASE_DUMP
      */
     private class RestoreCommand extends CommandModule{
         @Override
@@ -1488,8 +1537,8 @@ public class AnswerDatabase  extends CommandModule {
     }
 
     /**
-     * DATABASE_DUMP
      * Команда загрузки файла "📄"
+     * DATABASE_DUMP
      */
     private class DownloadCommand extends CommandModule{
         @Override
@@ -1544,8 +1593,8 @@ public class AnswerDatabase  extends CommandModule {
     }
 
     /**
-     * DATABASE_EDIT
      * Команда "Запомни"
+     * DATABASE_EDIT
      */
     private class RememberCommand extends CommandModule{
         private final HashMap<Long, RememberCommandSession> sessions = new HashMap<>();
@@ -1664,8 +1713,8 @@ public class AnswerDatabase  extends CommandModule {
     }
 
     /**
-     * DATABASE_READ
      * Команда "Ответы 15032"
+     * DATABASE_READ
      */
     private class GetAnswersByIdCommand extends CommandModule{
         final int numberOfAnswers = 20;
@@ -1712,8 +1761,101 @@ public class AnswerDatabase  extends CommandModule {
     }
 
     /**
+     * Команда "Ответы автор @username"
      * DATABASE_READ
+     */
+    private class GetAnswersByAuthorCommand extends CommandModule{
+        @Override
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminList.AdminListItem admin) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
+            CommandParser commandParser = new CommandParser(message.getText());
+            if(!commandParser.getWord().toLowerCase(Locale.ROOT).equals("ответы"))
+                return result;
+            if(!commandParser.getWord().toLowerCase(Locale.ROOT).equals("автор"))
+                return result;
+            if (!admin.isAllowed(AdminList.AdminListItem.DATABASE_READ)){
+                result.add(new Message("Нет доступа к команде."));
+                return result;
+            }
+            String username = commandParser.getWord();
+            if (username.isEmpty()){
+                result.add(new Message(
+                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+                                log("Не могу показать ответов автора, поскольку информация об авторе не была получена.\n\n" +
+                                        "Правильный формат команды:\n" +
+                                        "<i>Ответы автор @username 0</i>\n" +
+                                        "Где:\n" +
+                                        "- <b>@username</b> это либо юзернейм либо айди пользователя,\n" +
+                                        "- <b>0</b> это смещение от начала списка, " +
+                                        "чтобы смотреть больше 20 ответов (его можно не писать).")
+                ));
+                return result;
+            }
+
+            int offset = commandParser.getInt();
+            if(offset > 195) {
+                result.add(new Message(
+                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+                                log("Получено очень большое значение смешения. " +
+                                        "Эта команда максимум может загрузить 200 самых новых ответов, " +
+                                        "но не больше.")
+                ));
+                return result;
+            }
+
+            MessageRating messageRating = getLastAnswersByAuthor(username);
+            if(messageRating.isEmpty()){
+                result.add(new Message(
+                        "Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+                                log("Ответов за авторством \"" + username + "\" в базе не найдено.")
+                ));
+                return result;
+            }
+
+            StringBuilder stringBuilder = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n"+
+                    "Вот список последних ответов в базе, добавленных автором \""+username+"\":\n");
+            if(offset != 0)
+                stringBuilder.append("(со смещением ").append(offset).append(" от начала списка)\n");
+            stringBuilder.append("\n");
+
+            int addedItems = 0;
+            for(int i = offset; i<messageRating.getCapacity(); i++){
+                AnswerElement answerElement = messageRating.getTopMessage(i);
+                if(answerElement != null) {
+                    stringBuilder.append("").append(i).append(" \t");
+                    stringBuilder.append("<code>").append(answerElement.getId()).append("</code> \t");
+                    stringBuilder.append("[").append(new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(answerElement.getAnswerMessage().getDate())).append("] \t");
+                    stringBuilder.append(answerElement).append("\n");
+                    addedItems ++;
+                    if(addedItems > 20)
+                        break;
+                    if(stringBuilder.length() > 3800)
+                        break;
+                }
+            }
+            if(addedItems == 0)
+                stringBuilder.append("Список пуст.\n");
+
+
+            result.add(new Message(stringBuilder.toString()));
+            return result;
+        }
+
+        @Override
+        public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
+            ArrayList<CommandDesc> result = super.getHelp(requester);
+            if (requester.isAllowed(AdminList.AdminListItem.DATABASE_READ))
+                result.add(new CommandDesc(
+                        "Ответы автор @username 0",
+                        "Выведет список самых новых ответов от автора. " +
+                                "Число в конце это смешение от верха списка, его можно не писать."));
+            return result;
+        }
+    }
+
+    /**
      * Команда "Ответы на Иди нахуй!"
+     * DATABASE_READ
      */
     private class GetAnswersByQuestionCommand extends CommandModule{
         final int numberOfAnswers = 10;
@@ -1767,8 +1909,8 @@ public class AnswerDatabase  extends CommandModule {
     }
 
     /**
-     * DATABASE_READ
      * Команда "Ответ 15032"
+     * DATABASE_READ
      */
     private class GetAnswerByIdCommand extends CommandModule{
         @Override
@@ -1823,8 +1965,8 @@ public class AnswerDatabase  extends CommandModule {
     }
 
     /**
-     * DATABASE_READ
      * Команда "Забудь 15032"
+     * DATABASE_READ
      */
     private class RemoveAnswerByIdCommand extends CommandModule{
         @Override
