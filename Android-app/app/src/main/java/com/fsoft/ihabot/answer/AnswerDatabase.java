@@ -1762,6 +1762,7 @@ public class AnswerDatabase  extends CommandModule {
 
     /**
      * Команда "Ответы автор @username"
+     * Команда "/Answers_Author_00000"
      * DATABASE_READ
      */
     private class GetAnswersByAuthorCommand extends CommandModule{
@@ -1769,9 +1770,11 @@ public class AnswerDatabase  extends CommandModule {
         public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminList.AdminListItem admin) throws Exception {
             ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
             CommandParser commandParser = new CommandParser(message.getText());
-            if(!commandParser.getWord().toLowerCase(Locale.ROOT).equals("ответы"))
+            String word1 = commandParser.getWord().toLowerCase(Locale.ROOT);
+            if(!word1.equals("ответы") && !word1.equals("answers") )
                 return result;
-            if(!commandParser.getWord().toLowerCase(Locale.ROOT).equals("автор"))
+            String word2 = commandParser.getWord().toLowerCase(Locale.ROOT);
+            if(!word2.equals("автор") && !word2.equals("author"))
                 return result;
             if (!admin.isAllowed(AdminList.AdminListItem.DATABASE_READ)){
                 result.add(new Message("Нет доступа к команде."));

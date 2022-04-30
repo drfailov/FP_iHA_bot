@@ -100,7 +100,7 @@ public class CommandParser {
             return Integer.parseInt(word);
         }
         catch (Exception e){
-            e.printStackTrace();
+            //e.printStackTrace();
             log("! Ошибка: не удалось распознать word = "+word+" как обьект Integer.");
             return 0;
         }

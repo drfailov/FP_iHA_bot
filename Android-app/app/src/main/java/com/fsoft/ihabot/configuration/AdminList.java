@@ -392,6 +392,10 @@ public class AdminList  extends CommandModule {
 
             sb.append("⚡️ /HelpAdmin\n"+"<b>Просмотреть</b> справку по командам админки \n\n");
 
+
+            if(admin.isAllowed(DATABASE_READ))
+                sb.append("⚡️ /Answers_Author_").append(adminListItem.user.getId()).append("\n"+"<b>Просмотреть</b> последние добавленные в базу ответы администратора \n\n");
+
             if(admin.isAllowed(HISTORY_VIEW))
                 sb.append("⚡️ /History_").append(adminListItem.user.getId()).append("\n"+"<b>Просмотреть</b> последние сообщения администратора \n\n");
 
