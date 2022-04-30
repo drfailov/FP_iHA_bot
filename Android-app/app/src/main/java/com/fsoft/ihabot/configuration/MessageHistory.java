@@ -5,6 +5,9 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 
 import com.fsoft.ihabot.ApplicationManager;
+import com.fsoft.ihabot.Utils.CommandDesc;
+import com.fsoft.ihabot.Utils.CommandModule;
+import com.fsoft.ihabot.Utils.CommandParser;
 import com.fsoft.ihabot.Utils.F;
 import com.fsoft.ihabot.answer.Message;
 import com.fsoft.ihabot.communucation.tg.Chat;
@@ -34,9 +37,9 @@ import java.util.Objects;
  * Статистику будем вести раздельно по аккаунтам телеги.
  * Для каждого аккаунта будем вести список чатов и информацию про них.
  */
-public class MessageHistory {
+public class MessageHistory extends CommandModule {
     private final File messageHistoryFile;
-    private ArrayList<MessageHistoryTgAccount> messageHistoryTgAccounts = new ArrayList<>();
+    private final ArrayList<MessageHistoryTgAccount> messageHistoryTgAccounts = new ArrayList<>();
 
     public MessageHistory(ApplicationManager applicationManager) {
         messageHistoryFile = new File(applicationManager.getHomeFolder(), "MessageHistory.json");
@@ -54,6 +57,7 @@ public class MessageHistory {
                 e.printStackTrace();
             }
         }
+        childCommands.add(new UserHistoryCommand());
     }
 
     /**
@@ -70,7 +74,6 @@ public class MessageHistory {
         }
         return null;
     }
-
 
     /**
      * Выполняет поиск по всей истории сообщений с целью найти данные о пользователе по его ID в текстовом виде или юзернейму
@@ -141,22 +144,6 @@ public class MessageHistory {
 
     /**
      * Получить список последних чатов на аккаунте.
-     * Возвращает массив "Внутренних" обьектов класса
-     * @param tgAccount Аккаунт для которого загружаем чаты
-     * @return Возвращает обьекты чатов в истории в порядке от самых новых к старым
-     */
-    private ArrayList<MessageHistoryChat> getLastChatsListForAccount(TgAccount tgAccount) {
-        for (MessageHistoryTgAccount messageHistoryTgAccount:messageHistoryTgAccounts) {
-            if (messageHistoryTgAccount.tgAccountId == tgAccount.getId()) {
-                return messageHistoryTgAccount.getLastChatsList();
-            }
-        }
-        Log.d(F.TAG, "Был запрошен список чатов для аккаунта, которого нет в истории: " + tgAccount.getScreenName() + " ("+tgAccount.getId()+")");
-        return new ArrayList<>();
-    }
-
-    /**
-     * Получить список последних чатов на аккаунте.
      * Возвращает массив User
      * @param tgAccount Аккаунт для которого загружаем юзеров
      * @return Возвращает обьекты пользователей в истории чатов в порядке от самых новых к старым
@@ -169,6 +156,12 @@ public class MessageHistory {
         return users;
     }
 
+    /**
+     * Считает количество сообщений от некоторого пользовалетя за последнюю минуту.
+     * Используется для фильтрации спама, например.
+     * @param user обьект юзера телеграма который мы ищем. В нём должен быть либо username либо ID
+     * @return Количество сообщений от юзера. Если он не писал, соответственно, 0.
+     */
     public int countMessagesLastMinute(User user){
         if(user == null)
             return 0;
@@ -193,8 +186,59 @@ public class MessageHistory {
         return result;
     }
 
+    /**
+     * отправляет массив сообщений которые писал этот пользователь, начиная с самых новых
+     * @param usernameOrId текст его ID, либо username. Можно с собакой можно без.
+     * @return массив сообщений которые писал этот пользователь, начиная с самых новых
+     */
+    public ArrayList<Message> getUserHistory(String usernameOrId){
+        ArrayList<Message> result = new ArrayList<>();
+
+        for (MessageHistoryTgAccount account:messageHistoryTgAccounts){
+            for (MessageHistoryChat chat:account.chats){
+                for (Message message:chat.messageHistory){
+                    if(message.getAuthor().isIt(usernameOrId)){
+                        result.add(message);
+                    }
+                }
+            }
+        }
+        {//sort
+            result.sort(new Comparator<Message>() {
+                @Override
+                public int compare(Message message, Message m1) {
+                    return Long.compare(m1.getDate().getTime(), message.getDate().getTime());
+                }
+            });
+        }
+        return result;
+    }
+
+    /**
+     * Возвращает список истории всех чатов начиная с самых новых
+     * @return список истории всех чатов начиная с самых новых
+     */
+    public ArrayList<MessageHistoryChat> getLastChats(){
+        ArrayList<MessageHistoryChat> result = new ArrayList<>();
+        for (MessageHistoryTgAccount account:messageHistoryTgAccounts){
+            result.addAll(account.chats);
+        }
+        {//sort
+            result.sort(new Comparator<MessageHistoryChat>() {
+                @Override
+                public int compare(MessageHistoryChat message, MessageHistoryChat m1) {
+                    return Long.compare(m1.getLastMessageDate().getTime(), message.getLastMessageDate().getTime());
+                }
+            });
+        }
+        return result;
+    }
 
 
+
+    /**
+     * берёт весь массив из оперативки и прячет в файл
+     */
     private void messageHistoryWriteToFile(){
         Log.d(F.TAG, "Сохранение истории чатов в файл " + messageHistoryFile.getName() + " ...");
         try{
@@ -212,13 +256,22 @@ public class MessageHistory {
         }
     }
 
-    public ArrayList<MessageHistoryTgAccount> getMessageHistoryTgAccounts() {
-        return messageHistoryTgAccounts;
+    /**
+     * Получить список последних чатов на аккаунте.
+     * Возвращает массив "Внутренних" обьектов класса
+     * @param tgAccount Аккаунт для которого загружаем чаты
+     * @return Возвращает обьекты чатов в истории в порядке от самых новых к старым
+     */
+    private ArrayList<MessageHistoryChat> getLastChatsListForAccount(TgAccount tgAccount) {
+        for (MessageHistoryTgAccount messageHistoryTgAccount:messageHistoryTgAccounts) {
+            if (messageHistoryTgAccount.tgAccountId == tgAccount.getId()) {
+                return messageHistoryTgAccount.getLastChatsList();
+            }
+        }
+        Log.d(F.TAG, "Был запрошен список чатов для аккаунта, которого нет в истории: " + tgAccount.getScreenName() + " ("+tgAccount.getId()+")");
+        return new ArrayList<>();
     }
 
-    public void setMessageHistoryTgAccounts(ArrayList<MessageHistoryTgAccount> messageHistoryTgAccounts) {
-        this.messageHistoryTgAccounts = messageHistoryTgAccounts;
-    }
 
 
 
@@ -574,4 +627,77 @@ public class MessageHistory {
         }
     }
 
+
+    /**
+     * Команда "история @username"
+     * /History_@username
+     */
+    private class UserHistoryCommand extends CommandModule {
+
+        @Override
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminList.AdminListItem admin) throws Exception {
+            ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
+
+            CommandParser commandParser = new CommandParser(message.getText());
+            String word1 = commandParser.getWord().toLowerCase(Locale.ROOT);
+            if (!word1.equals("история") && !word1.equals("history") )
+                return result;
+
+            if(!admin.isAllowed(AdminList.AdminListItem.HISTORY_VIEW)){
+                result.add(new Message("Нет доступа к команде."));
+                return result;
+            }
+
+            StringBuilder sb = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
+            String username = commandParser.getWord();
+            if(username.isEmpty()) {
+                sb.append("<b>Список чатов сейчас:</b>\n\n");
+                ArrayList<MessageHistoryChat> chats = getLastChats();
+                for (MessageHistoryChat chat : chats) {
+                    sb.append("<b>");
+                    sb.append(new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(chat.getLastMessageDate()));
+                    sb.append("</b>, ");
+                    sb.append(chat.chatUser);
+                    sb.append(";\n");
+                    sb.append("⚡️ /History_");
+                    sb.append(chat.chatUser.getId());
+                    sb.append("\n\n");
+                    if(sb.length() > 3800)
+                        break;
+                }
+                result.add(new Message(sb.toString()));
+                return result;
+            }
+
+            ArrayList<Message> historyMessages = getUserHistory(username);
+            if(historyMessages.isEmpty()){
+                sb.append("<b>История сообщений</b> c ").append(username).append(" пуста.");
+            }
+            if(!historyMessages.isEmpty()){
+                Message lastMessage = historyMessages.get(0);
+                sb.append("<b>История сообщений</b> c пользователем ").append(lastMessage.getAuthor()).append(":\n");
+                sb.append("<i>(сохраняются только последние "+MessageHistoryChat.MESSAGES_LIMIT+" сообщений в чате)</i>\n\n");
+            }
+            for (Message historyMessage:historyMessages){
+                sb.append("<b>");
+                sb.append(new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(historyMessage.getDate()));
+                sb.append("</b>, ");
+                sb.append(historyMessage);
+                sb.append(";\n");
+                if(sb.length() > 3800)
+                    break;
+            }
+
+            result.add(new Message(sb.toString()));
+            return result;
+        }
+
+        @Override
+        public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
+            ArrayList<CommandDesc> result = super.getHelp(requester);
+            if(requester.isAllowed(AdminList.AdminListItem.HISTORY_VIEW))
+                result.add(new CommandDesc("История @username", "Вывести последние сообщения пользователя боту"));
+            return result;
+        }
+    }
 }

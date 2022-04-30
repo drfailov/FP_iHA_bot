@@ -95,6 +95,7 @@ public class ApplicationManager extends CommandModule {
         childCommands.add(adminList);
         childCommands.add(answerDatabase);
         childCommands.add(communicator);
+        childCommands.add(messageHistory);
         childCommands.add(new HelpCommand());
 
         //Запусе коммуникатора с задержкой, на всякий случай, чтобы успели прогрзиться остальные модули
@@ -152,6 +153,8 @@ public class ApplicationManager extends CommandModule {
                     sb += "⚡️ <b>/helpanswers</b>\nСписок команд работы с базой ответов." + "\n\n";
                 if(!adminList.getHelp(admin).isEmpty())
                     sb += "⚡️ <b>/helpadmin</b>\nСписок команд работы со списком администраторов." + "\n\n";
+                if(!messageHistory.getHelp(admin).isEmpty())
+                    sb += "⚡️ <b>/helphistory</b>\nСписок команд работы с историей сообщений." + "\n\n";
                 Message answer = new Message(sb);
                 result.add(answer);
             }
@@ -174,6 +177,20 @@ public class ApplicationManager extends CommandModule {
                 StringBuilder sb = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
                         "Список команд для работы со списком администраторов:\n\n");
                 ArrayList<CommandDesc> commands = ApplicationManager.this.getAdminList().getHelp(admin);
+                if(commands.isEmpty()){
+                    result.add(new Message("В этом разделе справки нет доступных команд."));
+                    return result;
+                }
+                for (CommandDesc commandDesc:commands)
+                    sb.append("⚡️ <b>").append(commandDesc.getExample()).append("</b>\n").append(commandDesc.getHelpText()).append("\n\n");
+                Message answer = new Message(sb.toString());
+                result.add(answer);
+            }
+
+            if(message.getText().toLowerCase(Locale.ROOT).trim().equals("/helphistory")) {
+                StringBuilder sb = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" +
+                        "Список команд для работы с историей сообщений:\n\n");
+                ArrayList<CommandDesc> commands = ApplicationManager.this.getMessageHistory().getHelp(admin);
                 if(commands.isEmpty()){
                     result.add(new Message("В этом разделе справки нет доступных команд."));
                     return result;

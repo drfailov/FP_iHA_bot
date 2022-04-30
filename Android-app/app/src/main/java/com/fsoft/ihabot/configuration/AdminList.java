@@ -150,7 +150,9 @@ public class AdminList  extends CommandModule {
     }
 
 
-
+    /**
+     * представляет обьект админа и всё его
+     */
     public static class AdminListItem{
         //Можно ли этому администратору пользоваться инфраструктурой обучения
         public static Right LEARNING = new Right("Learning", "Использовать функциональность обучения");
@@ -164,6 +166,8 @@ public class AdminList  extends CommandModule {
         public static Right ADMINS_READ = new Right("AdminsRead", "Просматривать список администраторов");
         ////Разрешить или нет добавление администраторов
         public static Right ADMINS_ADD = new Right("AdminsAdd", "Добавлять других администраторов и управлять правами");
+        //Разрешить или нет добавление администраторов
+        public static Right HISTORY_VIEW = new Right("HistoryView", "Просматривать историю сообщений пользователя");
 
         /**
          * Права списком используется для вывода юзеру списка прав в функциях где этот список формируется программно.
@@ -171,7 +175,7 @@ public class AdminList  extends CommandModule {
          * @return Массив обьектов Right. Права раздеены на блоки для наглядности. Разделитель - Null.
          */
         public static Right[] getGenericRightsList(){return new Right[]{
-                LEARNING, null, DATABASE_READ, DATABASE_EDIT, DATABASE_DUMP, null, ADMINS_READ,  ADMINS_ADD
+                LEARNING, null, DATABASE_READ, DATABASE_EDIT, DATABASE_DUMP, null, ADMINS_READ,  ADMINS_ADD, null, HISTORY_VIEW
         };}
 
 
@@ -388,6 +392,9 @@ public class AdminList  extends CommandModule {
 
             sb.append("⚡️ /HelpAdmin\n"+"<b>Просмотреть</b> справку по командам админки \n\n");
 
+            if(admin.isAllowed(HISTORY_VIEW))
+                sb.append("⚡️ /History_").append(adminListItem.user.getId()).append("\n"+"<b>Просмотреть</b> последние сообщения администратора \n\n");
+
             if(admin.isAllowed(ADMINS_ADD)) {
                 for (Right right : getGenericRightsList()) {
                     if (right != null) {
@@ -452,8 +459,8 @@ public class AdminList  extends CommandModule {
     }
 
     /**
-     * ADMINS_ADD
      * Команда "Админ добавить @username Причина добавления"
+     * ADMINS_ADD
      */
     private class AddAdminCommand extends CommandModule{
 
@@ -589,10 +596,10 @@ public class AdminList  extends CommandModule {
     }
 
     /**
-     * ADMINS_READ
      * Команда "Админ"
      * Команда "Админ @username "
      * /AdminInfo_989898
+     * ADMINS_READ
      */
     private class ShowAdminCommand extends CommandModule{
 
@@ -644,8 +651,8 @@ public class AdminList  extends CommandModule {
     }
 
     /**
-     * ADMINS_ADD
      * Команда "/AdminDelete_472147993"
+     * ADMINS_ADD
      */
     private class RemAdminCommand extends CommandModule{
         @Override
@@ -702,9 +709,9 @@ public class AdminList  extends CommandModule {
     }
 
     /**
-     * ADMINS_ADD
      * Команда "/AdminAllow_248067313_Learning"
      * Команда "/AdminDeny_248067313_DatabaseEdit"
+     * ADMINS_ADD
      */
     private class EditAdminCommand extends CommandModule{
         @Override
