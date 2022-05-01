@@ -10,6 +10,7 @@ import com.fsoft.ihabot.configuration.AdminList;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Locale;
 
 /**
  * Этот класс принимает все сообщения в телеге и тут в целом решается судьба каждого сообщения
@@ -207,10 +208,17 @@ public class MessageProcessor extends CommandModule {
         log("\nОшибок при доступе к API: " + tgAccount.getErrorCounter());
 
         if (message.getChat().getId() != message.getFrom().getId()){
-            log("Получено сообщение с чата " + message.getChat().getTitle() + ", " +
-                    "однако мы с чатами пока не работаем. " +
-                    "Игнорируем.");
-            return;
+            if(!message.getText()
+                    .toLowerCase(Locale.ROOT)
+                    .replace(",", " ")
+                    .replaceAll(" +", " ")
+                    .trim()
+                    .startsWith("бот ")){
+                log("Получено сообщение с чата " + message.getChat().getTitle() + ", " +
+                        "и в нём нет обращения. " +
+                        "Игнорируем.");
+                return;
+            }
         }
 
         //сформировать обьект вопроса
@@ -266,6 +274,7 @@ public class MessageProcessor extends CommandModule {
         log("За послежнюю минуту этот пользователь писал: " + messagesLastMinute + " раз. \n");
         if(messagesLastMinute > 15){
             log("Такое количество сообщений расценено как спам. Игнорируем. \n");
+            applicationManager.getMessageHistory().registerTelegramSpam(message.getChat(), question, tgAccount);
             return;
         }
 
