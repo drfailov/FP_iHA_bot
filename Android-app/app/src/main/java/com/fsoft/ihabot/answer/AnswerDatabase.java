@@ -69,6 +69,8 @@ import java.util.Random;
  * */
 public class AnswerDatabase  extends CommandModule {
     private static final int defaultDatabaseResourceZip = R.raw.answer_database;
+    private final ArrayList<MicroAnswerElement> tempAnswerDatabase = new ArrayList<>();
+    private boolean tempAnswerDatabaseReady = false;
     private final ApplicationManager applicationManager;
     private final JaroWinkler jaroWinkler;
     private final Synonyme synonyme;
@@ -113,7 +115,7 @@ public class AnswerDatabase  extends CommandModule {
      * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
      */
     public AnswerElement pickAnswer(Message question) throws Exception{
-        MessageRating messageRating = pickAnswers(question);
+        MessageRating messageRating = pickAnswers(question, false);
 
 
         log("-----------------------------------------------------------");
@@ -339,51 +341,92 @@ public class AnswerDatabase  extends CommandModule {
     /**
      * Подбирает ответ на вопрос исходя из базы вопросв. Эта функция просматривает файл полностью в поисках ответа.
      * @param question Входящее сообщение типа Message в исходном виде, без никакиз преобразований
+     * @param forceReadFromFile Дольше, но точнее. Поскольку статистика использования во временном хранилище не обновляется,
+     *                          для получения точной информации, необходимо загружатьответы из файла (это дольше)
      * @return MessageRating описывающий что подходит в качестве ответа
      * @author Dr. Failov
      * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
      */
-    private MessageRating pickAnswers(Message question) throws Exception{
+    private MessageRating pickAnswers(Message question, boolean forceReadFromFile) throws Exception{
         if(question.getText().split(" +").length > 7)
             throw new Exception("Я на сообщение с таким количеством слов не смогу подобрать ответ.");
         if(question.getText().length() > 40)
             throw new Exception("Я на такое длинное сообщение не смогу подобрать ответ.");
 
         MessageRating messageRating = new MessageRating(50);
+        PreparedMessage neededQuestion = prepareForCompare(question.getText());
 
-        String line;
-        int lineNumber = 0;
-        int errors = 0;
-        synchronized (fileAnswers) {
-            try(BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers))) {
-                while ((line = bufferedReader.readLine()) != null) {
-                    if (lineNumber % 1289 == 0)
-                        log(". Поиск ответа в базе (" + lineNumber + " уже проверено) ...");
-                    try {
-                        JSONObject jsonObject = new JSONObject(line);
-                        AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
-                        String currentQuestion = currentAnswerElement.getQuestionMessage().getText();
-                        String neededQuestion = question.getText();
+        if(tempAnswerDatabase.isEmpty() || forceReadFromFile) {
+            log("[tempAnswerDatabase] Будем читать ответы из файла. Сейчас будем заполнять временную базу!");
+            String line;
+            int lineNumber = 0;
+            int errors = 0;
+            synchronized (fileAnswers) {
+                try (BufferedReader bufferedReader = new BufferedReader(new FileReader(fileAnswers))) {
+                    tempAnswerDatabaseReady = false;
+                    tempAnswerDatabase.clear();
+                    while ((line = bufferedReader.readLine()) != null) {
+                        if (lineNumber % 1289 == 0)
+                            log(". Поиск ответа в большой базе (" + lineNumber + " уже проверено) ...");
+                        try {
+                            JSONObject jsonObject = new JSONObject(line);
+                            AnswerElement currentAnswerElement = new AnswerElement(jsonObject);
+                            String currentQuestionText = currentAnswerElement.getQuestionMessage().getText();
+                            PreparedMessage currentQuestion = prepareForCompare(currentQuestionText);
+                            tempAnswerDatabase.add(new MicroAnswerElement(currentQuestion, currentAnswerElement));
 
-                        double similarity = compareMessages(neededQuestion, currentQuestion);
+                            double similarity = compareMessages(neededQuestion, currentQuestion);
 
-                        messageRating.addAnswer(currentAnswerElement, similarity);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        errors++;
-                        log("! Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                            messageRating.addAnswer(currentAnswerElement, similarity);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            errors++;
+                            log("! Ошибка разбора строки " + lineNumber + " как ответа из базы.\n" + e.getMessage());
+                        }
+                        lineNumber++;
                     }
-                    lineNumber++;
+                }
+                catch (Exception e){
+                    tempAnswerDatabaseReady = false;
+                    tempAnswerDatabase.clear();
+                    throw e;
+                }
+                finally {
+                    tempAnswerDatabaseReady = true;
                 }
             }
+            if (errors != 0)
+                log("! При загрузке базы ответов возникло ошибок: " + errors + ".");
         }
-        if (errors != 0)
-            log("! При загрузке базы ответов возникло ошибок: " + errors + ".");
+        else {
+            if(!tempAnswerDatabaseReady) {
+                log("[tempAnswerDatabase] Другой поток сейчас работает с временной базой. " +
+                        "Она скоро должна быть готова к работе. " +
+                        "Подождём, но не дольше 60 сек.");
+                Calendar calendar = Calendar.getInstance();
+                long waitUntil = calendar.getTime().getTime() + 60L * 1000L;
+                while (!tempAnswerDatabaseReady) {
+                    if (calendar.getTime().getTime() > waitUntil)
+                        break;
+                    Thread.yield();
+                }
+                if(tempAnswerDatabaseReady) log("[tempAnswerDatabase] Ура, дождались. Временная база готова к работе.");
+                else log("[tempAnswerDatabase] НЕ ДОЖДАЛИСЬ! С временной базой что-то не так!");
+            }
+            int lineNumber = 0;
+            for (MicroAnswerElement microAnswerElement:tempAnswerDatabase){
+                if (lineNumber % 3289 == 0)
+                    log(". Поиск ответа во временной базе (" + lineNumber + " уже проверено) ...");
+                PreparedMessage currentQuestion = microAnswerElement.questionMessage;
+                double similarity = compareMessages(neededQuestion, currentQuestion);
+                messageRating.addAnswer(microAnswerElement.answerElement, similarity);
+                lineNumber++;
+            }
+        }
         System.gc();
 
         return messageRating;
     }
-
 
     /**
      * выдаёт список последних 100 ответов которые были добавлены администратором. Эта функция просматривает файл полностью в поисках ответа.
@@ -507,6 +550,8 @@ public class AnswerDatabase  extends CommandModule {
             }
         }
 
+        log("[tempAnswerDatabase] Основная база была изменена. Стираю временную, чтобы она пересоздалась.");
+        tempAnswerDatabase.clear();
 
         return answerElement;
     }
@@ -615,6 +660,9 @@ public class AnswerDatabase  extends CommandModule {
                 log("!!! Возникла проблема с заменой базы данных! Восстановление резервной копии: " + databaseTmpStorage.getName());
                 log("Замена базы из файла резервной кории: " + databaseTmpStorage.renameTo(fileAnswers));
             }
+            log("[tempAnswerDatabase] Основная база была изменена. Стираю временную, чтобы она пересоздалась.");
+            tempAnswerDatabase.clear();
+            System.gc();
         }
         return changed;
     }
@@ -724,14 +772,48 @@ public class AnswerDatabase  extends CommandModule {
         return answer;
     }
 
-    private String compareMessagesLastS1Text = ""; //данные для оптимизации compareMessages. Хранит строку с прошлого вызова, чтобы понять актуальны ли следующие поля
-    private boolean compareMessagesLastS1Empty = false; //данные для оптимизации compareMessages. Хранит информацию о том оказалась ли строка с прошлого вызова пустой
-    private boolean compareMessagesLastS1Question = false; //данные для оптимизации compareMessages. Хранит информацию о том содержала ли строка с прошлого вызова вопрос
-    private ArrayList<String> compareMessagesLastS1Words = new ArrayList<>(); //данные для оптимизации compareMessages. Хранит преобразованную строку с прошлого вызова готовую к сравнению
-    private String compareMessagesLastS2Text = ""; //данные для оптимизации compareMessages. Хранит строку с прошлого вызова, чтобы понять актуальны ли следующие поля
-    private boolean compareMessagesLastS2Empty = false; //данные для оптимизации compareMessages. Хранит информацию о том оказалась ли строка с прошлого вызова пустой
-    private boolean compareMessagesLastS2Question = false; //данные для оптимизации compareMessages. Хранит информацию о том содержала ли строка с прошлого вызова вопрос
-    private ArrayList<String> compareMessagesLastS2Words = new ArrayList<>(); //данные для оптимизации compareMessages. Хранит преобразованную строку с прошлого вызова готовую к сравнению
+    /**
+     * Содержит изуродованную строку готовую для сравнения
+     */
+    private static class PreparedMessage {  //данные для оптимизации compareMessages.
+        String originalText = ""; //Хранит строку с прошлого вызова, чтобы понять актуальны ли следующие поля
+        boolean empty = false; //Хранит информацию о том оказалась ли строка с прошлого вызова пустой
+        boolean question = false; //Хранит информацию о том содержала ли строка с прошлого вызова вопрос
+        ArrayList<String> words = null; //Хранит преобразованную строку с прошлого вызова готовую к сравнению
+    }
+
+    /**
+     * Уродует строку так, чтобы её было проще сравнивать алгоритмами.
+     * @param s1 строка на входе
+     * @return изуродованный обьект готовый для сравнения
+     */
+    private PreparedMessage prepareForCompare(String s1){
+        PreparedMessage result = new PreparedMessage();
+        result.originalText = s1;
+        //log("IN        :" + s1);//Пример: "бОт , ОпАчКи, ты бот. ПривЁЁёётик как ДелииишкИ ?!?!?! ??! )))"
+        s1 = s1.toLowerCase(Locale.ROOT); //привести текст входящего сообшения к нижнему регистру
+        //log("LOWCASE   :" + s1); //Пример: "бот , опачки, ты бот. привёёёётик как делииишки ?!?!?! ??! )))"
+        s1 = removeTreatment(s1); //убрать обращение бот
+        //log("TREATMENT :" + s1); //Пример: " опачки, ты бот. привёёёётик как делииишки ?!?!?! ??! )))"
+        //s1 = passOnlyLastSentence(s1); //оставить только последнее предложение
+        //log("LAST SENT :" + s1); //Пример: " привёёёётик как делииишки ?!?!?! ??! )))"
+        result.question = isQuestion(s1); //Сохранить информацию о том есть ли знак вопроса или слово вопроса
+        s1 = filterSymbols(s1); //Убрать все символы и знаки, оставить только текст
+        //log("FILTER    :" + s1); //Пример: " привёёёётик как делииишки   "
+        result.empty = s1.isEmpty();  //проверить не оказывается ли у нас пустая строка
+        if(result.empty) return result; //если после этого всего строка оказывается пустая - результат сравнения точно 0
+        s1 = replacePhoneticallySimilarLetters(s1); //Заменить символы которые часто забивают писать (ё ъ щ)
+        //log("PHONETIC  :" + s1); //Пример: " привеееетик как делииишки   "
+        s1 = removeRepeatingSymbols(s1); //устранить любые символы повторяющиеся несколько раз
+        //log("REPEATING :" + s1); //Пример: " приветик как делишки   "
+        s1 = synonyme.replaceSynonyms(s1); //заменить синонимы (полнотекстовым образом в нижнем регистре)
+        //log("SYNONYMS  :" + s1); //Пример: " привет как дела   "
+        s1 = s1.trim(); //Тримануть
+        //log("TRIM      :" + s1); //Пример: "привет как дела"
+        result.words = new ArrayList<>(Arrays.asList(s1.split(" ")));//разложить на слова
+        //log("ARRAY     :" + result.words); //Пример: ["привет","как","дела"]
+        return result;
+    }
 
     /**
      * Сравнивает две фразы.
@@ -760,73 +842,28 @@ public class AnswerDatabase  extends CommandModule {
      * @param s2 Входная строка2 для сравнения
      * @return Коэффициент похожести фраз. На данный момент 0.6 = полное сходство.
      */
-    private double compareMessages(String s1, String s2){
-        if(compareMessagesLastS1Text.equals(s1) && compareMessagesLastS1Empty)
+    private double compareMessages(PreparedMessage s1, PreparedMessage s2){
+        if(s1 == null)
             return 0;
-        if(compareMessagesLastS2Text.equals(s2) && compareMessagesLastS2Empty)
+        if(s2 == null)
             return 0;
-        if(!compareMessagesLastS1Text.equals(s1)){
-            compareMessagesLastS1Text = s1;
-            log("IN        :" + s1);//Пример: "бОт , ОпАчКи, ты бот. ПривЁЁёётик как ДелииишкИ ?!?!?! ??! )))"
-            s1 = s1.toLowerCase(Locale.ROOT); //привести текст входящего сообшения к нижнему регистру
-            log("LOWCASE   :" + s1); //Пример: "бот , опачки, ты бот. привёёёётик как делииишки ?!?!?! ??! )))"
-            s1 = removeTreatment(s1); //убрать обращение бот
-            log("TREATMENT :" + s1); //Пример: " опачки, ты бот. привёёёётик как делииишки ?!?!?! ??! )))"
-            s1 = passOnlyLastSentence(s1); //оставить только последнее предложение
-            log("LAST SENT :" + s1); //Пример: " привёёёётик как делииишки ?!?!?! ??! )))"
-            compareMessagesLastS1Question = isQuestion(s1); //Сохранить информацию о том есть ли знак вопроса или слово вопроса
-            s1 = filterSymbols(s1); //Убрать все символы и знаки, оставить только текст
-            log("FILTER    :" + s1); //Пример: " привёёёётик как делииишки   "
-            compareMessagesLastS1Empty = s1.isEmpty();  //проверить не оказывается ли у нас пустая строка
-            if(compareMessagesLastS1Empty) return 0; //если после этого всего строка оказывается пустая - результат сравнения точно 0
-            s1 = replacePhoneticallySimilarLetters(s1); //Заменить символы которые часто забивают писать (ё ъ щ)
-            log("PHONETIC  :" + s1); //Пример: " привеееетик как делииишки   "
-            s1 = removeRepeatingSymbols(s1); //устранить любые символы повторяющиеся несколько раз
-            log("REPEATING :" + s1); //Пример: " приветик как делишки   "
-            s1 = synonyme.replaceSynonyms(s1); //заменить синонимы (полнотекстовым образом в нижнем регистре)
-            log("SYNONYMS  :" + s1); //Пример: " привет как дела   "
-            s1 = s1.trim(); //Тримануть
-            log("TRIM      :" + s1); //Пример: "привет как дела"
-            compareMessagesLastS1Words = new ArrayList<>(Arrays.asList(s1.split(" ")));//разложить на слова
-            log("ARRAY     :" + compareMessagesLastS1Words); //Пример: ["привет","как","дела"]
-        }
-        if(!compareMessagesLastS2Text.equals(s2)){
-            compareMessagesLastS2Text = s2;
-            //Пример: "бОт , ОпАчКи, ты бот. ПривЁЁёётик как ДелииишкИ ?!?!?! ??! )))"
-            s2 = s2.toLowerCase(Locale.ROOT); //привести текст входящего сообшения к нижнему регистру
-            //Пример: "бот , опачки, ты бот. привёёёётик как делииишки ?!?!?! ??! )))"
-            s2 = removeTreatment(s2); //убрать обращение бот
-            //Пример: " опачки, ты бот. привёёёётик как делииишки ?!?!?! ??! )))"
-            s2 = passOnlyLastSentence(s2); //оставить только последнее предложение
-            compareMessagesLastS2Question = isQuestion(s2); //Сохранить информацию о том есть ли знак вопроса или слово вопроса
-            //Пример: " привёёёётик как делииишки ?!?!?! ??! )))"
-            s2 = filterSymbols(s2); //Убрать все символы и знаки, оставить только текст
-            compareMessagesLastS2Empty = s2.isEmpty();  //проверить не оказывается ли у нас пустая строка
-            if(compareMessagesLastS2Empty) return 0; //если после этого всего строка оказывается пустая - результат сравнения точно 0
-            //Пример: " привёёёётик как делииишки   "
-            s2 = replacePhoneticallySimilarLetters(s2); //Заменить символы которые часто забивают писать (ё ъ щ)
-            //Пример: " привеееетик как делииишки   "
-            s2 = removeRepeatingSymbols(s2); //устранить любые символы повторяющиеся несколько раз
-            //Пример: " приветик как делишки   "
-            s2 = synonyme.replaceSynonyms(s2); //заменить синонимы (полнотекстовым образом в нижнем регистре)
-            //Пример: " привет как дела   "
-            s2 = s2.trim(); //Тримануть
-            //Пример: "привет как дела"
-            compareMessagesLastS2Words = new ArrayList<>(Arrays.asList(s2.split(" ")));//разложить на слова
-            //Пример: ["привет","как","дела"]
-        }
-
+        if(s1.empty)
+            return 0;
+        if(s2.empty)
+            return 0;
+        if(s1.words == null)
+            return 0;
+        if(s2.words == null)
+            return 0;
 
         //сравнить все слова со всеми  по алгоритму Жаро-Винклера
-
-
         double similaritySum = 0;
-        for (String word2:compareMessagesLastS2Words){
-            if(compareMessagesLastS1Words.contains(word2))
+        for (String word2:s2.words){
+            if(s1.words.contains(word2))
                 similaritySum += 1;
             else {
                 double maxForWord = 0;
-                for (String word1 : compareMessagesLastS1Words) {
+                for (String word1 : s1.words) {
                     double similarity = jaroWinkler.similarity(word2, word1);
                     if (similarity > maxForWord)
                         maxForWord = similarity;
@@ -834,14 +871,14 @@ public class AnswerDatabase  extends CommandModule {
                 similaritySum += maxForWord*0.7;
             }
         }
-        double result = similaritySum / compareMessagesLastS2Words.size();
+        double result = similaritySum / s2.words.size();
 
         //учесть знак вопроса
-        if(compareMessagesLastS1Question == compareMessagesLastS2Question)
+        if(s1.question == s2.question)
             result += 0.1;
 
         //учесть количество слов. Чем сильнее оно отличается, тем меньше строки похожи.
-        result -= ((double) Math.abs(compareMessagesLastS2Words.size()-compareMessagesLastS1Words.size())) * 0.1d;
+        result -= ((double) Math.abs(s2.words.size()-s1.words.size())) * 0.1d;
 
         return result;
     }
@@ -1306,6 +1343,19 @@ public class AnswerDatabase  extends CommandModule {
                     return;
                 }
             }
+        }
+    }
+
+    /**
+     * Микро версия ответа, который используется для оптимизированного подбора ответа
+     */
+    private static class MicroAnswerElement{
+        private PreparedMessage questionMessage = null;
+        private AnswerElement answerElement = null;
+
+        public MicroAnswerElement(PreparedMessage questionMessage, AnswerElement answerElement) {
+            this.questionMessage = questionMessage;
+            this.answerElement = answerElement;
         }
     }
 
@@ -1880,7 +1930,7 @@ public class AnswerDatabase  extends CommandModule {
                 for (Attachment attachment:message.getAttachments())
                     question.addAttachment(attachment);
 
-                MessageRating messageRating = pickAnswers(question);
+                MessageRating messageRating = pickAnswers(question, true);
 
                 StringBuilder stringBuilder = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
                 stringBuilder.append("Вот список ответов в базе, подобранных на вопрос:\n");
