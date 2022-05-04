@@ -95,6 +95,7 @@ public class AnswerDatabase  extends CommandModule {
             loadDefaultDatabase();
         }
 
+        childCommands.add(new Learning());
         childCommands.add(new DumpCommand());
         childCommands.add(new RestoreCommand());
         childCommands.add(new DownloadCommand());
@@ -1359,6 +1360,46 @@ public class AnswerDatabase  extends CommandModule {
         }
     }
 
+    private static class Learning extends CommandModule{
+        String instruction = "<b>Как обучать бота:</b>\n\n" +
+                "1. Общаемся с ботом. Если видим что бот ответил плохо, исправляем.\n\n" +
+                "2. С помощью команды <b>\"Ответы на ...\"</b> выясняем какие есть варианты ответа в базе.\n\n" +
+                "3. Если в базе нет нужного ответа, добавляем с помощью команды <b>\"Запомни\"</b>. \n" +
+                "В вопросе следует оставить только те слова, к которым ответ подходит.\n\n" +
+                "4. Если в базе есть нужный ответ, значит он был использован неправильно. Нужно исправлять.\n\n" +
+                "5. Удаляем этот неправильный ответ с помощью команды <b>\"забудь ...\"</b> (ID ответа взять из пункта 2).\n\n" +
+                "6. Если этот вопрос состоял из нескольких частей, разделяем его на части и на каждую часть отвечаем отдельно.\n" +
+                "Пример неправильного вопроса: \n" +
+                "<i>\"Быстро нахуй пошёл! Долой с глаз моих!\"</i> Разделяем на: <i>\"Быстро\"</i>, <i>\"Нахуй пошёл\"</i> и <i>\"Долой с глаз\"</i>. \n" +
+                "На каждый из этих вопросов добавляем ответ.\n\n" +
+                "7. Пример как добавлять ответ. Это делается в 3 сообщения:\n" +
+                "<b> > Запомни </b>    (бот ответит инструкцией)\n" +
+                "<b> > Быстро </b>     (бот сохранит вопрос но не ответит)\n" +
+                "<b> > Бегу и падаю! </b>   (бот сохранит ответ и пришлёт отчёт)";
+
+
+        @Override
+        public ArrayList<Message> processCommand(Message message, TgAccount tgAccount, AdminList.AdminListItem admin) throws Exception{
+            ArrayList<Message> result = super.processCommand(message, tgAccount, admin);
+            if(message.getText().toLowerCase(Locale.ROOT).trim().equals("обучение")){
+                if (!admin.isAllowed(AdminList.AdminListItem.LEARNING)){
+                    result.add(new Message("Нет доступа к команде."));
+                    return result;
+                }
+                result.add(new Message("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n" + instruction));
+            }
+            return result;
+        }
+
+        @Override
+        public ArrayList<CommandDesc> getHelp(AdminList.AdminListItem requester) {
+            ArrayList<CommandDesc> result = super.getHelp(requester);
+            if (requester.isAllowed(AdminList.AdminListItem.LEARNING))
+                result.add(new CommandDesc("Обучение", "Отправить инструкцию по обучению."));
+            return result;
+        }
+    }
+
     /**
      * Команда "выгрузить базу"
      * DATABASE_DUMP
@@ -1930,7 +1971,7 @@ public class AnswerDatabase  extends CommandModule {
                 for (Attachment attachment:message.getAttachments())
                     question.addAttachment(attachment);
 
-                MessageRating messageRating = pickAnswers(question, true);
+                MessageRating messageRating = pickAnswers(question, false);
 
                 StringBuilder stringBuilder = new StringBuilder("Ответ на команду \"<b>"+message.getText() + "</b>\"\n\n");
                 stringBuilder.append("Вот список ответов в базе, подобранных на вопрос:\n");
