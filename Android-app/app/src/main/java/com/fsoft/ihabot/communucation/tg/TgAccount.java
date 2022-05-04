@@ -54,17 +54,21 @@ public class TgAccount extends TgAccountCore {
         messageProcessor.sendAnswer(chatId, message);
     }
     /**
-     * Блокирующая(!) версия функции для выгрузки файла
+     * Блокирующая(!) версия функции для скачивания файла из телеграма в локальное хранилище.
+     * Файл будет сохранен под автоматически выбранным именем во временной папке.
+     * @param fileId FileID с серверов телеграма
+     * @return Файл который скачан во временную папку
+     * @throws Exception работаем с фалами и сетью. Может случиться что угодно.
      */
     public java.io.File downloadPhotoAttachment(String fileId) throws Exception{
-        log("Попытка получить ссылку для скачивания файла фото вложения...");
+        log("Попытка получить ссылку для скачивания файла вложения...");
         final ArrayList<java.io.File> files = new ArrayList<>();
         final ArrayList<Exception> exceptions = new ArrayList<>();
         getFile(new GetFileListener() {
             @Override
             public void gotFile(File file) {
                 if(file.getFile_path() == null || file.getFile_path().isEmpty()){
-                    exceptions.add(new Exception("Телеграм не прислал ссылку на файл для скачивания фото."));
+                    exceptions.add(new Exception("Телеграм не прислал ссылку на файл для скачивания."));
                     return;
                 }
                 String directLink = "https://api.telegram.org/file/bot"+getId()+":"+getToken() + "/" + file.getFile_path();
@@ -95,18 +99,18 @@ public class TgAccount extends TgAccountCore {
                     mue.printStackTrace();
                     return;
                 } catch (IOException ioe) {
-                    exceptions.add(new Exception(log("Ошибка IOException скачивания файла фото: " + ioe.getLocalizedMessage())));
+                    exceptions.add(new Exception(log("Ошибка IOException скачивания файла: " + ioe.getLocalizedMessage())));
                     ioe.printStackTrace();
                     return;
                 } catch (SecurityException se) {
-                    exceptions.add(new Exception(log("Ошибка SecurityException скачивания файла фото: " + se.getLocalizedMessage())));
+                    exceptions.add(new Exception(log("Ошибка SecurityException скачивания файла: " + se.getLocalizedMessage())));
                     se.printStackTrace();
                     return;
                 }
                 if(placeToSave.isFile())
                     files.add(placeToSave);
                 else
-                    exceptions.add(new Exception(log("Всё вроде прошло норм, но файл фото не был скачан.")));
+                    exceptions.add(new Exception(log("Всё вроде прошло норм, но фото не был скачан.")));
             }
 
             @Override
@@ -120,7 +124,7 @@ public class TgAccount extends TgAccountCore {
         //ждать пока что-то появится либо пока не будет какая-то ошибка, либо таймаут 30 секунд
         while (files.isEmpty() && exceptions.isEmpty()){
             if(Calendar.getInstance().getTime().getTime() - started.getTime() > 60000) {
-                throw new TimeoutException("Таймаут, файл фото не получилось скачать.");
+                throw new TimeoutException("Таймаут, файл не получилось скачать.");
             }
         }
         if(!files.isEmpty()){

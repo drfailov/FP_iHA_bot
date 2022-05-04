@@ -701,7 +701,7 @@ public class TgAccountCore extends Account {
                     return params;
                 }
             };
-
+            multipartRequest.setRetryPolicy(new DefaultRetryPolicy( 60000, 5, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
             queue.add(multipartRequest);
         }
         catch (Exception e){
