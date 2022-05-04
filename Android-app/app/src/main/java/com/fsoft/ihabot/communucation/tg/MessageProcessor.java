@@ -428,35 +428,77 @@ public class MessageProcessor extends CommandModule {
         else {
             for (Attachment attachment : answer.getAttachments()) {
                 //send photo
-                if(attachment.isPhoto() && attachment.isLocal()){
-                    File file = new File(applicationManager.getAnswerDatabase().getFolderAttachments(), attachment.getAttachmentsFilename());
-                    long reply_to_message_id = 0;
+                if(attachment.isPhoto()){
+                    long reply_to_message_id_n = 0;
                     if(answer.getReplyToMessage() != null)
-                        reply_to_message_id = answer.getReplyToMessage().getMessage_id();
-                    tgAccount.sendPhoto(new TgAccountCore.SendMessageListener() {
-                        @Override
-                        public void sentMessage(Message message) {
-                            log("Отправлено фото: " + message.toString());
-                            String photoId = message.getPhotoId();
-                            if(photoId != null){
-                                log("ID загруженной фотографии: " + photoId);
-                                try {
-                                    applicationManager.getAnswerDatabase().updateAnswerAttachmentFileId(file.getName(), photoId, tgAccount.getId());
-                                }
-                                catch (Exception e){
-                                    e.printStackTrace();
-                                    log("Не могу записать в базу айдишник фотографии: " + e.getLocalizedMessage());
+                        reply_to_message_id_n = answer.getReplyToMessage().getMessage_id();
+                    final long reply_to_message_id = reply_to_message_id_n;
+                    if(attachment.isOnlineTg(tgAccount.getId())){
+                        String fileId = attachment.getTgFileID(tgAccount.getId());
+                        tgAccount.sendPhoto(new TgAccountCore.SendMessageListener() {
+                            @Override
+                            public void sentMessage(Message message) {
+                                log("Отправлено фото по FileID: " + message.toString());
+                                incrementMessagesSentCounter();
+                            }
+
+                            @Override
+                            public void error(Throwable error) {
+                                log(error.getClass().getName() + " while sending photo by ID");
+                                if(attachment.isLocal()) {
+                                    log("Rejecting photo ID...");
+                                    File file = new File(applicationManager.getAnswerDatabase().getFolderAttachments(), attachment.getAttachmentsFilename());
+                                    try {
+                                        applicationManager.getAnswerDatabase().updateAnswerAttachmentFileId(file.getName(), null, tgAccount.getId());
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                        log("Не могу записать в базу айдишник фотографии: " + e.getLocalizedMessage());
+                                    }
+
+                                    log("Send photo again as file...");
+                                    tgAccount.sendPhoto(new TgAccountCore.SendMessageListener() {
+                                        @Override
+                                        public void sentMessage(Message message) {
+                                            log("Отправлено фото: " + message.toString());
+                                            incrementMessagesSentCounter();
+                                        }
+
+                                        @Override
+                                        public void error(Throwable error) {
+                                            log(error.getClass().getName() + " while sending photo");
+                                        }
+                                    }, chatId, answer.getText(), file, reply_to_message_id);
                                 }
                             }
-                            incrementMessagesSentCounter();
-                        }
+                        }, chatId, answer.getText(), fileId, reply_to_message_id);
+                    }
+                    else if(attachment.isLocal()) {
+                        File file = new File(applicationManager.getAnswerDatabase().getFolderAttachments(), attachment.getAttachmentsFilename());
+                        tgAccount.sendPhoto(new TgAccountCore.SendMessageListener() {
+                            @Override
+                            public void sentMessage(Message message) {
+                                log("Отправлено фото: " + message.toString());
+                                String photoId = message.getPhotoId();
+                                if (photoId != null) {
+                                    log("ID загруженной фотографии: " + photoId);
+                                    try {
+                                        applicationManager.getAnswerDatabase().updateAnswerAttachmentFileId(file.getName(), photoId, tgAccount.getId());
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                        log("Не могу записать в базу айдишник фотографии: " + e.getLocalizedMessage());
+                                    }
+                                }
+                                incrementMessagesSentCounter();
+                            }
 
-                        @Override
-                        public void error(Throwable error) {
-                            log(error.getClass().getName() + " while sending photo");
-                        }
-                    }, chatId, answer.getText(), file, reply_to_message_id);
+                            @Override
+                            public void error(Throwable error) {
+                                log(error.getClass().getName() + " while sending photo");
+                            }
+                        }, chatId, answer.getText(), file, reply_to_message_id);
+                    }
                 }
+
 
                 //send document, from attachment or from file
                 if(attachment.isDoc() && attachment.isLocal()){

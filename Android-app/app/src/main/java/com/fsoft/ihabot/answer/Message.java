@@ -191,7 +191,7 @@ public class Message {
      * Эта функция предназначена для использования в базе ответов: когда файл выгружен на сервер,
      * в базу ответов вносятся его FileID
      * @param filename Имя файла из папки вложений (не путь), который мы ищем
-     * @param fileID Данные которые надо прикрепить к Attachment
+     * @param fileID Данные которые надо прикрепить к Attachment (null = отозвать)
      */
     public void addAttachmentFileID(String filename, String fileID, long botId){
         for (Attachment attachment:attachments){

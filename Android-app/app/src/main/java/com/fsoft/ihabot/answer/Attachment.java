@@ -169,7 +169,10 @@ public class Attachment {
     }
 
     public void updateTgFile_id(long botId, String file_id) {
-        if(!isOnlineTg(botId)) {
+        if(file_id == null){ //отозвать ID
+            onlineFiles.clear();
+        }
+        else if(!isOnlineTg(botId)) {
             OnlineFile onlineFile = new OnlineFile(file_id, botId);
             onlineFiles.add(onlineFile);
         }

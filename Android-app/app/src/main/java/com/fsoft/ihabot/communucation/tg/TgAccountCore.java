@@ -210,6 +210,8 @@ public class TgAccountCore extends Account {
             @Override
             public void onErrorResponse(VolleyError error) {
                 log(error.getClass().getName() + " while sending request: " + url);
+                if(error.networkResponse != null)
+                    log(new String(error.networkResponse.data));
                 listener.error(error);
                 error.printStackTrace();
                 incrementErrorCounter();
@@ -261,6 +263,8 @@ public class TgAccountCore extends Account {
             @Override
             public void onErrorResponse(VolleyError error) {
                 log(error.getClass().getName() + " while sending request: " + url);
+                if(error.networkResponse != null)
+                    log(new String(error.networkResponse.data));
                 listener.error(error);
                 error.printStackTrace();
                 incrementErrorCounter();
@@ -324,6 +328,8 @@ public class TgAccountCore extends Account {
             public void onErrorResponse(VolleyError error) {
                 //Caused by: java.net.UnknownHostException: Unable to resolve host "api.telegram.org": No address associated with hostname
                 log(error.getClass().getName() + " while sending request: " + url);
+                if(error.networkResponse != null)
+                    log(new String(error.networkResponse.data));
                 error.printStackTrace();
                 listener.error(error);
                 incrementErrorCounter();
@@ -445,6 +451,8 @@ public class TgAccountCore extends Account {
             @Override
             public void onErrorResponse(VolleyError error) {
                 log(error.getClass().getName() + " while sending request: " + url);
+                if(error.networkResponse != null)
+                    log(new String(error.networkResponse.data));
                 listener.error(error);
                 error.printStackTrace();
                 incrementErrorCounter();
@@ -496,6 +504,8 @@ public class TgAccountCore extends Account {
             @Override
             public void onErrorResponse(VolleyError error) {
                 log(error.getClass().getName() + " while sending request: " + url);
+                if(error.networkResponse != null)
+                    log(new String(error.networkResponse.data));
                 listener.error(error);
                 error.printStackTrace();
                 incrementErrorCounter();
@@ -540,6 +550,8 @@ public class TgAccountCore extends Account {
             @Override
             public void onErrorResponse(VolleyError error) {
                 log(error.getClass().getName() + " while sendChatAction: " + url);
+                if(error.networkResponse != null)
+                    log(new String(error.networkResponse.data));
                 error.printStackTrace();
                 incrementErrorCounter();
             }
@@ -548,6 +560,15 @@ public class TgAccountCore extends Account {
         //stringRequest.setRetryPolicy(new DefaultRetryPolicy( 30000, 5, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
         queue.add(stringRequest);
     }
+
+    /**
+     * Отправить этим аккаунтом телеграма фото как фото. Ограничение составляет 9 мегабайт.
+     * @param listener Что делать при успешной загрузке либо при ошибке
+     * @param chat_id Айди чата к кому надо отправлять.
+     * @param text Подпись к фото (ограничение 1020 символов)
+     * @param f Собственно файл фото. У программы должен быть полный к нему доступ.
+     * @param reply_to_message_id Если нужно отправить сообщение как ответ, использовать айди сообшения в чате. Если нет, отправить 0
+     */
     public void sendPhoto(final SendMessageListener listener, final long chat_id, final String text, final java.io.File f, final long reply_to_message_id){
         try {
             if(!f.isFile())
@@ -591,6 +612,8 @@ public class TgAccountCore extends Account {
                 @Override
                 public void onErrorResponse(VolleyError error) {
                     log("Upload photo error: " + error.networkResponse);
+                    if(error.networkResponse != null)
+                        log(new String(error.networkResponse.data));
                     error.printStackTrace();
                 }
             }) {
@@ -623,6 +646,82 @@ public class TgAccountCore extends Account {
             if(listener != null)
                 listener.error(e);
         }
+    }
+
+    /**
+     * Отправить этим аккаунтом телеграма фото как фото. FileID должен быть ранее создан этим же аккаунтом бота. чтобы это сработало.
+     * @param listener Что делать при успешной загрузке либо при ошибке
+     * @param chat_id Айди чата к кому надо отправлять.
+     * @param text Подпись к фото (ограничение 1020 символов)
+     * @param fileId Собственно FileID фото, которое уже было ранее отправлено ЭТИМ ЖЕ АККАУТОМ БОТА.
+     * @param reply_to_message_id Если нужно отправить сообщение как ответ, использовать айди сообшения в чате. Если нет, отправить 0
+     */
+    public void sendPhoto(final SendMessageListener listener, final long chat_id, final String text, final String fileId, final long reply_to_message_id){
+        JSONObject jsonObject = new JSONObject();
+        try {
+            //text = URLEncoder.encode(text, "UTF-8");
+            jsonObject.put("chat_id", chat_id);
+            jsonObject.put("photo", fileId);
+            jsonObject.put("parse_mode", "HTML");
+            if(text.length() > 1020)
+                jsonObject.put("caption", text.substring(0, 1020));
+            else
+                jsonObject.put("caption", text);
+            if(reply_to_message_id != 0){
+                jsonObject.put("reply_to_message_id", reply_to_message_id);
+            }
+        }
+        catch (Exception e){
+            log("! Error building JSON: " + e.toString());
+            e.printStackTrace();
+        }
+        final String url ="https://api.telegram.org/bot"+getId()+":"+getToken()+"/sendPhoto";//?chat_id="+chat_id+"&text="+text;
+        log("Sending photo by ID: " + url);
+        log(jsonObject.toString());
+        incrementApiCounter();
+        // Request a string response from the provided URL.
+        JsonObjectRequest stringRequest = new JsonObjectRequest(Request.Method.POST, url, jsonObject,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject jsonObject) {
+                        try{
+                            log("Sending photo by ID response: " + jsonObject.toString());
+                            if(!jsonObject.has("ok")) {
+                                incrementErrorCounter();
+                                listener.error(new Exception("No OK in response!"));
+                                return;
+                            }
+                            if(!jsonObject.getBoolean("ok")){
+                                incrementErrorCounter();
+                                listener.error(new Exception(jsonObject.optString("description", "No description")));
+                                return;
+                            }
+                            JSONObject result = jsonObject.getJSONObject("result");
+                            Message message = new Message(result);
+                            listener.sentMessage(message);
+                            state("Успешно отправлено фото по FileID");
+                        }
+                        catch (Exception e){
+                            listener.error(e);
+                            e.printStackTrace();
+                            incrementErrorCounter();
+                        }
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                //Caused by: java.net.UnknownHostException: Unable to resolve host "api.telegram.org": No address associated with hostname
+                log(error.getClass().getName() + " while sending request: " + url);
+                if(error.networkResponse != null)
+                    log(new String(error.networkResponse.data));
+                //error.printStackTrace();
+                listener.error(error);
+                incrementErrorCounter();
+            }
+        });
+        stringRequest.setRetryPolicy(new DefaultRetryPolicy( 30000, 5, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        // Add the request to the RequestQueue.
+        queue.add(stringRequest);
     }
 
     /**
@@ -676,6 +775,8 @@ public class TgAccountCore extends Account {
                 @Override
                 public void onErrorResponse(VolleyError error) {
                     log("Upload document error: " + error.networkResponse);
+                    if(error.networkResponse != null)
+                        log(new String(error.networkResponse.data));
                     error.printStackTrace();
                 }
             }) {
@@ -760,6 +861,8 @@ public class TgAccountCore extends Account {
             @Override
             public void onErrorResponse(VolleyError error) {
                 log(error.getClass().getName() + " while sending request: " + url);
+                if(error.networkResponse != null)
+                    log(new String(error.networkResponse.data));
                 error.printStackTrace();
                 listener.error(error);
                 incrementErrorCounter();
@@ -819,6 +922,8 @@ public class TgAccountCore extends Account {
             @Override
             public void onErrorResponse(VolleyError error) {
                 log(error.getClass().getName() + " while sending request: " + url);
+                if(error.networkResponse != null)
+                    log(new String(error.networkResponse.data));
                 error.printStackTrace();
                 listener.error(error);
                 incrementErrorCounter();

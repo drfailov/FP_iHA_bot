@@ -145,16 +145,20 @@ public class AnswerDatabase  extends CommandModule {
      * Производится полный проход по базе, по всем вложениям. И везде где в ответе во вложении используется файл filename,
      * вписывается fileId для дальнейшего использования при отправке.
      * @param filename Имя файла из папки вложений, который был отправлен
-     * @param fileId ID файла на сервере телеграм, который следует внести в базу
+     * @param fileId ID файла на сервере телеграм, который следует внести в базу. Если NULL значит нужно отозвать ID для этого фалйа
      * @author Dr. Failov
      * @throws Exception Поскольку производится сложная работа с файлом, случиться может что угодно
      */
     public synchronized void updateAnswerAttachmentFileId(String filename, String fileId, long botId) throws Exception{
         if(filename == null || filename.isEmpty())
             throw new Exception(log("Проблема внесения в базу ID фотографии: filename = null или пустой!"));
-        if(fileId == null || fileId.isEmpty())
-            throw new Exception(log("Проблема внесения в базу ID фотографии: fileId = null или пустой!"));
-        log("Вношу в очередь на прикрепление в базу к файлу " + filename + " айдишник " + fileId + " ...");
+        if(fileId == null || fileId.isEmpty()) {
+            fileId = null;
+            log("Вношу в очередь отзыв FileID для файла" + filename + " ...");
+        }
+        else {
+            log("Вношу в очередь на прикрепление в базу к файлу " + filename + " айдишник " + fileId + " ...");
+        }
         for(Triplet<String, String, Long> pair:updateAnswerPhotoIdQueue)
             if(pair.getFirst().equals(filename) && pair.getThird() == botId)
                 return;//throw new Exception(log("Попытка внести в очередь несколько ID для файла " + filename));
