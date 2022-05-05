@@ -140,6 +140,9 @@ public class AdminList  extends CommandModule {
         return null;
     }
 
+    public ArrayList<AdminListItem> getUserList() {
+        return userList;
+    }
 
     private void saveArrayToFile() throws Exception{
         try (PrintWriter fileTmpWriter = new PrintWriter(userListFile)) {

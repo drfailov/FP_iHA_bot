@@ -6,7 +6,7 @@
 
     <string name="menu_messages">Сообщения</string>
     <string name="menu_accounts">Аккаунты</string>
-    <string name="menu_settings">Настройки</string>
+    <string name="menu_admins">Администраторы</string>
     <string name="notification_content">Бот работает</string>
     <string name="notification_title">iHA bot 6.0 alpha 9</string>
     <string name="notification_channel_name">Бот работает</string>

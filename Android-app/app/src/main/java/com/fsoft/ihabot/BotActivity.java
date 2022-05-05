@@ -15,7 +15,9 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.navigation.NavigationView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.navigation.NavController;
+import androidx.navigation.NavDestination;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
@@ -38,38 +40,40 @@ public class BotActivity extends AppCompatActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         setSupportActionBar(binding.appBarBot.toolbar);
-        binding.appBarBot.fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
-                new TgLoginWindow(BotActivity.this, new TgLoginWindow.OnSuccessfulLoginListener() {
-                    @Override
-                    public void onSuccessfulLogin(TgAccount tgAccount) {
-                        try {
-                            ApplicationManager.getInstance().getCommunicator().addAccount(tgAccount);
-                            tgAccount.startAccount();
-                            Snackbar.make(view, "Добавлено: " + tgAccount.toString(), Snackbar.LENGTH_LONG).show();
-                        }
-                        catch (Exception e){
-                            e.printStackTrace();
-                            Snackbar.make(view, "Ошибка: " + e.getLocalizedMessage(), Snackbar.LENGTH_LONG).show();
-                        }
-                    }
-                });
-            }
-        });
+        binding.appBarBot.fab.setOnClickListener(getAddAccountListener());
         DrawerLayout drawer = binding.drawerLayout;
         NavigationView navigationView = binding.navView;
+
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.nav_messages, R.id.nav_accounts, R.id.nav_settings)
+                R.id.nav_messages, R.id.nav_accounts, R.id.nav_admins)
                 .setOpenableLayout(drawer)
                 .build();
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_bot);
+        navController.addOnDestinationChangedListener(new NavController.OnDestinationChangedListener() {
+            @Override
+            public void onDestinationChanged(@NonNull NavController navController, @NonNull NavDestination navDestination, @Nullable Bundle bundle) {
+                if(navDestination.getId() == R.id.nav_accounts){
+                    binding.appBarBot.fab.setVisibility(View.VISIBLE);
+                    binding.appBarBot.fab.setImageResource(R.drawable.ic_add_tg_account);
+                    binding.appBarBot.fab.setOnClickListener(getAddAccountListener());
+                }
+                else if(navDestination.getId() == R.id.nav_admins){
+                    binding.appBarBot.fab.setVisibility(View.VISIBLE);
+                    binding.appBarBot.fab.setImageResource(R.drawable.ic_menu_user);
+                    binding.appBarBot.fab.setOnClickListener(getAddAdminListener());
+                }
+                else {
+                    binding.appBarBot.fab.setVisibility(View.INVISIBLE);
+                }
+
+                Log.d("NAV",navDestination.toString());
+            }
+        });
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
         NavigationUI.setupWithNavController(navigationView, navController);
+
 
 
         //проверить запущен ли сервис. если нет - запустить.
@@ -102,5 +106,39 @@ public class BotActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_bot);
         return NavigationUI.navigateUp(navController, mAppBarConfiguration)
                 || super.onSupportNavigateUp();
+    }
+
+    private View.OnClickListener getAddAccountListener(){
+        return new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+//                        .setAction("Action", null).show();
+                new TgLoginWindow(BotActivity.this, new TgLoginWindow.OnSuccessfulLoginListener() {
+                    @Override
+                    public void onSuccessfulLogin(TgAccount tgAccount) {
+                        try {
+                            ApplicationManager.getInstance().getCommunicator().addAccount(tgAccount);
+                            tgAccount.startAccount();
+                            Snackbar.make(view, "Добавлено: " + tgAccount.toString(), Snackbar.LENGTH_LONG).show();
+                        }
+                        catch (Exception e){
+                            e.printStackTrace();
+                            Snackbar.make(view, "Ошибка: " + e.getLocalizedMessage(), Snackbar.LENGTH_LONG).show();
+                        }
+                    }
+                });
+            }
+        };
+    }
+
+    private View.OnClickListener getAddAdminListener(){
+        return new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+        };
     }
 }
