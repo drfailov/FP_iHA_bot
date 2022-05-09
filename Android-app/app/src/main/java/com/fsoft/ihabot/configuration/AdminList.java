@@ -346,18 +346,19 @@ public class AdminList  extends CommandModule {
         @NonNull
         @Override
         public String toString() {
-            StringBuilder sb = new StringBuilder();
-            sb.append("\uD83D\uDC64 <b>").append(user).append("</b>\n");
-            sb.append("[");
+            return "\uD83D\uDC64 <b>" + user + "</b>\n" +
+                    "[" + getRightsAsString() + "]\n" +
+                    "⚡️ /AdminInfo_" + user.getId() + " - подробнее.";
+        }
 
+        public String getRightsAsString(){
+            StringBuilder sb = new StringBuilder();
             for (Right right:getGenericRightsList()) {
                 if (right != null)
                     sb.append(isAllowed(right)?"✅":"⛔");
                 if (right == null)
                     sb.append("--");
             }
-            sb.append("]\n");
-            sb.append("⚡️ /AdminInfo_").append(user.getId()).append(" - подробнее.");
             return sb.toString();
         }
 

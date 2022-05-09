@@ -11,58 +11,35 @@ import android.widget.TextView;
 import com.fsoft.ihabot.ApplicationManager;
 import com.fsoft.ihabot.R;
 import com.fsoft.ihabot.Utils.F;
-import com.fsoft.ihabot.communucation.Communicator;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
 import com.fsoft.ihabot.communucation.tg.TgAccountCore;
 import com.fsoft.ihabot.communucation.tg.User;
 import com.fsoft.ihabot.configuration.AdminList;
 import com.squareup.picasso.Picasso;
 
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import jp.wasabeef.picasso.transformations.CropCircleTransformation;
 
-public class AdminsAdapter extends BaseAdapter {
+public class AddAdminUsersAdapter extends BaseAdapter {
     Activity activity = null;
     ApplicationManager applicationManager = null;
-    AdminList adminList = null;
-    /**
-     * Дело в том, что когда создаётся этот адаптер, данных в сервисе ещё не существует.
-     * Поэтому нужно попробовать повторно их достать когда сервис уже работает.
-     * Задача этого таймера состоит в том чтобы обновлять данные о ApplicationManager до тех пор, пока он не будет создан.
-     * ПОсле того как успешно получен Communictor (с которого и надо показывать данные), это таймер ликвидируется.
-     */
-    Timer timerToUpdateView = null;
+    ArrayList<User> users = null;
 
-    public AdminsAdapter(Activity activity) {
+
+    public AddAdminUsersAdapter(Activity activity) {
         this.activity = activity;
         applicationManager = ApplicationManager.getInstance();
-        if(applicationManager != null)
-            adminList = applicationManager.getAdminList();
-        timerToUpdateView = new Timer();
-        timerToUpdateView.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                activity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        notifyDataSetChanged();
-                    }
-                });
-            }
-        }, 1000, 1000);
+        users = applicationManager.getMessageHistory().getLastUsersList();
     }
 
     @Override
     public void notifyDataSetChanged() {
         if(applicationManager == null)
             applicationManager = ApplicationManager.getInstance();
-        if(applicationManager != null && adminList == null)
-            adminList = applicationManager.getAdminList();
-        if(adminList != null)
-            timerToUpdateView.cancel();
         super.notifyDataSetChanged();
     }
 
@@ -70,26 +47,17 @@ public class AdminsAdapter extends BaseAdapter {
     public void notifyDataSetInvalidated() {
         if(applicationManager == null)
             applicationManager = ApplicationManager.getInstance();
-        if(applicationManager != null && adminList == null)
-            adminList = applicationManager.getAdminList();
-        if(adminList != null)
-            timerToUpdateView.cancel();
         super.notifyDataSetInvalidated();
     }
 
     @Override
     public int getCount() {
-        if(adminList == null) {
-            return 0;
-        }
-        return adminList.getUserList().size();
+        return users.size();
     }
 
     @Override
     public Object getItem(int i) {
         return null;
-//        if(communicator == null) return null;
-//        return communicator.getTgAccounts().get(i);
     }
 
     @Override
@@ -103,23 +71,19 @@ public class AdminsAdapter extends BaseAdapter {
             convertView = activity.getLayoutInflater().inflate(R.layout.fragment_admins_list_item, container, false);
         }
 
-        AdminList.AdminListItem adminListItem =  adminList.getUserList().get(position);
-        if(adminListItem == null) {
-            return activity.getLayoutInflater().inflate(R.layout.fragment_admins_list_item, container, false);
-        }
-        User user = adminListItem.getUser();
+        User user = users.get(position);
         if(user == null) {
             return activity.getLayoutInflater().inflate(R.layout.fragment_admins_list_item, container, false);
         }
 
         { //NAME
-            TextView textView = convertView.findViewById(R.id.item_admin_textView_name);
+            TextView textView = convertView.findViewById(R.id.item_user_textView_name);
             if(textView != null) {
                 textView.setText(user.getName());
             }
         }
         { //USERNAME
-            TextView textView = convertView.findViewById(R.id.item_admin_textView_userhame);
+            TextView textView = convertView.findViewById(R.id.item_user_textView_username);
             if(textView != null) {
                 if(user.getUsername().isEmpty())
                     textView.setText(String.format(Locale.US, "%d", user.getId()));
@@ -128,23 +92,9 @@ public class AdminsAdapter extends BaseAdapter {
             }
         }
 
-        { //DESCRIPTION
-            TextView textView = convertView.findViewById(R.id.item_admins_textView_description);
-            if(textView != null) {
-                textView.setText(adminListItem.getComment());
-            }
-        }
-
-        { //RIGHTS
-            TextView textView = convertView.findViewById(R.id.item_admins_textView_rights);
-            if(textView != null) {
-                textView.setText(adminListItem.getRightsAsString());
-            }
-        }
-
         TgAccount tgAccount = applicationManager.getCommunicator().getWorkingTgAccount();
         if(tgAccount != null){//photo
-            ImageView imageView = convertView.findViewById(R.id.item_admin_imageview_avatar);
+            ImageView imageView = convertView.findViewById(R.id.item_user_imageview_avatar);
             if(imageView != null) {
                 tgAccount.getUserPhotoUrl(new TgAccountCore.GetUserPhotoListener() {
                     @Override

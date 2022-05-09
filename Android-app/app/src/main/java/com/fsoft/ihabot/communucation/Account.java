@@ -25,9 +25,6 @@ public class Account extends CommandModule implements AccountBase {
     //место для хранения данных этого аккаунта и любого наследованного аккаунта
     private FileStorage fileStorage = null;
     private String fileName = null;
-    //эту переменную делать true если получилось успешно
-    // войти и делать false если возникли серьезные проблемы с аккаунтом
-    private boolean token_ok = false;
     //это настройка для пользователя чтобы выключить аккаунт
     private boolean enabled = true;
     //устанавливается true во время запуска аккаунта
@@ -94,9 +91,6 @@ public class Account extends CommandModule implements AccountBase {
         }
     }
 
-    public boolean isToken_ok() {
-        return token_ok;
-    }
     public boolean isEnabled() {
         return enabled;
     }
@@ -160,9 +154,6 @@ public class Account extends CommandModule implements AccountBase {
     public void setToken(String token) {
         this.token = token;
         getFileStorage().put("token", token).commit();
-    }
-    public void setToken_ok(boolean token_ok) {
-        this.token_ok = token_ok;
     }
     public void setOnStateChangedListener(Runnable onStateChangedListener) {
         this.onStateChangedListener = onStateChangedListener;

@@ -5,11 +5,8 @@ import com.fsoft.ihabot.Utils.FileStorage;
 public interface AccountBase
 {
     public boolean remove();
-    public void login();
     public void startAccount();
     public void stopAccount();
-    public boolean isMine(String commandTreatment);
-    public boolean isToken_ok();
     public boolean isEnabled();
     public boolean isRunning();
     public String getState();
@@ -22,7 +19,6 @@ public interface AccountBase
     public void setState(String state);
     public void setId(long id);
     public void setToken(String token);
-    public void setToken_ok(boolean token_ok);
     public String getScreenName();
     public void setScreenName(String screenName);
 }

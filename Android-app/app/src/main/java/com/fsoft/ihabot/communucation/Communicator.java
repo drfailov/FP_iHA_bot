@@ -45,6 +45,13 @@ public class Communicator extends CommandModule{
                 return account;
         return null;
     }
+    public TgAccount getWorkingTgAccount(){
+        for (TgAccount account : tgAccounts) {
+            if (account.isRunning() && account.isEnabled())
+                return account;
+        }
+        return null;
+    }
     public ArrayList<TgAccount> getTgAccounts() {
         return tgAccounts;
     }

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:paddingStart="4dp"
+        android:text="Выбери кого назначить администратором из списка:"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+        android:textSize="15sp" />
+
+    <ListView
+        android:id="@+id/lv_assignment_users"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:paddingStart="4dp"
+        android:text="Если нужного пользователя нет в списке, пусть он мне напишет в телеграм. Тогда он появится в списке."
+        android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+        android:textSize="10sp"/>
+</LinearLayout>

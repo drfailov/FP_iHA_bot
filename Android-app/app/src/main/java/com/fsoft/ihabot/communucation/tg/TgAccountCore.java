@@ -348,6 +348,7 @@ public class TgAccountCore extends Account {
             if (currentUserPhotoUrl != null) {
                 listener.gotPhoto(currentUserPhotoUrl);
             } else {
+                incrementApiCounter();
                 getUserPhotoUrl(new GetUserPhotoListener() {
                     @Override
                     public void gotPhoto(String url) {
@@ -372,6 +373,7 @@ public class TgAccountCore extends Account {
     }
     public void getUserPhotoUrl(final GetUserPhotoListener listener, final long user_id){
         log(". Получение фотографии пользователя " + user_id + "...");
+        incrementApiCounter();
         getUserProfilePhotos(new GetUserProfilePhotosListener() {
             @Override
             public void gotPhotos(UserProfilePhotos photos) {

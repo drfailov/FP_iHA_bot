@@ -170,7 +170,7 @@ public class MessageHistory extends CommandModule {
     }
 
     /**
-     * Получить список последних чатов на аккаунте.
+     * Получить список последних юзеров на аккаунте.
      * Возвращает массив User
      * @param tgAccount Аккаунт для которого загружаем юзеров
      * @return Возвращает обьекты пользователей в истории чатов в порядке от самых новых к старым
@@ -180,6 +180,47 @@ public class MessageHistory extends CommandModule {
         for (MessageHistoryChat chat:getLastChatsListForAccount(tgAccount))
             if(chat.chatUser != null)
                 users.add(chat.chatUser);
+        return users;
+    }
+
+    /**
+     * Получить список последних чатов вообще в истории.
+     * Возвращает массив User
+     * @return Возвращает обьекты пользователей в истории чатов в порядке от самых новых к старым
+     */
+    public ArrayList<User> getLastUsersList() {
+        //load all
+        ArrayList<MessageHistoryChat> chats = new ArrayList<>();
+        for (MessageHistoryTgAccount account:messageHistoryTgAccounts){
+            chats.addAll(account.getChats());
+        }
+
+        {//sort
+            chats.sort(new Comparator<MessageHistoryChat>() {
+                @Override
+                public int compare(MessageHistoryChat message, MessageHistoryChat m1) {
+                    return Long.compare(m1.getLastMessageDate().getTime(), message.getLastMessageDate().getTime());
+                }
+            });
+        }
+
+        //Get users
+        ArrayList<User> users = new ArrayList<>();
+        for (MessageHistoryChat chat:chats) {
+            if (chat.chatUser != null)
+                users.add(chat.chatUser);
+        }
+
+        //clear duplicates
+        for (int i = 0; i < users.size(); i++){
+            for (int j = i + 1; j < users.size(); j++) {
+                if (users.get(i).getId() == users.get(j).getId()) {
+                    users.remove(j);
+                    j--;
+                }
+            }
+        }
+
         return users;
     }
 
