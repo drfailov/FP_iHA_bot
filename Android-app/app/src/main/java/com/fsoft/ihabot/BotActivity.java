@@ -1,16 +1,25 @@
 package com.fsoft.ihabot;
 
+import android.app.Dialog;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ListView;
+import android.widget.TextView;
 
 import com.fsoft.ihabot.Utils.F;
 import com.fsoft.ihabot.communucation.tg.TgAccount;
+import com.fsoft.ihabot.communucation.tg.User;
+import com.fsoft.ihabot.configuration.AdminList;
 import com.fsoft.ihabot.ui.TgLoginWindow;
+import com.fsoft.ihabot.ui.admins.AddAdminUsersAdapter;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.navigation.NavigationView;
 
@@ -61,7 +70,7 @@ public class BotActivity extends AppCompatActivity {
                 }
                 else if(navDestination.getId() == R.id.nav_admins){
                     binding.appBarBot.fab.setVisibility(View.VISIBLE);
-                    binding.appBarBot.fab.setImageResource(R.drawable.ic_menu_user);
+                    binding.appBarBot.fab.setImageResource(R.drawable.ic_add_user);
                     binding.appBarBot.fab.setOnClickListener(getAddAdminListener());
                 }
                 else {
@@ -136,8 +145,39 @@ public class BotActivity extends AppCompatActivity {
         return new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                final Dialog dialog = new Dialog(BotActivity.this);
+                dialog.setContentView(R.layout.dialog_add_admin);
+                ListView listView = dialog.findViewById(R.id.lv_assignment_users);
+                AddAdminUsersAdapter adapter = new AddAdminUsersAdapter(BotActivity.this);
+                listView.setAdapter(adapter);
+                listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                        if(adapter.getItem(i).getClass() == User.class) {
+                            User user = (User) adapter.getItem(i);
+                            ApplicationManager applicationManager = ApplicationManager.getInstance();
+                            if(applicationManager != null) {
+                                try {
+                                    AdminList.AdminListItem adminListItem = applicationManager.getAdminList().add(user, user, "Добавлено из интерфейса программы.");
+                                    for (AdminList.AdminListItem.Right right: AdminList.AdminListItem.getGenericRightsList()){
+                                        if(right != null)
+                                            adminListItem.setAllowed(right, true);
+                                    }
+                                    applicationManager.getAdminList().saveArrayToFile();
+                                    Snackbar.make(binding.appBarBot.fab, "Добавлен администратор: " + user.toString(), Snackbar.LENGTH_LONG).show();
+                                }
+                                catch (Exception e){
+                                    Snackbar.make(binding.appBarBot.fab, "Не удалось добавить администратора: " + e.getLocalizedMessage(), Snackbar.LENGTH_LONG).show();
+                                    e.printStackTrace();
+                                }
+                            }
+                            dialog.dismiss();
+                        }
+                    }
+                });
+                dialog.show();
+
+
             }
         };
     }

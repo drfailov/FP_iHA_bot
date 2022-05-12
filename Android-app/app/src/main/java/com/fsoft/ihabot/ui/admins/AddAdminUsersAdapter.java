@@ -34,6 +34,11 @@ public class AddAdminUsersAdapter extends BaseAdapter {
         this.activity = activity;
         applicationManager = ApplicationManager.getInstance();
         users = applicationManager.getMessageHistory().getLastUsersList();
+        //Удалить из списка тех кто уже админ
+        ArrayList<AdminList.AdminListItem> admins = applicationManager.getAdminList().getUserList();
+        for (AdminList.AdminListItem admin:admins){
+            users.remove(admin.getUser());
+        }
     }
 
     @Override
@@ -57,7 +62,7 @@ public class AddAdminUsersAdapter extends BaseAdapter {
 
     @Override
     public Object getItem(int i) {
-        return null;
+        return users.get(i);
     }
 
     @Override
@@ -68,12 +73,12 @@ public class AddAdminUsersAdapter extends BaseAdapter {
     @Override
     public View getView(int position, View convertView, ViewGroup container) {
         if (convertView == null) {
-            convertView = activity.getLayoutInflater().inflate(R.layout.fragment_admins_list_item, container, false);
+            convertView = activity.getLayoutInflater().inflate(R.layout.dialog_add_admin_list_item, container, false);
         }
 
         User user = users.get(position);
-        if(user == null) {
-            return activity.getLayoutInflater().inflate(R.layout.fragment_admins_list_item, container, false);
+        if(user == null) { //если юзер пустой, надо загрузить по новой, чтобы там не висели подвисшие данные с проглого элемента
+            return activity.getLayoutInflater().inflate(R.layout.dialog_add_admin_list_item, container, false);
         }
 
         { //NAME
@@ -96,50 +101,56 @@ public class AddAdminUsersAdapter extends BaseAdapter {
         if(tgAccount != null){//photo
             ImageView imageView = convertView.findViewById(R.id.item_user_imageview_avatar);
             if(imageView != null) {
-                tgAccount.getUserPhotoUrl(new TgAccountCore.GetUserPhotoListener() {
-                    @Override
-                    public void gotPhoto(String url) {
-                        imageView.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                Picasso.get()
-                                        .load(url)
-                                        .placeholder(R.drawable.tg_account_placeholder)
-                                        .transform(new CropCircleTransformation())
-                                        .into(imageView);
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void noPhoto() {
-                        imageView.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                Picasso.get()
-                                        .load(R.drawable.tg_account_placeholder)
-                                        .transform(new CropCircleTransformation())
-                                        .into(imageView);
-                            }
-                        });
-
-                    }
-
-                    @Override
-                    public void error(Throwable error) {
-                        imageView.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                Picasso.get()
-                                        .load(R.drawable.tg_account_placeholder)
-                                        .transform(new CropCircleTransformation())
-                                        .into(imageView);
-                            }
-                        });
-
-                        error.printStackTrace();
-                    }
-                }, user.getId());
+                Picasso.get()
+                        .load(R.drawable.tg_account_placeholder)
+                        .transform(new CropCircleTransformation())
+                        .into(imageView);
+//                {
+//                    tgAccount.getUserPhotoUrl(new TgAccountCore.GetUserPhotoListener() {
+//                        @Override
+//                        public void gotPhoto(String url) {
+//                            imageView.post(new Runnable() {
+//                                @Override
+//                                public void run() {
+//                                    Picasso.get()
+//                                            .load(url)
+//                                            .placeholder(R.drawable.tg_account_placeholder)
+//                                            .transform(new CropCircleTransformation())
+//                                            .into(imageView);
+//                                }
+//                            });
+//                        }
+//
+//                        @Override
+//                        public void noPhoto() {
+//                            imageView.post(new Runnable() {
+//                                @Override
+//                                public void run() {
+//                                    Picasso.get()
+//                                            .load(R.drawable.tg_account_placeholder)
+//                                            .transform(new CropCircleTransformation())
+//                                            .into(imageView);
+//                                }
+//                            });
+//
+//                        }
+//
+//                        @Override
+//                        public void error(Throwable error) {
+//                            imageView.post(new Runnable() {
+//                                @Override
+//                                public void run() {
+//                                    Picasso.get()
+//                                            .load(R.drawable.tg_account_placeholder)
+//                                            .transform(new CropCircleTransformation())
+//                                            .into(imageView);
+//                                }
+//                            });
+//
+//                            error.printStackTrace();
+//                        }
+//                    }, user.getId());
+//                }
             }
             else {
                 Log.d(F.TAG, "R.id.item_account_imageview_avatar is null =(");

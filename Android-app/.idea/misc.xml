@@ -5,7 +5,14 @@
       <map>
         <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/FP_iHA_bot/Android-app/app/src/main/res/drawable-v24/ic_add_user.xml" value="0.2525" />
         <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/FP_iHA_bot/Android-app/app/src/main/res/drawable-v24/ic_cross.xml" value="0.2985" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/FP_iHA_bot/Android-app/app/src/main/res/drawable-v24/ic_exclamation.xml" value="0.2525" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/FP_iHA_bot/Android-app/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.2525" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/FP_iHA_bot/Android-app/app/src/main/res/drawable/background_warning.xml" value="0.2525" />
         <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/FP_iHA_bot/Android-app/app/src/main/res/drawable/ic_add_tg_account.xml" value="0.5" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/FP_iHA_bot/Android-app/app/src/main/res/drawable/ic_launcher_background.xml" value="0.2525" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/FP_iHA_bot/Android-app/app/src/main/res/drawable/ic_menu_camera.xml" value="0.2525" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/FP_iHA_bot/Android-app/app/src/main/res/drawable/ic_menu_gallery.xml" value="0.2525" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/FP_iHA_bot/Android-app/app/src/main/res/drawable/ic_menu_message.xml" value="0.2525" />
         <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/FP_iHA_bot/Android-app/app/src/main/res/drawable/ic_menu_settings.xml" value="0.2985" />
         <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/FP_iHA_bot/Android-app/app/src/main/res/drawable/ic_menu_slideshow.xml" value="0.2985" />
         <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/FP_iHA_bot/Android-app/app/src/main/res/drawable/ic_menu_user.xml" value="0.33" />
@@ -25,6 +32,7 @@
         <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/FP_iHA_bot/Android-app/app/src/main/res/layout/nav_header_bot.xml" value="0.35054347826086957" />
         <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/FP_iHA_bot/Android-app/app/src/main/res/menu/account_popup_menu.xml" value="0.36666666666666664" />
         <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/FP_iHA_bot/Android-app/app/src/main/res/menu/activity_main_drawer.xml" value="0.36666666666666664" />
+        <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/FP_iHA_bot/Android-app/app/src/main/res/menu/admin_popup_menu.xml" value="0.36666666666666664" />
         <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/FP_iHA_bot/Android-app/app/src/main/res/menu/bot.xml" value="0.36666666666666664" />
         <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/app/src/main/res/drawable/ic_menu_gallery.xml" value="0.196" />
         <entry key="..\:/Data/Projects/IDEA_Android/VK_iHA_bot dir/2022-iHA_bot/app/src/main/res/drawable/ic_menu_message.xml" value="0.196" />

@@ -102,8 +102,8 @@ public class AccountsAdapter extends BaseAdapter {
         }
 
         TgAccount tgAccount = communicator.getTgAccounts().get(position);
-        if(tgAccount == null) {
-            return convertView;
+        if(tgAccount == null) { //если юзер пустой, надо загрузить по новой, чтобы там не висели подвисшие данные с проглого элемента
+            return activity.getLayoutInflater().inflate(R.layout.fragment_accounts_list_item, container, false);
         }
 
         tgAccount.setOnStateChangedListener(new Runnable() { //auto-updating

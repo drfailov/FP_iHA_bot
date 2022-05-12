@@ -104,7 +104,7 @@ public class AdminsAdapter extends BaseAdapter {
         }
 
         AdminList.AdminListItem adminListItem =  adminList.getUserList().get(position);
-        if(adminListItem == null) {
+        if(adminListItem == null) { //если юзер пустой, надо загрузить по новой, чтобы там не висели подвисшие данные с проглого элемента
             return activity.getLayoutInflater().inflate(R.layout.fragment_admins_list_item, container, false);
         }
         User user = adminListItem.getUser();
@@ -145,7 +145,9 @@ public class AdminsAdapter extends BaseAdapter {
         TgAccount tgAccount = applicationManager.getCommunicator().getWorkingTgAccount();
         if(tgAccount != null){//photo
             ImageView imageView = convertView.findViewById(R.id.item_admin_imageview_avatar);
+
             if(imageView != null) {
+                imageView.setImageResource(R.drawable.ic_tg_logo);
                 tgAccount.getUserPhotoUrl(new TgAccountCore.GetUserPhotoListener() {
                     @Override
                     public void gotPhoto(String url) {

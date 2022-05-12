@@ -1,17 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:paddingBottom="10dp">
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:paddingStart="4dp"
-        android:text="Выбери кого назначить администратором из списка:"
+        android:text="Добавить администратора"
         android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-        android:textSize="15sp" />
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="25dp"
+        android:layout_marginStart="15dp"
+        android:textSize="20sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp">
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="10dp"
+            android:src="@drawable/ic_add_user"
+            android:tint="?attr/colorOnBackground"
+            tools:ignore="UseAppTint" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="4dp"
+            android:text="Выбери кого назначить администратором из списка:"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textSize="14sp" />
+    </LinearLayout>
 
     <ListView
         android:id="@+id/lv_assignment_users"
@@ -19,12 +46,57 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <TextView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:paddingStart="4dp"
-        android:text="Если нужного пользователя нет в списке, пусть он мне напишет в телеграм. Тогда он появится в списке."
-        android:textAppearance="@style/TextAppearance.AppCompat.Display1"
-        android:textSize="10sp"/>
+        android:padding="5dp"
+        android:gravity="center_vertical"
+        android:layout_marginTop="10dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
+        android:background="@drawable/background_warning"
+        android:backgroundTint="?attr/colorOnBackground">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_margin="5dp"
+            android:src="@drawable/ic_exclamation"
+            android:tint="?attr/colorOnBackground"
+            tools:ignore="UseAppTint" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="4dp"
+            android:text="Если нужного пользователя нет в списке, пусть он мне напишет в телеграм. Тогда он появится в списке."
+            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+            android:textSize="12sp"/>
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="5dp"
+        android:gravity="center_vertical"
+        android:layout_marginTop="10dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
+        android:background="@drawable/background_warning"
+        android:backgroundTint="?attr/colorOnBackground">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_margin="5dp"
+            android:src="@drawable/ic_exclamation"
+            android:tint="?attr/colorOnBackground"
+            tools:ignore="UseAppTint" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="4dp"
+            android:text="Администратор будет добавлен с максимальным набором прав. Если нужно в будет изменить права администратора, воспользуйся командой ''Админы''."
+            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+            android:textSize="12sp"/>
+    </LinearLayout>
+
 </LinearLayout>

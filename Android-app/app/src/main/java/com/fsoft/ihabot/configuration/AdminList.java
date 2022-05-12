@@ -144,7 +144,11 @@ public class AdminList  extends CommandModule {
         return userList;
     }
 
-    private void saveArrayToFile() throws Exception{
+    /**
+     * Сохранить в файл фактически. Вызвать после изменений. Может быть вызвано из интерфейса программы или команды.
+     * @throws Exception Работаем с файлами. Что поделать.
+     */
+    public void saveArrayToFile() throws Exception{
         try (PrintWriter fileTmpWriter = new PrintWriter(userListFile)) {
             for (AdminListItem adminListItem : userList)
                 fileTmpWriter.println(adminListItem.toJson().toString());
