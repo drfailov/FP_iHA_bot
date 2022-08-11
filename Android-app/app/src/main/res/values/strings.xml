@@ -8,6 +8,6 @@
     <string name="menu_accounts">Аккаунты</string>
     <string name="menu_admins">Администраторы</string>
     <string name="notification_content">Бот работает</string>
-    <string name="notification_title">iHA bot 6.0 alpha 9</string>
+    <string name="notification_title">iHA bot 6.0 beta 1</string>
     <string name="notification_channel_name">Бот работает</string>
 </resources>
