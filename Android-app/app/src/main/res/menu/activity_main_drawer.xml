@@ -7,7 +7,8 @@
         <item
             android:id="@+id/nav_messages"
             android:icon="@drawable/ic_menu_message"
-            android:title="@string/menu_messages" />
+            android:title="@string/menu_messages"
+            android:visible="false" />
         <item
             android:id="@+id/nav_accounts"
             android:icon="@drawable/ic_menu_user"

@@ -57,17 +57,17 @@ public class AdminList  extends CommandModule {
             bufferedReader.close();
         }
         log("Загружено список: " + userList.size() + " администраторов");
-        if(userList.isEmpty()){
-            log("Поскольку список администраторов пустой, добавляю тестовую запись.");
-            {
-                User userTg = new User(248067313, "DrFailov", "Dr.", "Failov");
-                add(userTg, userTg, "Разработчик бота");
-            }
-            {
-                User userTg = new User(914020479, "Polyasha00", "", "");
-                add(userTg, userTg, "Подруга разработчика. Так надо");
-            }
-        }
+//        if(userList.isEmpty()){
+//            log("Поскольку список администраторов пустой, добавляю тестовую запись.");
+//            {
+//                User userTg = new User(248067313, "DrFailov", "Dr.", "Failov");
+//                add(userTg, userTg, "Разработчик бота");
+//            }
+//            {
+//                User userTg = new User(914020479, "Polyasha00", "", "");
+//                add(userTg, userTg, "Подруга разработчика. Так надо");
+//            }
+//        }
 
         childCommands.add(new ShowAdminCommand());
         childCommands.add(new AddAdminCommand());
